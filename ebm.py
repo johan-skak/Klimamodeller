@@ -116,9 +116,8 @@ def meridional_transport_PW(T, x, D):
     H = - 2.0 * np.pi * R_EARTH**2 * flux    # W (zonal integral around latitude circle)
     return H / 1e15                           # PW
 
-def global_mean(T, x):
-    return 0.5 * np.trapezoid(T, x)
-    # return np.mean(T)   # since x is uniform this is equivalent to trapezoid except at end-points # trapezoid is more correct
+def global_mean(T):
+    return np.mean(T)
 
 # ---------------- Single simulation (Crank–Nicolson for diffusion) -----------
 def run_simulation(params, years, nx, dt_years, Tinit=None):
@@ -143,7 +142,7 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
         rad_term = absorbed - OLR + params['F']
 
         # Diffusivity depends on global mean temperature
-        Tglob = global_mean(T, x)
+        Tglob = global_mean(T)
         D = params['D0'] * max(0.5, 1.0 + params['k2'] * (Tglob - T00))
 
         # Build L and do Crank–Nicolson step
@@ -162,7 +161,7 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
     alpha_end = albedo_from_T(T, x, params['k1'])
     dTloc_end = deltaT_of_Ts(T, params['k3'])
     OLR_end = sigma * (T - dTloc_end)**4
-    D_end = params['D0'] * max(0.5, 1.0 + params['k2'] * (global_mean(T, x) - T00))
+    D_end = params['D0'] * max(0.5, 1.0 + params['k2'] * (global_mean(T) - T00))
     aLe, bLe, cLe = build_diffusion_tridiag(nx, x, D_end)
     conv_end = apply_L_to_T(aLe, bLe, cLe, T)           # W/m² (convergence)
     H_end_PW = meridional_transport_PW(T, x, D_end)     # PW
@@ -209,8 +208,8 @@ def main():
 
     # Panel 6 quantities: Δ fields and polar amplification (EXACT as in Jupyter/Fortran here)
     dT_lat = (forc['T'] - ctrl['T'])             # K
-    mean_ctrl = global_mean(ctrl['T'], x)
-    mean_forc = global_mean(forc['T'], x)
+    mean_ctrl = global_mean(c['T'], x)
+    mean_forc = global_mean(f['T'], x)
     dT_global = (mean_forc - mean_ctrl)
     Ts_ctrl_pole = ctrl['T'][-1]
     Ts_forc_pole = forc['T'][-1]
