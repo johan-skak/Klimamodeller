@@ -61,7 +61,10 @@ def thomas_solve(a, b, c, d):
 # ---------------- Physics building blocks (PDF exact forms) ----------------
 def Q_x(x, S):
     """Annual-mean insolation (TOA) as function of x = sin(lat)."""
-    return 0.25 * S * (1.0 - 0.241 * (3.0 * x**2 - 1.0))
+    dx = x[1] - x[0]
+    x_left = x - 0.5 * dx
+    x_right = x + 0.5 * dx
+    return 0.25 * S * (1.0 - 0.241 * (x_right**3 - x_left**3 - (x_right - x_left)) / (dx))
 
 def albedo_from_T(T, x, k1):
     """Equation (12): effective albedo with ice fraction fi = k1*(273-T) clipped to [0,1]."""
