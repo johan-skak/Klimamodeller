@@ -119,6 +119,17 @@ def meridional_transport_PW(T, x, D):
 def global_mean(T):
     return np.mean(T)
 
+def poles_temperature(T, x):
+    """Return temperature at poles (K) by extrapolation since T is at cell centers. Extrapolates by a quadratic fit with 0 gradient at poles.
+    
+    Parameters
+        T: array of temperatures at cell centers
+        x: array of sin(lat) at cell centers (linear spacing)
+        
+    Returns
+        (T_south, T_north) temperatures at south and north poles (K)"""
+    return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0
+
 # ---------------- Single simulation (Crank–Nicolson for diffusion) -----------
 def run_simulation(params, years, nx, dt_years, Tinit=None):
     dx = 2.0 / nx
@@ -223,16 +234,16 @@ def main():
     x = ctrl['x']; lat = np.degrees(np.arcsin(x))
 
     # Panel 6 quantities: Δ fields and polar amplification (EXACT as in Jupyter/Fortran here)
-    dT_lat = (forc['T'] - ctrl['T'])             # K
+    dT_lat = (forc['T'] - ctrl['T']) # K
     mean_ctrl = global_mean(ctrl['T'])
     mean_forc = global_mean(forc['T'])
     dT_global = (mean_forc - mean_ctrl)
-    Ts_ctrl_pole = ctrl['T'][-1]
-    Ts_forc_pole = forc['T'][-1]
+    Ts_ctrl_npole = poles_temperature(ctrl['T'], x)[1]
+    Ts_forc_npole = poles_temperature(forc['T'], x)[1]
     # Polar amplification per earlier implementation: (ΔT_pole - ΔT_global)/ΔT_global
     polar_ampl = np.nan
     if abs(dT_global) > 1e-12:
-        polar_ampl = ((Ts_forc_pole - Ts_ctrl_pole) - dT_global) / dT_global
+        polar_ampl = ((Ts_forc_npole - Ts_ctrl_npole) - dT_global) / dT_global
 
     # ---- Build multipanel figure ----
     fig, axs = plt.subplots(4, 2, figsize=(12, 14))
@@ -298,7 +309,7 @@ def main():
     Forced  global mean T (°C): {mean_forc-273.15:.3f}
     ΔT global (°C): {dT_global:.3f}
 
-    North pole T control / forced (°C): {Ts_ctrl_pole-273.15:.3f} / {Ts_forc_pole-273.15:.3f}
+    North pole T control / forced (°C): {Ts_ctrl_npole-273.15:.3f} / {Ts_forc_npole-273.15:.3f}
     Polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): {polar_ampl:.3f}
 
     D_end control / forced (W m⁻² K⁻¹): {ctrl['D_end']:.3f} / {forc['D_end']:.3f}
