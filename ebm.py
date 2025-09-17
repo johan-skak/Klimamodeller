@@ -21,7 +21,8 @@ Usage example:
 
 import numpy as np
 import matplotlib.pyplot as plt
-import argparse, os, textwrap
+import argparse, os, textwrap # for command-line args, file operations and text formatting
+from matplotlib.ticker import FixedLocator # for minor ticks
 
 # ---------------- Physical / model constants ----------------
 SIGMA = 5.67e-8                  # Stefan-Boltzmann (W/m²/K⁴)
@@ -199,7 +200,7 @@ def main():
     p.add_argument('--input', type=str, default='formoutput.txt', help='parameter file (optional)')
     p.add_argument('--years_control', type=float, default=500)
     p.add_argument('--years_forced', type=float, default=500)
-    p.add_argument('--nx', type=int, default=100)
+    p.add_argument('--nx', type=int, default=200)
     p.add_argument('--dt', type=float, default=1.0, help='timestep in years')
     p.add_argument('--outdir', type=str, default='results')
     args = p.parse_args()
@@ -255,39 +256,39 @@ def main():
     # ---- Build multipanel figure ----
     fig, axs = plt.subplots(4, 2, figsize=(12, 14))
     axs = axs.flatten()
-
+    
     # Panel 1: Temperature profiles (°C)
-    axs[0].plot(lat, ctrl['T_init'] - 273.15, label='Initial')
-    axs[0].plot(lat, ctrl['T_end'] - 273.15, label='Control end')
-    axs[0].plot(lat, forc['T_end'] - 273.15, label='Forced end')
-    axs[0].set_title('Panel 1: Temperature profiles (°C)'); axs[0].set_xlabel('Latitude (°)'); axs[0].set_ylabel('°C'); axs[0].legend(); axs[0].grid(True)
+    axs[0].plot([-90, *lat, 90], [ctrl['T_poles_end'][0] - 273.15,*ctrl['T_end'] - 273.15, ctrl['T_poles_end'][1] - 273.15], label='Control end')
+    axs[0].plot([-90, *lat, 90], [forc['T_poles_end'][0] - 273.15,*forc['T_end'] - 273.15, forc['T_poles_end'][1] - 273.15], label='Forced end')
+    axs[0].plot([-90, *lat, 90], [ctrl['T_poles_init'][0] - 273.15,*ctrl['T_init'] - 273.15, ctrl['T_poles_init'][1] - 273.15], label='Initial')
+    axs[0].set_title('Panel 1: Temperature profiles (°C)'); axs[0].set_ylabel('°C')
 
     # Panel 2: OLR (W/m²)
     axs[1].plot(lat, ctrl['olr_end'], label='Control')
     axs[1].plot(lat, forc['olr_end'], label='Forced')
-    axs[1].set_title('Panel 2: OLR (W/m²)'); axs[1].set_xlabel('Latitude (°)'); axs[1].set_ylabel('W/m²'); axs[1].legend(); axs[1].grid(True)
+    axs[1].set_title('Panel 2: OLR (W/m²)'); axs[1].set_ylabel('W/m²')
 
     # Panel 3: Albedo
     axs[2].plot(lat, ctrl['alpha_end'], label='Control')
     axs[2].plot(lat, forc['alpha_end'], label='Forced')
-    axs[2].set_title('Panel 3: Albedo'); axs[2].set_xlabel('Latitude (°)'); axs[2].set_ylabel('albedo'); axs[2].legend(); axs[2].grid(True)
+    axs[2].set_title('Panel 3: Albedo'); axs[2].set_ylabel('albedo')
 
     # Panel 4: Meridional heat transport (PW)
     Hc = meridional_transport_PW(ctrl['T_end'], x, ctrl['D_end'])
     Hf = meridional_transport_PW(forc['T_end'], x, forc['D_end'])
     axs[3].plot(lat, Hc, label='Control')
     axs[3].plot(lat, Hf, label='Forced')
-    axs[3].set_title('Panel 4: Meridional heat transport (PW)'); axs[3].set_xlabel('Latitude (°)'); axs[3].set_ylabel('PW'); axs[3].legend(); axs[3].grid(True)
+    axs[3].set_title('Panel 4: Meridional heat transport (PW)'); axs[3].set_ylabel('PW')
 
     # Panel 5: Heat flux convergence (W/m²)
     axs[4].plot(lat, ctrl['conv_end'], label='Control')
     axs[4].plot(lat, forc['conv_end'], label='Forced')
-    axs[4].set_title('Panel 5: Heat flux convergence (W/m²)'); axs[4].set_xlabel('Latitude (°)'); axs[4].set_ylabel('W/m²'); axs[4].legend(); axs[4].grid(True)
+    axs[4].set_title('Panel 5: Heat flux convergence (W/m²)'); axs[4].set_ylabel('W/m²')
 
     # Panel 6: Change in zonal mean temperature (°C) + polar amplification
     axs[5].plot(lat, dT_lat, label='Forced - Control (°C)')
     axs[5].set_title(f'Panel 6: ΔT zonal (°C); polar amplification = {polar_ampl:.3f}')
-    axs[5].set_xlabel('Latitude (°)'); axs[5].set_ylabel('°C'); axs[5].grid(True)
+    axs[5].set_ylabel('°C')
 
     # Panel 7: Global mean time series (°C)
     Tg_all = np.concatenate([ctrl['Tg'], forc['Tg']])
@@ -300,6 +301,20 @@ def main():
 
     # Hide the 8th panel
     axs[7].axis('off')
+
+    # Minor grid with 40 ticks based on lat spacing
+    minor_ticks = np.arcsin(np.linspace(-1, 1, 40)) * (180/np.pi)
+
+    # Settings applicable to panels 1-6
+    for ax in axs[:6]:
+        ax.set_xlim([-90, 90])
+        ax.set_xlabel('Latitude')
+        ax.legend()
+        ax.grid(True)
+        ax.set_xticks(np.linspace(-90, 90, 7))
+        ax.set_xticklabels([f"{tick:.0f}°" for tick in np.linspace(-90, 90, 7)])
+        ax.xaxis.set_minor_locator(FixedLocator(minor_ticks))
+        ax.grid(True, which='minor', linestyle=':', alpha=0.5)
 
     fig.tight_layout()
     multi_path = os.path.join(args.outdir, 'ebm_panels.png')

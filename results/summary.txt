@@ -1,14 +1,14 @@
 
 === EBM Summary ===
 Years (control, forced): (500, 500)
-Grid points nx: 100, Δt (years): 1.0
+Grid points nx: 200, Δt (years): 1.0
 
-Control global mean T (°C): 15.077
-Forced  global mean T (°C): 18.453
-ΔT global (°C): 3.376
+Control global mean T (°C): 15.081
+Forced  global mean T (°C): 18.454
+ΔT global (°C): 3.373
 
-North pole T control / forced (°C): -13.441 / -7.199
-Polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.849
+North pole T control / forced (°C): -13.782 / -7.511
+Polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.859
 
 D_end control / forced (W m⁻² K⁻¹): 0.665 / 0.687
 
