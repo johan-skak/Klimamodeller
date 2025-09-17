@@ -41,23 +41,19 @@ A_PROFILE = 45.0                 # K
 # ---------------- Tridiagonal solver ----------------
 def thomas_solve(a, b, c, d):
     n = len(d)
-    # Arrays to store modified coefficients
-    super_diag_prime = np.zeros(n)
-    rhs_prime = np.zeros(n)
+    ac, bc, cc, dc = map(np.array, (a, b, c, d))  # make copies to store modified coefficients
     # Forward elimination: modify coefficients
-    super_diag_prime[0] = c[0] / b[0]
-    rhs_prime[0] = d[0] / b[0]
     for i in range(1, n):
-        denom = b[i] - a[i] * super_diag_prime[i-1]
-        # Avoid out-of-bounds for last super-diagonal element
-        super_diag_prime[i] = c[i] / denom if i < n-1 else 0.0
-        rhs_prime[i] = (d[i] - a[i] * rhs_prime[i-1]) / denom
+        mc = ac[i] / bc[i-1]
+        bc[i] -= mc * cc[i-1]
+        dc[i] -= mc * dc[i-1]
+
     # Backward substitution: solve for solution vector
-    sol = np.zeros(n)
-    sol[-1] = rhs_prime[-1]
+    x = np.zeros(n)
+    x[-1] = dc[-1] / bc[-1]
     for i in range(n-2, -1, -1):
-        sol[i] = rhs_prime[i] - super_diag_prime[i] * sol[i+1]
-    return sol
+        x[i] = (dc[i] - cc[i] * x[i+1]) / bc[i]
+    return x
 
 # ---------------- Physics building blocks (PDF exact forms) ----------------
 def Q_x(x, S):
@@ -84,31 +80,23 @@ def deltaT_of_Ts(Ts, k3):
 def build_diffusion_tridiag(nx, x, D):
     dx = x[1] - x[0]
     a = np.zeros(nx); b = np.zeros(nx); c = np.zeros(nx)
-    x_half = 0.5 * (x[:-1] + x[1:]) #positions at cell faces except poles where flux=0
-    w_half = D * (1.0 - x_half**2) # diffusivity at cell faces
-    for i in range(nx):
-        if i == 0:
-            c[i] = w_half[i] / dx**2
-            b[i] = -c[i]
-        elif i == nx - 1:
-            a[i] = w_half[i-1] / dx**2
-            b[i] = -a[i]
-        else:
-            a[i] = w_half[i-1] / dx**2
-            c[i] = w_half[i] / dx**2
-            b[i] = -(a[i] + c[i])
+
+    # half-point weights (length nx-1)
+    x_half = 0.5 * (x[:-1] + x[1:])
+    w_half = D * (1.0 - x_half**2) # diffusivity at cell borders
+    
+    # interior contributions
+    a[1:] = w_half / dx**2     # lower diagonal
+    c[:-1] = w_half / dx**2      # upper diagonal
+    b = -(a + c)                    # main diagonal
     return a, b, c
 
 def apply_L_to_T(a, b, c, T):
-    n = len(T)
-    out = np.zeros_like(T)
-    for i in range(n):
-        out[i] = b[i] * T[i]
-        if i > 0:
-            out[i] += a[i] * T[i-1]
-        if i < n-1:
-            out[i] += c[i] * T[i+1]
+    out = b * T
+    out[1:]  += a[1:] * T[:-1]   # lower diagonal contribution
+    out[:-1] += c[:-1] * T[1:]   # upper diagonal contribution
     return out
+
 
 # ---------------- Diagnostics helpers ----------------
 def meridional_transport_PW(T, x, D):
