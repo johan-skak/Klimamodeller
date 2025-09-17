@@ -138,7 +138,9 @@ def simulation_diagnostics(x, T, params):
     aL, bL, cL = build_diffusion_tridiag(len(x), x, D)
     conv = apply_L_to_T(aL, bL, cL, T)     # W/m² (convergence)
     MHTrans_PW = meridional_transport_PW(T, x, D) # PW = 10^15 W
-    return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D)
+    T_mean = global_mean(T)
+    T_poles = poles_temperature(T, x)
+    return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles)
 
 # ---------------- Single simulation (Crank–Nicolson for diffusion) -----------
 def run_simulation(params, years, nx, dt_years, Tinit=None):
@@ -244,23 +246,18 @@ def main():
 
     # Panel 6 quantities: Δ fields and polar amplification (EXACT as in Jupyter/Fortran here)
     dT_lat = (forc['T_end'] - ctrl['T_end']) # K
-    mean_ctrl = global_mean(ctrl['T_end'])
-    mean_forc = global_mean(forc['T_end'])
-    dT_global = (mean_forc - mean_ctrl)
-    Ts_ctrl_npole = poles_temperature(ctrl['T_end'], x)[1]
-    Ts_forc_npole = poles_temperature(forc['T_end'], x)[1]
+    dT_global = (forc['T_mean_end'] - ctrl['T_mean_end'])
     # Polar amplification per earlier implementation: (ΔT_pole - ΔT_global)/ΔT_global
     polar_ampl = np.nan
     if abs(dT_global) > 1e-12:
-        polar_ampl = ((Ts_forc_npole - Ts_ctrl_npole) - dT_global) / dT_global
+        polar_ampl = ((forc['T_poles_end'][1] - ctrl['T_poles_end'][1]) - dT_global) / dT_global
 
     # ---- Build multipanel figure ----
     fig, axs = plt.subplots(4, 2, figsize=(12, 14))
     axs = axs.flatten()
 
     # Panel 1: Temperature profiles (°C)
-    T_init = params_ctrl['T0'] + A_PROFILE * (1.0/3.0 - x**2)
-    axs[0].plot(lat, T_init - 273.15, label='Initial')
+    axs[0].plot(lat, ctrl['T_init'] - 273.15, label='Initial')
     axs[0].plot(lat, ctrl['T_end'] - 273.15, label='Control end')
     axs[0].plot(lat, forc['T_end'] - 273.15, label='Forced end')
     axs[0].set_title('Panel 1: Temperature profiles (°C)'); axs[0].set_xlabel('Latitude (°)'); axs[0].set_ylabel('°C'); axs[0].legend(); axs[0].grid(True)
@@ -314,11 +311,11 @@ def main():
     Years (control, forced): ({args.years_control}, {args.years_forced})
     Grid points nx: {args.nx}, Δt (years): {args.dt}
 
-    Control global mean T (°C): {mean_ctrl-273.15:.3f}
-    Forced  global mean T (°C): {mean_forc-273.15:.3f}
+    Control global mean T (°C): {ctrl['T_mean_end']-273.15:.3f}
+    Forced  global mean T (°C): {forc['T_mean_end']-273.15:.3f}
     ΔT global (°C): {dT_global:.3f}
 
-    North pole T control / forced (°C): {Ts_ctrl_npole-273.15:.3f} / {Ts_forc_npole-273.15:.3f}
+    North pole T control / forced (°C): {ctrl['T_poles_end'][1]-273.15:.3f} / {forc['T_poles_end'][1]-273.15:.3f}
     Polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): {polar_ampl:.3f}
 
     D_end control / forced (W m⁻² K⁻¹): {ctrl['D_end']:.3f} / {forc['D_end']:.3f}
