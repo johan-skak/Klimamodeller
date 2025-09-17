@@ -83,18 +83,18 @@ def deltaT_of_Ts(Ts, k3):
 def build_diffusion_tridiag(nx, x, D):
     dx = x[1] - x[0]
     a = np.zeros(nx); b = np.zeros(nx); c = np.zeros(nx)
-    x_half = 0.5 * (x[:-1] + x[1:])
-    w_half = 1.0 - x_half**2
+    x_half = 0.5 * (x[:-1] + x[1:]) #positions at cell faces except poles where flux=0
+    w_half = D * (1.0 - x_half**2) # diffusivity at cell faces
     for i in range(nx):
         if i == 0:
-            c[i] = D * w_half[i] / dx**2
+            c[i] = w_half[i] / dx**2
             b[i] = -c[i]
         elif i == nx - 1:
-            a[i] = D * w_half[i-1] / dx**2
+            a[i] = w_half[i-1] / dx**2
             b[i] = -a[i]
         else:
-            a[i] = D * w_half[i-1] / dx**2
-            c[i] = D * w_half[i] / dx**2
+            a[i] = w_half[i-1] / dx**2
+            c[i] = w_half[i] / dx**2
             b[i] = -(a[i] + c[i])
     return a, b, c
 
@@ -121,9 +121,11 @@ def global_mean(T):
 
 # ---------------- Single simulation (Crank–Nicolson for diffusion) -----------
 def run_simulation(params, years, nx, dt_years, Tinit=None):
-    x = np.linspace(-1.0, 1.0, nx)
+    dx = 2.0 / nx
+    x = np.linspace(-1.0 + dx/2, 1.0 - dx/2, nx) # sin(lat) at cell centers
+
     if Tinit is None:
-        T = params['T0'] + A_PROFILE * (1.0/3.0 - x**2)   # initial profile
+        T = params['T0'] + A_PROFILE * (1.0/3.0 - x**2)   # initial profile where center value approximates average cell value. Should be good enough only being initial values
     else:
         T = Tinit.copy()
 
