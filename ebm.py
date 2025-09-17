@@ -112,10 +112,13 @@ def apply_L_to_T(a, b, c, T):
 
 # ---------------- Diagnostics helpers ----------------
 def meridional_transport_PW(T, x, D):
-    dTdx = np.gradient(T, x)
-    flux = - D * (1.0 - x**2) * dTdx         # W/m² (per-area heat flux)
-    H = - 2.0 * np.pi * R_EARTH**2 * flux    # W (zonal integral around latitude circle)
-    return H / 1e15                           # PW
+    """Calculate meridional heat transport HMTrans (PW = 10¹⁵ W) from temperature profile T (K) at x = sin(lat) with diffusivity D (W m⁻² K⁻¹)."""
+    # dTdx = np.gradient(T, x)
+    dTdx = np.r_[0, (T[1:] - T[:-1]) / (x[1] - x[0]), 0]
+    x_borders = np.r_[-1, (x[1:] + x[:-1]) / 2, 1]
+    flux = - D * (1.0 - x_borders**2) * dTdx                    # W/m² (per-area heat flux)
+    HMTrans = - 2.0 * np.pi * R_EARTH**2 * flux                 # W (zonal integral around latitude circle)
+    return np.arcsin(x_borders) / np.pi * 180, HMTrans / 1e15                            # PW
 
 def global_mean(T):
     return np.mean(T)
@@ -274,10 +277,8 @@ def main():
     axs[2].set_title('Panel 3: Albedo'); axs[2].set_ylabel('albedo')
 
     # Panel 4: Meridional heat transport (PW)
-    Hc = meridional_transport_PW(ctrl['T_end'], x, ctrl['D_end'])
-    Hf = meridional_transport_PW(forc['T_end'], x, forc['D_end'])
-    axs[3].plot(lat, Hc, label='Control')
-    axs[3].plot(lat, Hf, label='Forced')
+    axs[3].plot(ctrl['MHTrans_PW_end'][0], ctrl['MHTrans_PW_end'][1], label='Control')
+    axs[3].plot(forc['MHTrans_PW_end'][0], forc['MHTrans_PW_end'][1], label='Forced')
     axs[3].set_title('Panel 4: Meridional heat transport (PW)'); axs[3].set_ylabel('PW')
 
     # Panel 5: Heat flux convergence (W/m²)
