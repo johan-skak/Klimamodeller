@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#Test comment
+
 """
 Shell application version of the Kaas 1D Energy Balance Model (EBM).
 Produces the SAME diagnostics as the Jupyter/Fortran versions:
