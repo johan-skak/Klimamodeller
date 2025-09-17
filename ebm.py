@@ -197,6 +197,20 @@ def main():
 
     os.makedirs(args.outdir, exist_ok=True)
 
+    # Print model parameters
+    print(textwrap.dedent(f"""
+    === EBM Model Parameters ===
+    k1 (ice albedo sensitivity) \t: {base['k1']}
+    k2 (diffusivity sensitivity)\t: {base['k2']}
+    k3 (lapse rate sensitivity) \t: {base['k3']}
+    D0 (background diffusivity) \t: {base['D0']}
+    T0 (initial temperature)    \t: {base['T0']}
+    S0 (initial solar forcing)  \t: {base['S0']}
+    S1 (final solar forcing)    \t: {base['S1']}
+    F  (additional forcing)     \t: {base['F']}
+    ================================
+    """))
+
     # ---- CONTROL RUN ----
     params_ctrl = dict(k1=base['k1'], k2=base['k2'], k3=base['k3'], D0=base['D0'], T0=base['T0'], S=base['S0'], F=0.0)
     ctrl = run_simulation(params_ctrl, years=args.years_control, nx=args.nx, dt_years=args.dt)
