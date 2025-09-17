@@ -224,8 +224,8 @@ def main():
 
     # Panel 6 quantities: Δ fields and polar amplification (EXACT as in Jupyter/Fortran here)
     dT_lat = (forc['T'] - ctrl['T'])             # K
-    mean_ctrl = global_mean(c['T'], x)
-    mean_forc = global_mean(f['T'], x)
+    mean_ctrl = global_mean(ctrl['T'])
+    mean_forc = global_mean(forc['T'])
     dT_global = (mean_forc - mean_ctrl)
     Ts_ctrl_pole = ctrl['T'][-1]
     Ts_forc_pole = forc['T'][-1]
