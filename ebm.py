@@ -130,22 +130,105 @@ def poles_temperature(T, x):
         (T_south, T_north) temperatures at south and north poles (K)"""
     return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0
 
+def print_array(varname: str, a, n: int):
+    """
+    Python 3 version of the Fortran subroutine print_array
+    - varname: variable name (string)
+    - a: array-like (real values)
+    - n: length of array to consider
+    """
+    a = np.asarray(a[:n], dtype=float)
+
+    # --- Compute middle indices ---
+    if n % 2 == 0:
+        mid1, mid2 = n // 2, n // 2 + 1
+    else:
+        mid1 = mid2 = (n + 1) // 2
+
+    print()  # blank line
+    mean_val = np.nanmean(a)  # ignores NaNs
+    print(f"Variable name = {varname}   Mean = {mean_val:.6f}")
+
+    # --- Compute absolute max value (ignoring NaNs) ---
+    abs_a = np.abs(a[~np.isnan(a)])
+    maxvalabs = np.max(abs_a) if abs_a.size > 0 else 0.0
+
+    # --- Format helpers to mimic Fortran descriptors ---
+    def fmt_int(val, width):
+        return f"{val:>{width}d}"
+
+    def fmt_float(val, sci=False):
+        if np.isnan(val):
+            return "       NaN"
+        if sci:
+            return f"{val:10.3e}"  # like es10.3
+        else:
+            return f"{val:10.4f}"  # like f10.3
+
+    use_scientific = (maxvalabs > 1e5) or (maxvalabs < 0.1)
+
+    # --- Print indices ---
+    if mid2 - mid1 > 1:
+        idxs = (
+            [fmt_int(i, 7 if j == 0 else 10) for j, i in enumerate(range(1, min(3, n) + 1))]
+            + ["     ..."]
+            + [fmt_int(i, 10) for i in range(mid1, mid2 + 1)]
+            + ["    ..."]
+            + [fmt_int(i, 10) for i in range(n - 2, n + 1)]
+        )
+    else:
+        idxs = (
+            [fmt_int(i, 7 if j == 0 else 10) for j, i in enumerate(range(1, min(3, n) + 1))]
+            + ["     ..."]
+            + [fmt_int(i, 10) for i in range(mid1, mid2 + 1)]
+            + ["    ..."]
+            + [fmt_int(i, 10) for i in range(n - 2, n + 1)]
+        )
+    print("".join(idxs))
+
+    # --- Print values ---
+    if mid2 - mid1 > 1:
+        vals = (
+            [fmt_float(v, use_scientific) for v in a[0:min(3, n)]]
+            + ["  ...  "]
+            + [fmt_float(v, use_scientific) for v in a[mid1 - 1:mid2]]
+            + ["  ...  "]
+            + [fmt_float(v, use_scientific) for v in a[n - 3:n]]
+        )
+    else:
+        vals = (
+            [fmt_float(v, use_scientific) for v in a[0:min(3, n)]]
+            + ["  ...  "]
+            + [fmt_float(v, use_scientific) for v in a[mid1 - 1:mid2]]
+            + ["  ...  "]
+            + [fmt_float(v, use_scientific) for v in a[n - 3:n]]
+        )
+    print("".join(vals))
+
 # ---------------- Single simulation (Crank–Nicolson for diffusion) -----------
 def run_simulation(params, years, nx, dt_years, Tinit=None):
     dx = 2.0 / nx
     x = np.linspace(-1.0 + dx/2, 1.0 - dx/2, nx) # sin(lat) at cell centers
 
     if Tinit is None:
-        T = params['T0'] + A_PROFILE * (1.0/3.0 - x**2)   # initial profile where center value approximates average cell value. Should be good enough only being initial values
+        # T = params['T0'] + A_PROFILE * (1.0/3.0 - x**2)   # initial profile where center value approximates average cell value. Should be good enough only being initial values
+        x_left = x - 0.5 * dx
+        x_right = x + 0.5 * dx
+        T = params['T0'] + A_PROFILE / 3 - A_PROFILE / 3 * (x_right**3 - x_left**3) / dx
     else:
         T = Tinit.copy()
+
+    # if Tinit is None:
+    #     print_array("x", x, nx)
+    #     print("T0 = ",params['T0'])
+    #     print_array("T",T,nx)
 
     dt = dt_years * SECONDS_PER_YEAR
     nsteps = int(round(years / dt_years))
 
     Tg_series = []
 
-    for _ in range(nsteps):
+    for i in range(nsteps):
         # Explicit radiative terms
         Q = Q_x(x, params['S'])
         alpha = albedo_from_T(T, x, params['k1'])
@@ -153,6 +236,14 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
         dTloc = deltaT_of_Ts(T, params['k3'])
         OLR = sigma * (T - dTloc)**4
         rad_term = absorbed - OLR + params['F']
+
+        # if i == 0 and Tinit is None:
+        #     print_array("Q", Q, nx)
+        #     print_array("alpha", alpha, nx)
+        #     print_array("absorbed", absorbed, nx)
+        #     print_array("dTloc", dTloc, nx)
+        #     print_array("OLR", OLR, nx)
+        #     print_array("rad_term", rad_term, nx)
 
         # Diffusivity depends on global mean temperature
         Tglob = global_mean(T)
@@ -167,6 +258,10 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
         bA =  1.0 - 0.5 * coef * bL
         cA = -0.5 * coef * cL
         T = thomas_solve(aA, bA, cA, rhs)
+
+        if Tinit is None and i == 0:
+            print_array("LT", LT, nx)
+            print_array("T", T, nx)
 
         Tg_series.append(Tglob - 273.15)  # °C
 
@@ -188,7 +283,7 @@ def main():
     p.add_argument('--input', type=str, default='formoutput.txt', help='parameter file (optional)')
     p.add_argument('--years_control', type=float, default=500)
     p.add_argument('--years_forced', type=float, default=500)
-    p.add_argument('--nx', type=int, default=200)
+    p.add_argument('--nx', type=int, default=100)
     p.add_argument('--dt', type=float, default=1.0, help='timestep in years')
     p.add_argument('--outdir', type=str, default='results')
     args = p.parse_args()
