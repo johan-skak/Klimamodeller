@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import argparse, os, textwrap
 
 # ---------------- Physical / model constants ----------------
-sigma = 5.67e-8                  # Stefan-Boltzmann (W/m²/K⁴)
+SIGMA = 5.67e-8                  # Stefan-Boltzmann (W/m²/K⁴)
 C = 1.046e9                      # Heat capacity (J m⁻² K⁻¹), 250 m mixed layer
 SECONDS_PER_YEAR = 365 * 24 * 3600
 R_EARTH = 6.371e6                # m
@@ -130,6 +130,16 @@ def poles_temperature(T, x):
         (T_south, T_north) temperatures at south and north poles (K)"""
     return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0
 
+def simulation_diagnostics(x, T, params):
+    alpha = albedo_from_T(T, x, k1=params['k1'])
+    dTloc = deltaT_of_Ts(T, k3=params['k3'])
+    olr = SIGMA * (T - dTloc)**4
+    D = params['D0'] * max(0.5, 1.0 + params['k2'] * (global_mean(T) - T00))
+    aL, bL, cL = build_diffusion_tridiag(len(x), x, D)
+    conv = apply_L_to_T(aL, bL, cL, T)     # W/m² (convergence)
+    MHTrans_PW = meridional_transport_PW(T, x, D) # PW = 10^15 W
+    return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D)
+
 # ---------------- Single simulation (Crank–Nicolson for diffusion) -----------
 def run_simulation(params, years, nx, dt_years, Tinit=None):
     dx = 2.0 / nx
@@ -139,6 +149,11 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
         T = params['T0'] + A_PROFILE * (1.0/3.0 - x**2)   # initial profile where center value approximates average cell value. Should be good enough only being initial values
     else:
         T = Tinit.copy()
+
+    #Initial diagnostics
+    init_diag = simulation_diagnostics(x, T, params)
+    init_diag = {key + "_init": value for key, value in init_diag.items()}
+
 
     dt = dt_years * SECONDS_PER_YEAR
     nsteps = int(round(years / dt_years))
@@ -151,8 +166,8 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
         alpha = albedo_from_T(T, x, params['k1'])
         absorbed = Q * (1.0 - alpha)
         dTloc = deltaT_of_Ts(T, params['k3'])
-        OLR = sigma * (T - dTloc)**4
-        rad_term = absorbed - OLR + params['F']
+        olr = SIGMA * (T - dTloc)**4
+        rad_term = absorbed - olr + params['F']
 
         # Diffusivity depends on global mean temperature
         Tglob = global_mean(T)
@@ -171,16 +186,10 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
         Tg_series.append(Tglob - 273.15)  # °C
 
     # End-state diagnostics
-    alpha_end = albedo_from_T(T, x, params['k1'])
-    dTloc_end = deltaT_of_Ts(T, params['k3'])
-    OLR_end = sigma * (T - dTloc_end)**4
-    D_end = params['D0'] * max(0.5, 1.0 + params['k2'] * (global_mean(T) - T00))
-    aLe, bLe, cLe = build_diffusion_tridiag(nx, x, D_end)
-    conv_end = apply_L_to_T(aLe, bLe, cLe, T)           # W/m² (convergence)
-    H_end_PW = meridional_transport_PW(T, x, D_end)     # PW
+    end_diag = simulation_diagnostics(x, T, params)
+    end_diag = {key + "_end": value for key, value in end_diag.items()}
 
-    return dict(x=x, T=T, alpha=alpha_end, OLR=OLR_end, conv=conv_end,
-                H_PW=H_end_PW, Tg=np.array(Tg_series), D_end=D_end)
+    return {"x": x, "Tg": np.array(Tg_series), **init_diag, **end_diag}
 
 # ---------------- Main program (control → forced) ----------------
 def main():
@@ -228,18 +237,18 @@ def main():
 
     # ---- FORCED RUN (continuation) ----
     params_forc = dict(k1=base['k1'], k2=base['k2'], k3=base['k3'], D0=base['D0'], T0=base['T0'], S=base['S1'], F=base['F'])
-    forc = run_simulation(params_forc, years=args.years_forced, nx=args.nx, dt_years=args.dt, Tinit=ctrl['T'])
+    forc = run_simulation(params_forc, years=args.years_forced, nx=args.nx, dt_years=args.dt, Tinit=ctrl['T_end'])
 
     # Common axes
     x = ctrl['x']; lat = np.degrees(np.arcsin(x))
 
     # Panel 6 quantities: Δ fields and polar amplification (EXACT as in Jupyter/Fortran here)
-    dT_lat = (forc['T'] - ctrl['T']) # K
-    mean_ctrl = global_mean(ctrl['T'])
-    mean_forc = global_mean(forc['T'])
+    dT_lat = (forc['T_end'] - ctrl['T_end']) # K
+    mean_ctrl = global_mean(ctrl['T_end'])
+    mean_forc = global_mean(forc['T_end'])
     dT_global = (mean_forc - mean_ctrl)
-    Ts_ctrl_npole = poles_temperature(ctrl['T'], x)[1]
-    Ts_forc_npole = poles_temperature(forc['T'], x)[1]
+    Ts_ctrl_npole = poles_temperature(ctrl['T_end'], x)[1]
+    Ts_forc_npole = poles_temperature(forc['T_end'], x)[1]
     # Polar amplification per earlier implementation: (ΔT_pole - ΔT_global)/ΔT_global
     polar_ampl = np.nan
     if abs(dT_global) > 1e-12:
@@ -252,30 +261,30 @@ def main():
     # Panel 1: Temperature profiles (°C)
     T_init = params_ctrl['T0'] + A_PROFILE * (1.0/3.0 - x**2)
     axs[0].plot(lat, T_init - 273.15, label='Initial')
-    axs[0].plot(lat, ctrl['T'] - 273.15, label='Control end')
-    axs[0].plot(lat, forc['T'] - 273.15, label='Forced end')
+    axs[0].plot(lat, ctrl['T_end'] - 273.15, label='Control end')
+    axs[0].plot(lat, forc['T_end'] - 273.15, label='Forced end')
     axs[0].set_title('Panel 1: Temperature profiles (°C)'); axs[0].set_xlabel('Latitude (°)'); axs[0].set_ylabel('°C'); axs[0].legend(); axs[0].grid(True)
 
     # Panel 2: OLR (W/m²)
-    axs[1].plot(lat, ctrl['OLR'], label='Control')
-    axs[1].plot(lat, forc['OLR'], label='Forced')
+    axs[1].plot(lat, ctrl['olr_end'], label='Control')
+    axs[1].plot(lat, forc['olr_end'], label='Forced')
     axs[1].set_title('Panel 2: OLR (W/m²)'); axs[1].set_xlabel('Latitude (°)'); axs[1].set_ylabel('W/m²'); axs[1].legend(); axs[1].grid(True)
 
     # Panel 3: Albedo
-    axs[2].plot(lat, ctrl['alpha'], label='Control')
-    axs[2].plot(lat, forc['alpha'], label='Forced')
+    axs[2].plot(lat, ctrl['alpha_end'], label='Control')
+    axs[2].plot(lat, forc['alpha_end'], label='Forced')
     axs[2].set_title('Panel 3: Albedo'); axs[2].set_xlabel('Latitude (°)'); axs[2].set_ylabel('albedo'); axs[2].legend(); axs[2].grid(True)
 
     # Panel 4: Meridional heat transport (PW)
-    Hc = meridional_transport_PW(ctrl['T'], x, ctrl['D_end'])
-    Hf = meridional_transport_PW(forc['T'], x, forc['D_end'])
+    Hc = meridional_transport_PW(ctrl['T_end'], x, ctrl['D_end'])
+    Hf = meridional_transport_PW(forc['T_end'], x, forc['D_end'])
     axs[3].plot(lat, Hc, label='Control')
     axs[3].plot(lat, Hf, label='Forced')
     axs[3].set_title('Panel 4: Meridional heat transport (PW)'); axs[3].set_xlabel('Latitude (°)'); axs[3].set_ylabel('PW'); axs[3].legend(); axs[3].grid(True)
 
     # Panel 5: Heat flux convergence (W/m²)
-    axs[4].plot(lat, ctrl['conv'], label='Control')
-    axs[4].plot(lat, forc['conv'], label='Forced')
+    axs[4].plot(lat, ctrl['conv_end'], label='Control')
+    axs[4].plot(lat, forc['conv_end'], label='Forced')
     axs[4].set_title('Panel 5: Heat flux convergence (W/m²)'); axs[4].set_xlabel('Latitude (°)'); axs[4].set_ylabel('W/m²'); axs[4].legend(); axs[4].grid(True)
 
     # Panel 6: Change in zonal mean temperature (°C) + polar amplification
