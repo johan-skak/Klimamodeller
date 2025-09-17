@@ -39,7 +39,12 @@ DELTA_T_MIN = 10.0               # K (lower bound)
 A_PROFILE = 45.0                 # K
 
 # ---------------- Tridiagonal solver ----------------
-def thomas_solve(a, b, c, d):
+def thomas_solve(a, b, c, d): #If to slow, replace with scipy.linalg.solve_banded
+    """Solve tridiagonal system Ax = d with A defined by diagonals a,b,c using Thomas algorithm.
+    a: lower diagonal (length n but a[0] unused)
+    b: main diagonal (length n)
+    c: upper diagonal (length n but c[-1] unused)
+    d: right-hand side (length n)"""
     n = len(d)
     ac, bc, cc, dc = map(np.array, (a, b, c, d))  # make copies to store modified coefficients
     # Forward elimination: modify coefficients
@@ -61,15 +66,15 @@ def Q_x(x, S):
     dx = x[1] - x[0]
     x_left = x - 0.5 * dx
     x_right = x + 0.5 * dx
-    return 0.25 * S * (1.0 - 0.241 * (x_right**3 - x_left**3 - (x_right - x_left)) / (dx))
+    return 0.25 * S * (1.0 - 0.241 * (x_right**3 - x_left**3 - (x_right - x_left)) / dx)
 
 def albedo_from_T(T, x, k1):
-    """Equation (12): effective albedo with ice fraction fi = k1*(273-T) clipped to [0,1]."""
+    """Equation (12): effective albedo with ice fraction f_i = k1*(273-T) clipped to [0,1]."""
     alpha_a = 0.2 + 0.08 * x**2
-    fi = np.clip(k1 * (273.0 - T), 0.0, 1.0)
-    alpha_s = 0.60 * fi + (1.0 - fi) * (0.1 + 0.15 * x**4)
-    Aa = 0.32 * (1.0 - 0.85 * x**2)
-    alpha = alpha_a + alpha_s - alpha_a * alpha_s - Aa * alpha_s
+    f_i = np.clip(k1 * (273.0 - T), 0.0, 1.0)
+    alpha_s = 0.60 * f_i + (1.0 - f_i) * (0.1 + 0.15 * x**4)
+    A_a = 0.32 * (1.0 - 0.85 * x**2)
+    alpha = alpha_a + alpha_s - alpha_a * alpha_s - A_a * alpha_s
     return np.minimum(alpha, 0.7)
 
 def deltaT_of_Ts(Ts, k3):
@@ -78,6 +83,17 @@ def deltaT_of_Ts(Ts, k3):
 
 # ---------------- Diffusion operator L ≈ ∂x[D(1-x²) ∂x] ----------------
 def build_diffusion_tridiag(nx, x, D):
+    """Build tridiagonal representation of diffusion operator L with diffusivity D (W m⁻² K⁻¹) on borders with nx cell points at x = sin(lat).
+
+    Parameters
+        nx: number of cell points
+        x: array of sin(lat) at cell centers (linear spacing)
+        D: diffusivity (W m⁻² K⁻¹)
+
+    Returns
+        a, b, c: lower, main and upper diagonals of L (arrays of length nx)
+            a[0] and c[-1] are unused (=0)
+    """
     dx = x[1] - x[0]
     a = np.zeros(nx); b = np.zeros(nx); c = np.zeros(nx)
 
@@ -87,11 +103,12 @@ def build_diffusion_tridiag(nx, x, D):
     
     # interior contributions
     a[1:] = w_half / dx**2     # lower diagonal
-    c[:-1] = w_half / dx**2      # upper diagonal
-    b = -(a + c)                    # main diagonal
+    c[:-1] = w_half / dx**2    # upper diagonal
+    b = -(a + c)               # main diagonal
     return a, b, c
 
 def apply_L_to_T(a, b, c, T):
+    """Apply diffusion (tri-diagonal) operator L defined by diagonals a,b,c to temperature profile T."""
     out = b * T
     out[1:]  += a[1:] * T[:-1]   # lower diagonal contribution
     out[:-1] += c[:-1] * T[1:]   # upper diagonal contribution
@@ -100,7 +117,7 @@ def apply_L_to_T(a, b, c, T):
 
 # ---------------- Diagnostics helpers ----------------
 def meridional_transport_PW(T, x, D):
-    """Calculate meridional heat transport HMTrans (PW = 10¹⁵ W) from temperature profile T (K) at x = sin(lat) with diffusivity D (W m⁻² K⁻¹)."""
+    """Calculate meridional heat transport HMTrans (PW = 10¹⁵ W) at boundaries from temperature profile T (K) at x = sin(lat) with diffusivity D (W m⁻² K⁻¹)."""
     # dTdx = np.gradient(T, x)
     dTdx = np.r_[0, (T[1:] - T[:-1]) / (x[1] - x[0]), 0]
     x_borders = np.r_[-1, (x[1:] + x[:-1]) / 2, 1]
@@ -111,18 +128,22 @@ def meridional_transport_PW(T, x, D):
 def global_mean(T):
     return np.mean(T)
 
-def poles_temperature(T, x):
+def poles_temperature(T):
     """Return temperature at poles (K) by extrapolation since T is at cell centers. Extrapolates by a quadratic fit with 0 gradient at poles.
     
     Parameters
         T: array of temperatures at cell centers
-        x: array of sin(lat) at cell centers (linear spacing)
         
     Returns
         (T_south, T_north) temperatures at south and north poles (K)"""
-    return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0
+    return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0 # Formula can be easily found be Taylor expansion (error is O(dx^3))
 
 def simulation_diagnostics(x, T, params):
+    """Calculate diagnostics from temperature profile T (K) at x = sin(lat) with model parameters params.
+
+    Returns
+        dict: diagnostic values
+    """
     alpha = albedo_from_T(T, x, k1=params['k1'])
     dTloc = deltaT_of_Ts(T, k3=params['k3'])
     olr = SIGMA * (T - dTloc)**4
@@ -131,11 +152,28 @@ def simulation_diagnostics(x, T, params):
     conv = apply_L_to_T(aL, bL, cL, T)     # W/m² (convergence)
     MHTrans_PW = meridional_transport_PW(T, x, D) # PW = 10^15 W
     T_mean = global_mean(T)
-    T_poles = poles_temperature(T, x)
-    return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles)
+    T_poles = poles_temperature(T)
+    Q = Q_x(x, params['S'])
+    return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q=Q)
 
 # ---------------- Single simulation (Crank–Nicolson for diffusion) -----------
 def run_simulation(params, years, nx, dt_years, Tinit=None):
+    """Run EBM simulation with model parameters params for given years, grid points nx and timestep dt_years.
+
+    Parameters
+        params: dict with model parameters k1, k2, k3, D0, T0, S, F
+        years: number of years to run
+        nx: number of grid points
+        dt_years: timestep in years
+        Tinit: initial temperature profile (K) at cell centers (optional, otherwise uses default initial profile)
+
+    Returns
+        dict with keys:
+        x: array of sin(lat) at cell centers
+        Tg: array of global mean temperature time series (°C)
+        T_init, alpha_init, olr_init, conv_init, MHTrans_PW_init, D_init, T_mean_init, T_poles_init: initial diagnostics
+        T_end, alpha_end, olr_end, conv_end, MHTrans_PW_end, D_end, T_mean_end, T_poles_end: end-state diagnostics
+    """
     dx = 2.0 / nx
     x = np.linspace(-1.0 + dx/2, 1.0 - dx/2, nx) # sin(lat) at cell centers
 
@@ -146,15 +184,16 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
 
     #Initial diagnostics
     init_diag = simulation_diagnostics(x, T, params)
-    init_diag = {key + "_init": value for key, value in init_diag.items()}
+    init_diag = {key + "_init": value for key, value in init_diag.items()} # rename keys
 
 
     dt = dt_years * SECONDS_PER_YEAR
     nsteps = int(round(years / dt_years))
 
     Tg_series = []
+    Tglob = global_mean(T)
 
-    for i in range(nsteps):
+    for _ in range(nsteps):
         # Explicit radiative terms
         Q = Q_x(x, params['S'])
         alpha = albedo_from_T(T, x, params['k1'])
@@ -164,7 +203,6 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
         rad_term = absorbed - olr + params['F']
 
         # Diffusivity depends on global mean temperature
-        Tglob = global_mean(T)
         D = params['D0'] * max(0.5, 1.0 + params['k2'] * (Tglob - T00))
 
         # Build L and do Crank–Nicolson step
@@ -176,12 +214,13 @@ def run_simulation(params, years, nx, dt_years, Tinit=None):
         bA =  1.0 - 0.5 * coef * bL
         cA = -0.5 * coef * cL
         T = thomas_solve(aA, bA, cA, rhs)
+        Tglob = global_mean(T)
 
         Tg_series.append(Tglob - 273.15)  # °C
 
     # End-state diagnostics
     end_diag = simulation_diagnostics(x, T, params)
-    end_diag = {key + "_end": value for key, value in end_diag.items()}
+    end_diag = {key + "_end": value for key, value in end_diag.items()} # rename keys
 
     return {"x": x, "Tg": np.array(Tg_series), **init_diag, **end_diag}
 
@@ -213,7 +252,7 @@ def main():
 
     # Print model parameters
     print(textwrap.dedent(f"""
-    === EBM Model Parameters ===
+    === EBM Model Parameters =======
     k1 (ice albedo sensitivity) \t: {base['k1']}
     k2 (diffusivity sensitivity)\t: {base['k2']}
     k3 (lapse rate sensitivity) \t: {base['k3']}
@@ -236,8 +275,14 @@ def main():
     # Common axes
     x = ctrl['x']; lat = np.degrees(np.arcsin(x))
 
+    #Extended temperature profiles including poles
+    lat_ext = np.r_[-90, lat, 90]
+    ctrl_T_init_ext = np.r_[ctrl['T_poles_init'][0], ctrl['T_init'], ctrl['T_poles_init'][1]]
+    ctrl_T_end_ext = np.r_[ctrl['T_poles_end'][0], ctrl['T_end'], ctrl['T_poles_end'][1]]
+    forc_T_end_ext = np.r_[forc['T_poles_end'][0], forc['T_end'], forc['T_poles_end'][1]]
+
     # Panel 6 quantities: Δ fields and polar amplification (EXACT as in Jupyter/Fortran here)
-    dT_lat = (forc['T_end'] - ctrl['T_end']) # K
+    dT_lat = forc_T_end_ext - ctrl_T_end_ext # K
     dT_global = (forc['T_mean_end'] - ctrl['T_mean_end'])
     # Polar amplification per earlier implementation: (ΔT_pole - ΔT_global)/ΔT_global
     polar_ampl = np.nan
@@ -249,9 +294,9 @@ def main():
     axs = axs.flatten()
     
     # Panel 1: Temperature profiles (°C)
-    axs[0].plot([-90, *lat, 90], [ctrl['T_poles_end'][0] - 273.15,*ctrl['T_end'] - 273.15, ctrl['T_poles_end'][1] - 273.15], label='Control end')
-    axs[0].plot([-90, *lat, 90], [forc['T_poles_end'][0] - 273.15,*forc['T_end'] - 273.15, forc['T_poles_end'][1] - 273.15], label='Forced end')
-    axs[0].plot([-90, *lat, 90], [ctrl['T_poles_init'][0] - 273.15,*ctrl['T_init'] - 273.15, ctrl['T_poles_init'][1] - 273.15], label='Initial')
+    axs[0].plot(lat_ext, ctrl_T_end_ext - 273.15, label='Control end')
+    axs[0].plot(lat_ext, forc_T_end_ext - 273.15, label='Forced end')
+    axs[0].plot(lat_ext, ctrl_T_init_ext - 273.15, label='Initial')
     axs[0].set_title('Panel 1: Temperature profiles (°C)'); axs[0].set_ylabel('°C')
 
     # Panel 2: OLR (W/m²)
@@ -275,18 +320,18 @@ def main():
     axs[4].set_title('Panel 5: Heat flux convergence (W/m²)'); axs[4].set_ylabel('W/m²')
 
     # Panel 6: Change in zonal mean temperature (°C) + polar amplification
-    axs[5].plot(lat, dT_lat, label='Forced - Control (°C)')
+    axs[5].plot(lat_ext, dT_lat, label='Forced - Control (°C)')
     axs[5].set_title(f'Panel 6: ΔT zonal (°C); polar amplification = {polar_ampl:.3f}')
     axs[5].set_ylabel('°C')
 
     # Panel 7: Global mean time series (°C)
-    Tg_all = np.concatenate([ctrl['Tg'], forc['Tg']])
+    Tg_all = np.r_[global_mean(ctrl['T_init']) - 273.15, ctrl['Tg'], forc['Tg']]
     time_years = np.arange(len(Tg_all)) * args.dt   # convert to years
 
     axs[6].plot(time_years, Tg_all, label='Global mean (°C)')
     axs[6].axvline(len(ctrl['Tg']) * args.dt, color='k', ls='--', label='forcing on')
     axs[6].set_title('Panel 7: Global mean time series (°C)')
-    axs[6].set_xlabel('Time (years)'); axs[6].set_ylabel('°C'); axs[6].legend(); axs[6].grid(True)
+    axs[6].set_xlabel('Time (years)'); axs[6].set_xlim([0, time_years[-1]]); axs[6].set_ylabel('°C'); axs[6].legend(); axs[6].grid(True)
 
     # Hide the 8th panel
     axs[7].axis('off')
@@ -315,14 +360,16 @@ def main():
     Years (control, forced): ({args.years_control}, {args.years_forced})
     Grid points nx: {args.nx}, Δt (years): {args.dt}
 
-    Control global mean T (°C): {ctrl['T_mean_end']-273.15:.3f}
-    Forced  global mean T (°C): {forc['T_mean_end']-273.15:.3f}
-    ΔT global (°C): {dT_global:.3f}
+    Control global mean T (°C): {ctrl['T_mean_end']-273.15:.1f}
+    Forced  global mean T (°C): {forc['T_mean_end']-273.15:.1f}
+    ΔT global (°C): {dT_global:.2f}
 
-    North pole T control / forced (°C): {ctrl['T_poles_end'][1]-273.15:.3f} / {forc['T_poles_end'][1]-273.15:.3f}
-    Polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): {polar_ampl:.3f}
+    North pole T control / forced (°C): {ctrl['T_poles_end'][1]-273.15:.1f} / {forc['T_poles_end'][1]-273.15:.1f}
+    North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): {polar_ampl:.3f}
 
-    D_end control / forced (W m⁻² K⁻¹): {ctrl['D_end']:.3f} / {forc['D_end']:.3f}
+    Outgoing longwave radiation (OLR) control / forced (W m⁻²): {ctrl['olr_end'].mean():.0f} / {forc['olr_end'].mean():.0f}
+    Planetary albedo control / forced: {np.average(ctrl['alpha_end'], weights=ctrl['Q_end']):.3f} / {np.average(forc['alpha_end'], weights=forc['Q_end']):.3f}
+    Diffusivity control / forced (W m⁻² K⁻¹): {ctrl['D_end']:.3f} / {forc['D_end']:.3f}
 
     Figure saved: {multi_path}
     """)
