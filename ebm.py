@@ -18,7 +18,7 @@ Usage example:
   python ebm.py --input formoutput.txt --years_control 300 --years_forced 300 \
                     --nx 120 --dt 0.5 --outdir results
 """
-# det her er en test ændring fra Ludvig
+
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse, os, textwrap # for command-line args, file operations and text formatting
