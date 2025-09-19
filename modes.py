@@ -3,23 +3,12 @@ import numpy as np
 import math
 
 class Mode:
+    def __str__(self):
+        return self.__class__.__name__
     def initialize(self, model): pass
-    def step(self, model, t): pass
+    def step(self, model, i, x, T): pass
     def finalize(self, model): pass
-    def check_compatibility(self, other): return True
-
-class DefaultMode(Mode):
-    """Always-on physics (annual mean)."""
-    def initialize(self, model):
-        # Setup grid, initial temperature, etc.
-        nx = model.config["nx"]
-        dx = 2.0 / nx
-        x = np.linspace(-1.0 + dx/2, 1.0 - dx/2, nx) # sin(lat)
-        T0 = model.config["T0"]
-        A_PROFILE = 45.0
-        T = T0 + A_PROFILE * (1/3 - x**2)
-
-        model.state.update({"x": x, "T": T})
+    def check_compatibility(self, modes): return True
 
 class SeasonalVariation(Mode):
     def initialize(self, model):
