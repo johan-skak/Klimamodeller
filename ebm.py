@@ -136,7 +136,7 @@ def poles_temperature(T):
         
     Returns
         (T_south, T_north) temperatures at south and north poles (K)"""
-    return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0 # Formula can be easily found be Taylor expansion (error is O(dx^3))
+    return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0 # Formula can be easily found be Taylor expansion (error is O(dx^3) actually O(dx^4) since function is even)
 
 def simulation_diagnostics(x, T, params):
     """Calculate diagnostics from temperature profile T (K) at x = sin(lat) with model parameters params.
