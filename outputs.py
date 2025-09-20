@@ -47,17 +47,20 @@ def run_all_outputs(outputs, outdir):
             f.write(summary)
 
 class OutPut:
-    def __init__(self):
+    def __init__(self, mods=[]): #mods can be a single modifier function (Parameters: output object, model object) or a list of them
         self.axes = []      # List of functions to plot on axes
         self.summaries = [] # List of functions to write summaries
+        self.mods = [mods] if callable(mods) else mods # List of modifier functions
 
     def initialize(self, model): pass
     def step(self, model, i): pass
-    def finalize(self, model): pass
+    def finalize(self, model):
+        for m in self.mods: # Call modifier functions if any
+            m(self, model)
     
 class DefaultOutput(OutPut):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, mods=[]):
+        super().__init__(mods)
         self.Tg_series = []
         self.diags = {}
     
@@ -67,15 +70,18 @@ class DefaultOutput(OutPut):
         self.lat = np.degrees(np.arcsin(self.x))
 
     def step(self, model, i):
-        if i == model.nsteps//2:
+        if i+1 == model.nsteps//2:
             self.diags["_mid"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
         # Tmean = model.T.mean() - 273.15
         # self.Tg_series.append(Tmean)
 
     def finalize(self, model):
         self.diags["_end"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
+        self.dt_global = self.diags["_end"]["T_mean"] - self.diags["_mid"]["T_mean"]
+        self.polar_ampl = (self.diags["_end"]["T_poles"][1] - self.diags["_mid"]["T_poles"][1] - self.dt_global) / self.dt_global if self.dt_global != 0 else np.nan
         self.axes = [self.panel1, self.panel2]
         self.summaries = [lambda: self.summarize(model, self.diags)]
+        super().finalize(model)
     
     def summarize(self, model, diags):
         return textwrap.dedent(f"""
@@ -88,6 +94,7 @@ class DefaultOutput(OutPut):
         ΔT global (°C): {diags['_end']['T_mean']-diags['_mid']['T_mean']:.2f}
 
         North pole T control / forced (°C): {diags['_mid']['T_poles'][1]-273.15:.1f} / {diags['_end']['T_poles'][1]-273.15:.1f}
+        North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): {self.polar_ampl:.3f}
 
         Outgoing longwave radiation (OLR) control / forced (W m⁻²): {diags['_mid']['olr'].mean():.0f} / {diags['_end']['olr'].mean():.0f}
         Planetary albedo control / forced: {np.average(diags['_mid']['alpha'], weights=diags['_mid']['Q_x']):.3f} / {np.average(diags['_end']['alpha'], weights=diags['_end']['Q_x']):.3f}
@@ -97,7 +104,7 @@ class DefaultOutput(OutPut):
     def panel1(self, ax):
         """Plot initial, control and final temperature profiles."""
         lat_ext = np.r_[-90, self.lat, 90]
-        for case, label in zip(["_init", "_mid", "_end"], ["Initial", "Control", "Final"]):
+        for case, label in zip(["_mid", "_end", "_init"], ["Control", "Final", "Initial"]):
             T_ext = np.r_[self.diags[case]["T_poles"][0], self.diags[case]["T"], self.diags[case]["T_poles"][1]] - 273.15
             ax.plot(lat_ext, T_ext, label=label)
         ax.set_title("Temperature profile")
@@ -142,8 +149,8 @@ class DefaultOutput(OutPut):
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
 
 class TimeSeriesOutput(OutPut):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, mods=[]):
+        super().__init__(mods)
         self.Tg_series = []
 
     def initialize(self, model):
@@ -155,6 +162,7 @@ class TimeSeriesOutput(OutPut):
 
     def finalize(self, model):
         self.axes = [self.panel]
+        super().finalize(model)
 
     def panel(self, ax):
         """Plot global mean temperature time series."""
@@ -180,3 +188,14 @@ class SeasonalOutput(OutPut):
         plt.title(f"Seasonal profile at step {t}")
         plt.xlabel("Latitude"); plt.ylabel("°C")
         plt.show()
+
+#Default function needed for default model with forcing
+def vline(output_obj, model):
+    """Modifier: wrap first panel to add a vertical line at half the years."""
+    old_panel = output_obj.axes[0]   # save the original function
+    
+    def new_panel(ax):
+        old_panel(ax)  # call original panel
+        ax.axvline(model.config['years'] // 2, color='k', ls='--')
+    
+    output_obj.axes[0] = new_panel   # replace it with the wrapped version

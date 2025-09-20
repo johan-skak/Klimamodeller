@@ -7,7 +7,7 @@ CONFIG_FILE = 'config.json'
 
 if __name__ == "__main__":
     # Default config
-    config = {"years": 1000, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
+    config = {"years": 1000, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "results"}
     # Read config from file if it exists and update defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # Gather outputs from modes
     outputs_list = [o for m in modes_list for o in m.outputs]
     if not outputs_list:
-        outputs_list = [outputs.DefaultOutput(), outputs.TimeSeriesOutput()] #Forcing = True eller vline ...
+        outputs_list = [outputs.DefaultOutput(), outputs.TimeSeriesOutput(outputs.vline)] # Default outputs with forcing line
     
     # Create and run model
     climate_model = model.ClimateModel(config, params, modes_list, outputs_list)

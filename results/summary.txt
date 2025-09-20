@@ -5,14 +5,15 @@
 Years (control, forced): (500, 500)
 Grid points nx: 200, Δt (years): 1
 
-Control global mean T (°C): 15.2
+Control global mean T (°C): 15.1
 Forced  global mean T (°C): 18.5
-ΔT global (°C): 3.25
+ΔT global (°C): 3.37
 
-North pole T control / forced (°C): -13.7 / -7.5
+North pole T control / forced (°C): -13.8 / -7.5
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.859
 
 Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 246
-Planetary albedo control / forced: 0.297 / 0.291
-Diffusivity control / forced (W m⁻² K⁻¹): 0.666 / 0.687
+Planetary albedo control / forced: 0.298 / 0.291
+Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.687
 
-Figures and summary saved in Results/ebm_panels.png
+Figures and summary saved in results/ebm_panels.png
