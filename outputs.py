@@ -47,20 +47,17 @@ def run_all_outputs(outputs, outdir):
             f.write(summary)
 
 class OutPut:
-    def __init__(self, mods=[]): #mods can be a single modifier function (Parameters: output object, model object) or a list of them
+    def __init__(self):
         self.axes = []      # List of functions to plot on axes
         self.summaries = [] # List of functions to write summaries
-        self.mods = [mods] if callable(mods) else mods # List of modifier functions
 
     def initialize(self, model): pass
     def step(self, model, i): pass
-    def finalize(self, model):
-        for m in self.mods: # Call modifier functions if any
-            m(self, model)
+    def finalize(self, model): pass
     
 class DefaultOutput(OutPut):
-    def __init__(self, mods=[]):
-        super().__init__(mods)
+    def __init__(self):
+        super().__init__()
         self.Tg_series = []
         self.diags = {}
     
@@ -81,7 +78,6 @@ class DefaultOutput(OutPut):
         self.polar_ampl = (self.diags["_end"]["T_poles"][1] - self.diags["_mid"]["T_poles"][1] - self.dt_global) / self.dt_global if self.dt_global != 0 else np.nan
         self.axes = [self.panel1, self.panel2]
         self.summaries = [lambda: self.summarize(model, self.diags)]
-        super().finalize(model)
     
     def summarize(self, model, diags):
         return textwrap.dedent(f"""
@@ -149,9 +145,10 @@ class DefaultOutput(OutPut):
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
 
 class TimeSeriesOutput(OutPut):
-    def __init__(self, mods=[]):
-        super().__init__(mods)
+    def __init__(self, vline=False):
+        super().__init__()
         self.Tg_series = []
+        self.vline = vline
 
     def initialize(self, model):
         self.dt = model.config["dt_years"]
@@ -162,13 +159,15 @@ class TimeSeriesOutput(OutPut):
 
     def finalize(self, model):
         self.axes = [self.panel]
-        super().finalize(model)
 
     def panel(self, ax):
         """Plot global mean temperature time series."""
         ax.plot(np.arange(len(self.Tg_series)) * self.dt, self.Tg_series)
         ax.set_title("Global Mean Surface Temperature")
         ax.set_xlabel("Time (years)"); ax.set_xlim(0, len(self.Tg_series) * self.dt); ax.set_ylabel("°C"); ax.grid(True)
+        if self.vline:
+            ax.axvline(len(self.Tg_series)*self.dt/2, color='k', linestyle='--', label='Forcing On')
+            ax.legend()
 
 class SeasonalOutput(OutPut):
     def __init__(self):
@@ -188,14 +187,3 @@ class SeasonalOutput(OutPut):
         plt.title(f"Seasonal profile at step {t}")
         plt.xlabel("Latitude"); plt.ylabel("°C")
         plt.show()
-
-#Default function needed for default model with forcing
-def vline(output_obj, model):
-    """Modifier: wrap first panel to add a vertical line at half the years."""
-    old_panel = output_obj.axes[0]   # save the original function
-    
-    def new_panel(ax):
-        old_panel(ax)  # call original panel
-        ax.axvline(model.config['years'] // 2, color='k', ls='--')
-    
-    output_obj.axes[0] = new_panel   # replace it with the wrapped version
