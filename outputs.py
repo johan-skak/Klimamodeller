@@ -26,7 +26,7 @@ def run_all_outputs(outputs, outdir):
     if axes:
         v_num = int(np.round(np.sqrt(2*len(axes)))) # Aim for 2:1 aspect ratio
         h_num = int(np.ceil(len(axes) / v_num))
-        fig, axs = plt.subplots(h_num, v_num, figsize=(6*h_num, 4*v_num))
+        fig, axs = plt.subplots(v_num, h_num, figsize=(6*h_num, 3.5*v_num))
         axs = np.atleast_1d(axs).flatten()
         
         for axfunc, subplot_ax in zip(axes, axs):
@@ -76,7 +76,11 @@ class DefaultOutput(OutPut):
         self.diags["_end"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
         self.dt_global = self.diags["_end"]["T_mean"] - self.diags["_mid"]["T_mean"]
         self.polar_ampl = (self.diags["_end"]["T_poles"][1] - self.diags["_mid"]["T_poles"][1] - self.dt_global) / self.dt_global if self.dt_global != 0 else np.nan
-        self.axes = [self.panel1, self.panel2]
+        self.lat_ext = np.r_[-90, self.lat, 90]
+        for case in ["_mid", "_end", "_init"]:
+            self.diags[case]["T_ext"] = np.r_[self.diags[case]["T_poles"][0], self.diags[case]["T"], self.diags[case]["T_poles"][1]]
+        # Finally set up axes and summaries
+        self.axes = [self.panel1, self.panel2, self.panel3, self.panel4, self.panel5, self.panel6]
         self.summaries = [lambda: self.summarize(model, self.diags)]
     
     def summarize(self, model, diags):
@@ -97,21 +101,48 @@ class DefaultOutput(OutPut):
         Diffusivity control / forced (W m⁻² K⁻¹): {diags['_mid']['D']:.3f} / {diags['_end']['D']:.3f}
         """)
 
+    # Panel 1: Temperature profiles  (°C)
     def panel1(self, ax):
         """Plot initial, control and final temperature profiles."""
-        lat_ext = np.r_[-90, self.lat, 90]
         for case, label in zip(["_mid", "_end", "_init"], ["Control", "Final", "Initial"]):
-            T_ext = np.r_[self.diags[case]["T_poles"][0], self.diags[case]["T"], self.diags[case]["T_poles"][1]] - 273.15
-            ax.plot(lat_ext, T_ext, label=label)
+            ax.plot(self.lat_ext, self.diags[case]["T_ext"], label=label)
         ax.set_title("Temperature profile")
         ax.set_ylabel("°C")
         self.Stylize(ax)
-
+    # Panel 2: OLR profiles (W/m²)
     def panel2(self, ax):
         """Plot control and final OLR profiles."""
         ax.plot(self.lat, self.diags["_mid"]['olr'], label='Control')
         ax.plot(self.lat, self.diags["_end"]['olr'], label='Forced')
         ax.set_title('Outgoing Longwave Radiation (OLR)'); ax.set_ylabel('W/m²')
+        self.Stylize(ax)
+    # Panel 3: Albedo profiles
+    def panel3(self, ax):
+        """Plot control and final albedo profiles."""
+        ax.plot(self.lat, self.diags["_mid"]['alpha'], label='Control')
+        ax.plot(self.lat, self.diags["_end"]['alpha'], label='Forced')
+        ax.set_title('Planetary Albedo'); ax.set_ylabel('Albedo')
+        self.Stylize(ax)
+    # Panel 4: Meridional heat transport (PW)
+    def panel4(self, ax):
+        """Plot control and final meridional heat transport profiles."""
+        ax.plot(self.diags["_mid"]['MHTrans_PW'][0], self.diags["_mid"]['MHTrans_PW'][1], label='Control')
+        ax.plot(self.diags["_end"]['MHTrans_PW'][0], self.diags["_end"]['MHTrans_PW'][1], label='Forced')
+        ax.set_title('Meridional Heat Transport'); ax.set_ylabel('PW (10¹⁵ W)')
+        self.Stylize(ax)
+    # Heat flux convergence (W/m²)
+    def panel5(self, ax):
+        """Plot control and final heat flux convergence profiles."""
+        ax.plot(self.lat, self.diags["_mid"]['conv'], label='Control')
+        ax.plot(self.lat, self.diags["_end"]['conv'], label='Forced')
+        ax.set_title('Heat Flux Convergence'); ax.set_ylabel('W/m²')
+        self.Stylize(ax)
+    # Change in zonal mean temperature (°C) + polar amplification
+    def panel6(self, ax):
+        """Plot change in zonal mean temperature profile."""
+        dT_ext = self.diags["_end"]['T_ext'] - self.diags["_mid"]['T_ext']
+        ax.plot(self.lat_ext, dT_ext, label='Forced - Control')
+        ax.set_title('Change in Zonal Mean Temperature'); ax.set_ylabel('ΔT (K)')
         self.Stylize(ax)
 
     def Stylize(self, ax):
@@ -162,7 +193,7 @@ class TimeSeriesOutput(OutPut):
 
     def panel(self, ax):
         """Plot global mean temperature time series."""
-        ax.plot(np.arange(len(self.Tg_series)) * self.dt, self.Tg_series)
+        ax.plot(np.arange(len(self.Tg_series)) * self.dt, self.Tg_series, label='Global Mean Temperature')
         ax.set_title("Global Mean Surface Temperature")
         ax.set_xlabel("Time (years)"); ax.set_xlim(0, len(self.Tg_series) * self.dt); ax.set_ylabel("°C"); ax.grid(True)
         if self.vline:

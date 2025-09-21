@@ -1,5 +1,6 @@
 {
     "years": 1000,
     "dt_years": 1,
-    "nx": 200
+    "nx": 200,
+    "output_dir": "ResultsTest"
 }
