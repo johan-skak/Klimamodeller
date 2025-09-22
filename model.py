@@ -28,7 +28,7 @@ class ClimateModel:
         
         for i in range(self.nsteps):
             # Evolve model one step
-            self.T = self.update_temperature(self.T, self.x, self.dt, self.params, self.funcs, i >= self.nsteps//2) #Forcing on in second half
+            self.T = self.update_temperature(self.T, self.x, self.dt, self.params, self.funcs, i >= self.nsteps//2*self.config["Forcing"]) #Forcing on in second half
 
             # Modes hook
             for m in self.modes: m.step(self, i)

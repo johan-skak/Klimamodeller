@@ -1,6 +1,7 @@
 # modes.py
 import numpy as np
 import math
+import outputs
 
 class Mode:
     def __str__(self):
@@ -9,6 +10,7 @@ class Mode:
     def step(self, model, i, x, T): pass
     def finalize(self, model): pass
     def check_compatibility(self, modes): return True
+    outputs = []
 
 class SeasonalVariation(Mode):
     def initialize(self, model):
@@ -32,3 +34,5 @@ class SeasonalVariation(Mode):
                                     np.cos(np.arcsin(x)) * np.cos(delta) * np.sin(h0))
 
         model.Q_x = seasonal_Q
+    
+    outputs = [outputs.SeasonalOutput()]
