@@ -7,7 +7,7 @@ CONFIG_FILE = 'config.json'
 
 if __name__ == "__main__":
     # Default config
-    config = {"years": 1000, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "results", "Forcing": False}
+    config = {"years": 1000, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results", "Forcing": False}
     # Read config from file if it exists and update defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
@@ -20,7 +20,6 @@ if __name__ == "__main__":
     if os.path.exists(PARAMETERS_FILE):
         with open(PARAMETERS_FILE) as f:
             params |= json.load(f)
-
 
     modes_list = []
     for mode_name in config["modes"]:

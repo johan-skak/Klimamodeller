@@ -205,16 +205,29 @@ class SeasonalOutput(OutPut):
         super().__init__()
         self.history = []
 
-    def step(self, model, t):
-        lat = np.degrees(np.arcsin(model.x))
+    def initialize(self, model):
+        self.x = model.x
+        self.lat = np.degrees(np.arcsin(self.x))
+
+    def step(self, model, i):
         T = model.T - 273.15
-        self.history.append((t, T.copy()))
+        self.history.append((i*model.config["dt_years"], T.copy()))
 
     def finalize(self, model):
+        self.axes = [self.panel1, self.panel2]
+
+    def panel1(self, ax):
         # Example: plot last temperature profile
         t, T = self.history[-1]
-        lat = np.degrees(np.arcsin(model.x))
-        plt.plot(lat, T)
-        plt.title(f"Seasonal profile at step {t}")
-        plt.xlabel("Latitude"); plt.ylabel("°C")
-        plt.show()
+        ax.plot(self.lat, T)
+        ax.set_title(f"Seasonal profile at step {t}")
+        ax.set_xlabel("Latitude"); ax.set_ylabel("°C")
+    
+    def panel2(self, ax):
+        # Example: plot temperature near Denmark (lat ~ 56°N) over time
+        lat_idx = np.argmin(np.abs(self.lat - 56))
+        times = [t for t, T in self.history]
+        temperatures = [T[lat_idx] for t, T in self.history]
+        ax.plot(times, temperatures)
+        ax.set_title("Temperature near Denmark (56°N) over time")
+        ax.set_xlabel("Time (years)"); ax.set_ylabel("°C")

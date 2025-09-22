@@ -28,7 +28,7 @@ class ClimateModel:
         
         for i in range(self.nsteps):
             # Evolve model one step
-            self.T = self.update_temperature(self.T, self.x, self.dt, self.params, self.funcs, i >= self.nsteps//2*self.config["Forcing"]) #Forcing on in second half
+            self.T = self.update_temperature(self.T, self.x, self.dt, self.params, self.funcs, i, i >= self.nsteps//2*self.config["Forcing"]) #Forcing on in second half in default mode
 
             # Modes hook
             for m in self.modes: m.step(self, i)
@@ -40,12 +40,12 @@ class ClimateModel:
         for m in self.modes: m.finalize(self)
         for o in self.outputs: o.finalize(self)
 
-    def update_temperature(self, T, x, dt, params, funcs, Forcing=False):
+    def update_temperature(self, T, x, dt, params, funcs, i, Forcing=False):
         # Explicit radiative terms
-        Q_x = funcs['Q_x'](x, params['S0'])
-        alpha = funcs['albedo_from_T'](T, x, params['k1'])
+        Q_x = funcs['Q_x'](x, params['S0'], model=self, i=i) #The model and i arguments are ignored in default mode but necessary for other modes
+        alpha = funcs['albedo_from_T'](T, x, params['k1'], model=self, i=i)
         absorbed = Q_x * (1.0 - alpha)
-        dTloc = funcs['deltaT_of_Ts'](T, params['k3'])
+        dTloc = funcs['deltaT_of_Ts'](T, params['k3'], model=self, i=i)
         olr = phys.SIGMA * (T - dTloc)**4
         rad_term = absorbed - olr + params['F']*Forcing # Forcing term only when Forcing=True (=1)
 

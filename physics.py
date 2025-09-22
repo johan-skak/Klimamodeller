@@ -14,6 +14,10 @@ DELTA_T_MIN = 10.0               # K (lower bound)
 # initial profile amplitude (eq. 17)
 A_PROFILE = 45.0                 # K
 
+# Wrapper to add model and i as optional input but ignore them
+def Input(func):
+    return lambda *args, model=None, i=None, **kwargs: func(*args, **kwargs)
+
 # ---------------- Tridiagonal solver ----------------
 def thomas_solve(a, b, c, d): #If to slow, replace with scipy.linalg.solve_banded
     """Solve tridiagonal system Ax = d with A defined by diagonals a,b,c using Thomas algorithm.
@@ -36,11 +40,14 @@ def thomas_solve(a, b, c, d): #If to slow, replace with scipy.linalg.solve_bande
         x[i] = (dc[i] - cc[i] * x[i+1]) / bc[i]
     return x
 
+
 # ---------------- Physics building blocks (PDF exact forms) ----------------
+@Input
 def T_init(x, T0):
     """Initial temperature profile (K) as function of x = sin(lat)."""
     return T0 + A_PROFILE * (1/3 - x**2)
 
+@Input
 def Q_x(x, S):
     """Annual-mean insolation (TOA) as function of x = sin(lat)."""
     dx = x[1] - x[0]
@@ -48,6 +55,7 @@ def Q_x(x, S):
     x_right = x + 0.5 * dx
     return 0.25 * S * (1.0 - 0.241 * (x_right**3 - x_left**3 - (x_right - x_left)) / dx)
 
+@Input
 def albedo_from_T(T, x, k1):
     """Equation (12): effective albedo with ice fraction f_i = k1*(273-T) clipped to [0,1]."""
     alpha_a = 0.2 + 0.08 * x**2
@@ -57,6 +65,7 @@ def albedo_from_T(T, x, k1):
     alpha = alpha_a + alpha_s - alpha_a * alpha_s - A_a * alpha_s
     return np.minimum(alpha, 0.7)
 
+@Input
 def deltaT_of_Ts(Ts, k3):
     """Equation (13): δT(Ts) = DELTA_T0 + k3 (Ts - T00), with lower bound."""
     return np.maximum(DELTA_T0 + k3 * (Ts - T00), DELTA_T_MIN)
@@ -96,6 +105,7 @@ def apply_L_to_T(a, b, c, T):
 
 
 # ---------------- Diagnostics helpers ----------------
+@Input
 def meridional_transport_PW(T, x, D):
     """Calculate meridional heat transport HMTrans (PW = 10¹⁵ W) at boundaries from temperature profile T (K) at x = sin(lat) with diffusivity D (W m⁻² K⁻¹)."""
     # dTdx = np.gradient(T, x)
@@ -105,9 +115,11 @@ def meridional_transport_PW(T, x, D):
     HMTrans = - 2.0 * np.pi * R_EARTH**2 * flux                 # W (zonal integral around latitude circle)
     return np.arcsin(x_borders) / np.pi * 180, HMTrans / 1e15                            # PW
 
+@Input
 def global_mean(T):
     return np.mean(T)
 
+@Input
 def poles_temperature(T):
     """Return temperature at poles (K) by extrapolation since T is at cell centers. Extrapolates by a quadratic fit with 0 gradient at poles.
     
