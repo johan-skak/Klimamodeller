@@ -22,9 +22,6 @@ class ClimateModel:
         self.x = np.linspace(-1.0 + self.dx/2, 1.0 - self.dx/2, self.config["nx"])
         self.T = phys.T_init(self.x, self.params["T0"])  # Initial temperature profile (K)
 
-        self.Forcing = self.params["F"] # Stores F for use after control period
-        self.params["F"] = 0 # Set initial forcing to 0
-
         self.dt = self.config["dt_years"] * phys.SECONDS_PER_YEAR # time step in seconds
         self.nsteps = int(round(self.config["years"] / self.config["dt_years"]))
         self.ctrl_nsteps = int(round(self.config["ctrl_years"] / self.config["dt_years"]))
@@ -33,10 +30,6 @@ class ClimateModel:
         for o in self.outputs: o.initialize(self)
         
         for i in range(self.nsteps):
-            # Turn forcing on after control period
-            if i == self.ctrl_nsteps:
-                self.params["F"] = self.Forcing
-
             # Evolve model one step
             self.T = self.update_temperature(self.T, self.x, self.dt, self.params, self.funcs, i)
 
@@ -57,7 +50,7 @@ class ClimateModel:
         absorbed = Q_x * (1.0 - alpha)
         dTloc = funcs['deltaT_of_Ts'](T, params['k3'], model=self, i=i)
         olr = phys.SIGMA * (T - dTloc)**4
-        rad_term = absorbed - olr + params['F']
+        rad_term = absorbed - olr + params['F']*(i >= self.ctrl_nsteps) # Only apply forcing after control period
 
         # Diffusivity depends on global mean temperature
         D = params['D0'] * max(0.5, 1.0 + params['k2'] * (T.mean() - phys.T00))
@@ -66,7 +59,7 @@ class ClimateModel:
         aL, bL, cL = funcs['build_diffusion_tridiag'](x, D)
         LT = funcs['apply_L_to_T'](aL, bL, cL, T)
         coef = dt / phys.C
-        rhs = T + 0.5 * coef * LT + (dt / phys.C) * rad_term
+        rhs = T + 0.5 * coef * LT + coef * rad_term
         aA = -0.5 * coef * aL
         bA =  1.0 - 0.5 * coef * bL
         cA = -0.5 * coef * cL
