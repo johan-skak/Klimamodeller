@@ -1,0 +1,6 @@
+{
+    "years": 1000,
+    "dt_years": 1,
+    "nx": 200,
+    "modes": ["SeasonalVariation"]
+}
