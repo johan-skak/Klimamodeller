@@ -108,7 +108,7 @@ def build_diffusion_tridiag(nx, x, D):
     x_half = 0.5 * (x[:-1] + x[1:]) # positions of cell borders (lenghth nx-1)
     w_half = D * (1.0 - x_half**2) # diffusivity at cell borders (length nx-1)
     
-    # centered difference discretisation, second order derivative in space (1, -2, 1 stencil)
+    """ centered difference discretisation, second order derivative in space (1, -2, 1 stencil) """
     a[1:] = w_half / dx**2     # lower diagonal
     c[:-1] = w_half / dx**2    # upper diagonal
     b = -(a + c)               # main diagonal
@@ -124,7 +124,8 @@ def apply_L_to_T(a, b, c, T):
 
 # ---------------- Diagnostics helpers ----------------
 def meridional_transport_PW(T, x, D):
-    """Calculate meridional heat transport HMTrans (PW = 10¹⁵ W) at boundaries from temperature profile T (K) at x = sin(lat) with diffusivity D (W m⁻² K⁻¹)."""
+    """Calculate meridional heat transport HMTrans (PW = 10¹⁵ W) at cell borders 
+    from temperature profile T (K) at x = sin(lat) with diffusivity D (W m⁻² K⁻¹)."""
     # dTdx = np.gradient(T, x)
     dTdx = np.r_[0, (T[1:] - T[:-1]) / (x[1] - x[0]), 0]
     x_borders = np.r_[-1, (x[1:] + x[:-1]) / 2, 1]
@@ -143,7 +144,7 @@ def poles_temperature(T):
         
     Returns
         (T_south, T_north) temperatures at south and north poles (K)"""
-    return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0 # Formula can be easily found be Taylor expansion (error is O(dx^3))
+    return (9*T[0] - T[1]) / 8.0, (9*T[-1] - T[-2]) / 8.0  # Formula can be easily found be Taylor expansion (error is O(dx^3))
 
 def simulation_diagnostics(x, T, params):
     """Calculate diagnostics from temperature profile T (K) at x = sin(lat) with model parameters params.
