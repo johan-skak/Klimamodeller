@@ -74,7 +74,6 @@ class OutPut:
     
 class DefaultOutput(OutPut):
     def __init__(self):
-        self.Tg_series = []
         self.diags = {} # Diagnostics
     
     def initialize(self, model):
@@ -85,8 +84,6 @@ class DefaultOutput(OutPut):
     def step(self, model, i):
         if i+1 == model.nsteps//2:
             self.diags["_mid"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
-        # Tmean = model.T.mean() - 273.15
-        # self.Tg_series.append(Tmean)
 
     def finalize(self, model):
         self.diags["_end"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
