@@ -31,14 +31,12 @@ SECONDS_PER_YEAR = 365 * 24 * 3600
 R_EARTH = 6.371e6                # m
 
 # greenhouse offset parameters
-DELTA_T0 = 33.1                  # δT at reference
-T00 = 287.5                      # K (reference)
-DELTA_T_MIN = 10.0               # K (lower bound)
+DELTA_T0 = 33.1                  # δT at reference in Kelvin (page 3)
+T00 = 287.5                      # reference temperature in Kelvin (page 3)
+DELTA_T_MIN = 10.0               # reference temperature lower bound in Kelvin (beginnning of page 7)
+A_PROFILE = 45.0                 # amplitude a in the initial latitude-dependent surface temperature profile (eq. 17)
 
-# initial profile amplitude (eq. 17)
-A_PROFILE = 45.0                 # K
-
-# ---------------- Tridiagonal solver ----------------
+# ---------------- Tridiagonal matrix solver (Thomas solver) ----------------
 def thomas_solve(a, b, c, d): #If to slow, replace with scipy.linalg.solve_banded
     """Solve tridiagonal system Ax = d with A defined by diagonals a,b,c using Thomas algorithm.
     a: lower diagonal (length n but a[0] unused)
@@ -62,14 +60,20 @@ def thomas_solve(a, b, c, d): #If to slow, replace with scipy.linalg.solve_bande
 
 # ---------------- Physics building blocks (PDF exact forms) ----------------
 def Q_x(x, S):
-    """Annual-mean insolation (TOA) as function of x = sin(lat)."""
+    """Annual average downward shortwave (solar radiation) flux at the top of the atmosphere as function of x = sine of the latitude.
+      S is the energy flux from solar radiation at the position of the Earth (W/m²).
+      This returns the expression from the theory document (first line in page 6) averaged over a cell in x.
+      Averaging method: integrate from one cell edge to the other and divide by cell width."""
     dx = x[1] - x[0]
     x_left = x - 0.5 * dx
     x_right = x + 0.5 * dx
     return 0.25 * S * (1.0 - 0.241 * (x_right**3 - x_left**3 - (x_right - x_left)) / dx)
 
 def albedo_from_T(T, x, k1):
-    """Equation (12): effective albedo with ice fraction f_i = k1*(273-T) clipped to [0,1]."""
+    """Equation (12): effective albedo alpha with ice fraction f_i = k1*(273-T) clipped to [0,1].
+      alpha_a is the albedo from atmosphere and clouds, alpha_s is the surface albedo, e.g. from ice.
+      T is the average surface temperature of the Earth. A_a is the fractional atmospheric absorption of solar radiation.
+      k1 is one of the user-parameters of the model, namely the sensitivity of ice fraction f_i to temperature."""
     alpha_a = 0.2 + 0.08 * x**2
     f_i = np.clip(k1 * (273.0 - T), 0.0, 1.0)
     alpha_s = 0.60 * f_i + (1.0 - f_i) * (0.1 + 0.15 * x**4)
@@ -78,17 +82,20 @@ def albedo_from_T(T, x, k1):
     return np.minimum(alpha, 0.7)
 
 def deltaT_of_Ts(Ts, k3):
-    """Equation (13): δT(Ts) = DELTA_T0 + k3 (Ts - T00), with lower bound."""
+    """Equation (13): δT(Ts) = DELTA_T0 + k3 (Ts - T00), with lower bound DELTA_T_MIN.
+     δT(Ts) is the greenhouse effect as function of surface temperature Ts.
+     k3 is the local sensitivity of δT to surface temperature Ts (longwave feedback)."""
     return np.maximum(DELTA_T0 + k3 * (Ts - T00), DELTA_T_MIN)
 
 # ---------------- Diffusion operator L ≈ ∂x[D(1-x²) ∂x] ----------------
 def build_diffusion_tridiag(nx, x, D):
-    """Build tridiagonal representation of diffusion operator L with diffusivity D (W m⁻² K⁻¹) on borders with nx cell points at x = sin(lat).
+    """Build tridiagonal representation of diffusion operator L 
+    with diffusivity D (W m⁻² K⁻¹) on cell borders with nx cell points at x = sin(lat).
 
     Parameters
         nx: number of cell points
         x: array of sin(lat) at cell centers (linear spacing)
-        D: diffusivity (W m⁻² K⁻¹)
+        D: heat diffusion coefficient (W m⁻² K⁻¹)
 
     Returns
         a, b, c: lower, main and upper diagonals of L (arrays of length nx)
@@ -97,11 +104,11 @@ def build_diffusion_tridiag(nx, x, D):
     dx = x[1] - x[0]
     a = np.zeros(nx); b = np.zeros(nx); c = np.zeros(nx)
 
-    # half-point weights (length nx-1)
-    x_half = 0.5 * (x[:-1] + x[1:])
-    w_half = D * (1.0 - x_half**2) # diffusivity at cell borders
     
-    # interior contributions
+    x_half = 0.5 * (x[:-1] + x[1:]) # positions of cell borders (lenghth nx-1)
+    w_half = D * (1.0 - x_half**2) # diffusivity at cell borders (length nx-1)
+    
+    """ centered difference discretisation, second order derivative in space (1, -2, 1 stencil) """
     a[1:] = w_half / dx**2     # lower diagonal
     c[:-1] = w_half / dx**2    # upper diagonal
     b = -(a + c)               # main diagonal
@@ -117,7 +124,8 @@ def apply_L_to_T(a, b, c, T):
 
 # ---------------- Diagnostics helpers ----------------
 def meridional_transport_PW(T, x, D):
-    """Calculate meridional heat transport HMTrans (PW = 10¹⁵ W) at boundaries from temperature profile T (K) at x = sin(lat) with diffusivity D (W m⁻² K⁻¹)."""
+    """Calculate meridional heat transport HMTrans (PW = 10¹⁵ W) at cell borders 
+    from temperature profile T (K) at x = sin(lat) with diffusivity D (W m⁻² K⁻¹)."""
     # dTdx = np.gradient(T, x)
     dTdx = np.r_[0, (T[1:] - T[:-1]) / (x[1] - x[0]), 0]
     x_borders = np.r_[-1, (x[1:] + x[:-1]) / 2, 1]
