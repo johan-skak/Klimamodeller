@@ -21,7 +21,7 @@ if __name__ == "__main__":
         with open(PARAMETERS_FILE) as f:
             params |= json.load(f)
 
-    modes_list = []
+    modes_list = [] # Is a list of mode class instances
     for mode_name in config["modes"]:
         if hasattr(modes, mode_name):
             modes_list.append(getattr(modes, mode_name)())
@@ -41,4 +41,4 @@ if __name__ == "__main__":
     climate_model.run()
 
     # Make outputs
-    outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"])
+    outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"]) # Climate_model.config may be different from input config due to modes

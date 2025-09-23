@@ -12,7 +12,7 @@ class ClimateModel:
         for m in self.modes: m.check_compatibility(self.modes)
 
     def run(self):
-        # Let modes modify config/params/T
+        # Let modes modify config/params/T/funcs as needed
         for m in self.modes: m.initialize(self)
 
         # Define grid and initial state
@@ -20,7 +20,7 @@ class ClimateModel:
         self.x = np.linspace(-1.0 + self.dx/2, 1.0 - self.dx/2, self.config["nx"])
         self.T = phys.T_init(self.x, self.params["T0"])  # Initial temperature profile (K)
 
-        self.dt = self.config["dt_years"] * phys.SECONDS_PER_YEAR
+        self.dt = self.config["dt_years"] * phys.SECONDS_PER_YEAR # time step in seconds
         self.nsteps = int(round(self.config["years"] / self.config["dt_years"]))
 
         # Let outputs collect initial data

@@ -8,8 +8,8 @@ class Mode:
     def initialize(self, model): pass
     def step(self, model, i): pass
     def finalize(self, model): pass
-    def check_compatibility(self, modes): return True
-    outputs = []
+    def check_compatibility(self, modes): pass
+    outputs = [] # Is a list of output class instances
 
 class SeasonalVariation(Mode):
     def initialize(self, model):

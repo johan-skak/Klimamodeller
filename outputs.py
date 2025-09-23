@@ -22,16 +22,16 @@ def run_all_outputs(outputs, outdir):
     print(f"Finished simulation. Generating outputs in {outdir}")
     os.makedirs(outdir, exist_ok=True)
 
-    axes = [ax for o in outputs for ax in o.axes] if outputs else []
-    if axes:
-        v_num = int(np.round(np.sqrt(2*len(axes)))) # Aim for 2:1 aspect ratio
-        h_num = int(np.ceil(len(axes) / v_num))
+    axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs] if outputs else []
+    if axes_funcs:
+        v_num = int(np.round(np.sqrt(2*len(axes_funcs)))) # Aim for 2:1 aspect ratio
+        h_num = int(np.ceil(len(axes_funcs) / v_num))
         fig, axs = plt.subplots(v_num, h_num, figsize=(6*h_num, 3.5*v_num))
         axs = np.atleast_1d(axs).flatten()
         
-        for axfunc, subplot_ax in zip(axes, axs):
+        for axfunc, subplot_ax in zip(axes_funcs, axs):
             axfunc(subplot_ax)  # plotting function should accept "ax"
-        for ax in axs[len(axes):]:
+        for ax in axs[len(axes_funcs):]:
             ax.axis('off')  # Turn off unused subplots
         fig.tight_layout()
         fig.savefig(f"{outdir}/ebm_panels.png", dpi=150)
@@ -41,15 +41,15 @@ def run_all_outputs(outputs, outdir):
         summary = "=== EBM Summary ===\n\n"
         for sfunc in summaries:
             summary += textwrap.dedent(sfunc()) + "\n"
-        summary += f"Figures and summary saved in {outdir}/ebm_panels.png\n"
+        summary += f"Figures and summary saved in {outdir}\n"
         print(summary)
         with open(f"{outdir}/summary.txt", "w", encoding="utf-8") as f:
             f.write(summary)
 
 class OutPut:
     def __init__(self):
-        self.axes = []      # List of functions to plot on axes
-        self.summaries = [] # List of functions to write summaries
+        self.axes_funcs = [] # List of functions to plot on axes_funcs (returns nothing)
+        self.summaries = [] # List of functions to write summaries (returns strings)
 
     def initialize(self, model): pass
     def step(self, model, i): pass
@@ -59,7 +59,7 @@ class DefaultOutput(OutPut):
     def __init__(self):
         super().__init__()
         self.Tg_series = []
-        self.diags = {}
+        self.diags = {} # Diagnostics
     
     def initialize(self, model):
         self.diags["_init"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
@@ -79,8 +79,8 @@ class DefaultOutput(OutPut):
         self.lat_ext = np.r_[-90, self.lat, 90]
         for case in ["_mid", "_end", "_init"]:
             self.diags[case]["T_ext"] = np.r_[self.diags[case]["T_poles"][0], self.diags[case]["T"], self.diags[case]["T_poles"][1]]
-        # Finally set up axes and summaries
-        self.axes = [self.panel1, self.panel2, self.panel3, self.panel4, self.panel5, self.panel6]
+        # Finally set up axes_funcs and summaries
+        self.axes_funcs = [self.panel1, self.panel2, self.panel3, self.panel4, self.panel5, self.panel6]
         self.summaries = [lambda: self.summarize(model, self.diags)]
     
     def summarize(self, model, diags):
@@ -189,7 +189,7 @@ class TimeSeriesOutput(OutPut):
         self.Tg_series.append(model.T.mean() - 273.15)
 
     def finalize(self, model):
-        self.axes = [self.panel]
+        self.axes_funcs = [self.panel]
 
     def panel(self, ax):
         """Plot global mean temperature time series."""
@@ -214,7 +214,7 @@ class SeasonalOutput(OutPut):
         self.history.append((i*model.config["dt_years"], T.copy()))
 
     def finalize(self, model):
-        self.axes = [self.panel1, self.panel2]
+        self.axes_funcs = [self.panel1, self.panel2]
 
     def panel1(self, ax):
         # Example: plot last temperature profile
