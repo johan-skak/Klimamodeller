@@ -7,7 +7,7 @@ from matplotlib.ticker import FixedLocator # For custom minor ticks
 import physics as phys
 
 def print_simulation_info(config, params):
-    print("Running simulation with the following configuration and parameters\nNote: some modes may have changed the values specified in the config and parameter files\n")
+    print("Running simulation with the following configuration and parameters\n\033[1mNote\033[0m: some modes may have changed the values specified in the config and parameter files\n")
     descs = phys.PARAM_DESCS # descriptions for parameter keys
     max_ckey_len = max((len(k) for k in config), default=0) # find max config key length
     max_pkey_len = max((len(k) for k in params), default=0) # find max parameters key length
@@ -31,10 +31,10 @@ def print_simulation_info(config, params):
         print(f"{key:<{max_pkey_len}} {desc:<{max_pdesc_len+2}} : {value}")
     print("=" * total_pwidth + "\n")
 
-    print("Starting simulation...")
+    print("\033[1mStarting\033[0m simulation...")
 
 def run_all_outputs(outputs, outdir):
-    print(f"Finished simulation. Generating outputs in {outdir}")
+    print(f"\033[1mFinished\033[0m simulation. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
     os.makedirs(outdir, exist_ok=True)
 
     axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]
@@ -52,14 +52,15 @@ def run_all_outputs(outputs, outdir):
         fig.savefig(f"{outdir}/ebm_panels.png", dpi=150)
 
     summaries = [s for o in outputs for s in o.summaries]
+    summary = ""
     if summaries:#Also print the summary
         summary = "\n=== EBM Summary ==="
         for sfunc in summaries:
             summary += textwrap.dedent(sfunc) + "\n"
-        summary += f"Figures and summary saved in {outdir}\n"
-        print(summary)
         with open(f"{outdir}/summary.txt", "w", encoding="utf-8") as f:
             f.write(summary)
+    summary += f"Figures and summary saved in \033[4m{outdir}\033[0m\n"
+    print(summary)
 
 class OutPut:
     def __init__(self): pass

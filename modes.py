@@ -13,10 +13,14 @@ class Mode:
 
 class SeasonalVariation(Mode):
     def initialize(self, model):
-        # Override config
-        model.config["dt_years"] = 1/24    # monthly steps
-        model.config["years"] = 50
-        model.config["output_dir"] += "_SeVa"
+        # Override config if necessary
+        if model.config["dt_years"] > 1/12: # is a problem with default settings
+            warn(f"Time step - \033[4m{model.config["dt_years"]} > 1/12 years\033[0m - is to large to capture seasonal variation. Has been set to half a month.")
+            model.config["dt_years"] = 1/24 # half monthly steps
+        if model.config["years"] > 1000: # too long computation time # not relevant with default settings
+            warn(f"Simulation time - \033[4m{model.config["years"]} > 1000 years\033[0m - is to large for reasonable run time. Has been set to fifty years.")
+            model.config["years"] = 50
+        model.config["output_dir"] += "_SeVa" #Modify output directory name
 
         # Replace insolation kernel
         # See Wikipedia Solar Irradiance
@@ -34,3 +38,12 @@ class SeasonalVariation(Mode):
         model.funcs['Q_x'] = seasonal_Q # Replaces Q_x with seasonal_Q in ClimateModel object
     
     outputs = [outputs.SeasonalOutput(), outputs.TimeSeriesOutput()]
+
+def warn(msg):
+    """
+    Print a formatted warning message in bold yellow with a ⚠️ symbol.
+    Works in most Unix shells and modern PowerShell.
+    """
+    YELLOW_BOLD = "\033[1;33m"
+    RESET = "\033[0m"
+    print(f"{YELLOW_BOLD}⚠️  Warning:{RESET} {msg}")
