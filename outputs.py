@@ -73,8 +73,7 @@ class OutPut:
     def finalize(self, model): pass
     
 class DefaultOutput(OutPut):
-    def __init__(self):
-        self.diags = {} # Diagnostics
+    diags = {} # Diagnostics
     
     def initialize(self, model):
         self.diags["_init"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
@@ -212,8 +211,8 @@ class TimeSeriesOutput(OutPut):
             ax.legend()
 
 class SeasonalOutput(OutPut):
-    def __init__(self):
-        self.history = []
+    t = [] # time in years
+    T = [] # temperature in K
 
     def initialize(self, model):
         self.x = model.x
@@ -221,23 +220,21 @@ class SeasonalOutput(OutPut):
 
     def step(self, model, i):
         T = model.T - 273.15
-        self.history.append((i*model.config["dt_years"], T.copy()))
+        self.t.append(i*model.config["dt_years"])
+        self.T.append(T.copy())
 
     def finalize(self, model):
         self.axes_funcs = [self.panel1, self.panel2]
 
     def panel1(self, ax):
         # Example: plot last temperature profile
-        t, T = self.history[-1]
-        ax.plot(self.lat, T)
-        ax.set_title(f"Seasonal profile at step {t}")
+        ax.plot(self.lat, self.T[-1])
+        ax.set_title(f"Seasonal profile at step {self.t[-1]}")
         ax.set_xlabel("Latitude"); ax.set_ylabel("°C")
     
     def panel2(self, ax):
         # Example: plot temperature near Denmark (lat ~ 56°N) over time
         lat_idx = np.argmin(np.abs(self.lat - 56))
-        times = [t for t, T in self.history]
-        temperatures = [T[lat_idx] for t, T in self.history]
-        ax.plot(times, temperatures)
+        ax.plot(self.t, self.T)
         ax.set_title("Temperature near Denmark (56°N) over time")
         ax.set_xlabel("Time (years)"); ax.set_ylabel("°C")
