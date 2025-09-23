@@ -7,7 +7,7 @@ CONFIG_FILE = 'config.json'
 
 if __name__ == "__main__":
     # Default config
-    config = {"years": 1000, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results", "Forcing": False}
+    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results", "Forcing": False}
     # Read config from file if it exists and update defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:

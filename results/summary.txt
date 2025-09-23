@@ -16,4 +16,4 @@ Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 246
 Planetary albedo control / forced: 0.298 / 0.291
 Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.687
 
-Figures and summary saved in Results/ebm_panels.png
+Figures and summary saved in Results

@@ -30,6 +30,6 @@ class SeasonalVariation(Mode):
             SIr = (S / np.pi) * (h0 * x * np.sin(delta) + np.sqrt(1 - x**2) * np.cos(delta) * np.sin(h0))
             return SIr
 
-        model.funcs['Q_x'] = seasonal_Q
+        model.funcs['Q_x'] = seasonal_Q # Replaces Q_x with seasonal_Q in ClimateModel object
     
     outputs = [outputs.SeasonalOutput(), outputs.TimeSeriesOutput()]
