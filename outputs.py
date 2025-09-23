@@ -8,8 +8,10 @@ import physics as phys
 
 def print_simulation_info(config, params):
     print("=== EBM Model Configuration =======")
+    max_key_len = max(len(k) for k in config) # find max key length
+
     for key, value in config.items():
-        print(f"{key} \t: {value}")
+        print(f"{key:<{max_key_len}} : {str(value)}") # - pad key to align the colons
 
     print("=== EBM Model Parameters ========")
     for key, value in params.items():
@@ -22,7 +24,7 @@ def run_all_outputs(outputs, outdir):
     print(f"Finished simulation. Generating outputs in {outdir}")
     os.makedirs(outdir, exist_ok=True)
 
-    axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs] if outputs else []
+    axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]
     if axes_funcs:
         v_num = int(np.round(np.sqrt(2*len(axes_funcs)))) # Aim for 2:1 aspect ratio
         h_num = int(np.ceil(len(axes_funcs) / v_num))
@@ -36,11 +38,11 @@ def run_all_outputs(outputs, outdir):
         fig.tight_layout()
         fig.savefig(f"{outdir}/ebm_panels.png", dpi=150)
 
-    summaries = [s for o in outputs for s in o.summaries] if outputs else []
+    summaries = [s for o in outputs for s in o.summaries]
     if summaries:#Also print the summary
         summary = "=== EBM Summary ===\n\n"
         for sfunc in summaries:
-            summary += textwrap.dedent(sfunc()) + "\n"
+            summary += textwrap.dedent(sfunc) + "\n"
         summary += f"Figures and summary saved in {outdir}\n"
         print(summary)
         with open(f"{outdir}/summary.txt", "w", encoding="utf-8") as f:
@@ -81,7 +83,7 @@ class DefaultOutput(OutPut):
             self.diags[case]["T_ext"] = np.r_[self.diags[case]["T_poles"][0], self.diags[case]["T"], self.diags[case]["T_poles"][1]]
         # Finally set up axes_funcs and summaries
         self.axes_funcs = [self.panel1, self.panel2, self.panel3, self.panel4, self.panel5, self.panel6]
-        self.summaries = [lambda: self.summarize(model, self.diags)]
+        self.summaries = [self.summarize(model, self.diags)]
     
     def summarize(self, model, diags):
         return textwrap.dedent(f"""
