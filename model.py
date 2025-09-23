@@ -1,6 +1,7 @@
 # model.py
 import numpy as np
 import physics as phys
+import outputs
 
 class ClimateModel:
     def __init__(self, config, params, modes, outputs):
@@ -16,6 +17,7 @@ class ClimateModel:
     def run(self):
         # Let modes modify config/params/T/funcs as needed
         for m in self.modes: m.initialize(self)
+        outputs.print_simulation_info(self.config, self.params)
 
         # Define grid and initial state
         self.dx = 2.0 / self.config["nx"]
@@ -45,12 +47,12 @@ class ClimateModel:
 
     def update_temperature(self, T, x, dt, params, funcs, i):
         # Explicit radiative terms
-        Q_x = funcs['Q_x'](x, params['S0'], model=self, i=i) #The model and i arguments are ignored in default mode but necessary for other modes
+        Q_x = funcs['Q_x'](x, params['S'], model=self, i=i) # The model and i arguments are ignored in default mode but necessary for other modes
         alpha = funcs['albedo_from_T'](T, x, params['k1'], model=self, i=i)
         absorbed = Q_x * (1.0 - alpha)
         dTloc = funcs['deltaT_of_Ts'](T, params['k3'], model=self, i=i)
         olr = phys.SIGMA * (T - dTloc)**4
-        rad_term = absorbed - olr + params['F']*(i >= self.ctrl_nsteps) # Only apply forcing after control period
+        rad_term = absorbed - olr + params['F'] * (i >= self.ctrl_nsteps) # Only apply forcing after control period
 
         # Diffusivity depends on global mean temperature
         D = params['D0'] * max(0.5, 1.0 + params['k2'] * (T.mean() - phys.T00))

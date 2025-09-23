@@ -7,17 +7,30 @@ from matplotlib.ticker import FixedLocator # For custom minor ticks
 import physics as phys
 
 def print_simulation_info(config, params):
-    print("=== EBM Model Configuration =======")
-    max_key_len = max(len(k) for k in config) # find max key length
+    print("Running simulation with the following configuration and parameters\nNote: some modes may have changed the values specified in the config and parameter files\n")
+    descs = phys.PARAM_DESCS # descriptions for parameter keys
+    max_ckey_len = max((len(k) for k in config), default=0) # find max config key length
+    max_pkey_len = max((len(k) for k in params), default=0) # find max parameters key length
+    max_pdesc_len = max((len(descs.get(k) or "") for k in params.keys()), default=0) # find max length of descriptions associated with the keys in params (if they have an associated description)
+    max_pval_len = max((len(str(v)) for v in params.values()), default=0) # find max length af values in params
+    total_pwidth = max_pkey_len + max_pval_len + max_pdesc_len + 6
 
+    header = "=== EBM Model Configuration "
+    print(header + "=" * (total_pwidth - len(header))) # number of "=" set to right align with following prints
+    # print config details
     for key, value in config.items():
-        print(f"{key:<{max_key_len}} : {str(value)}") # - pad key to align the colons
+        print(f"{key:<{max_ckey_len}} : {str(value)}") # - pad key to align the colons
+    print("=" * total_pwidth + "\n")
 
-    print("=== EBM Model Parameters ========")
+    header = "=== EBM Model Parameters " # new header
+    print(header + "=" * (total_pwidth - len(header)))
+    # print parameter details
     for key, value in params.items():
-        print(f"{key} \t: {value}")
+        desc = descs.get(key) or "" # returns empty string if the key is not found
+        desc = f"({desc})" # add parentheses to string
+        print(f"{key:<{max_pkey_len}} {desc:<{max_pdesc_len+2}} : {value}")
+    print("=" * total_pwidth + "\n")
 
-    print("===================================")
     print("Starting simulation...")
 
 def run_all_outputs(outputs, outdir):
@@ -40,7 +53,7 @@ def run_all_outputs(outputs, outdir):
 
     summaries = [s for o in outputs for s in o.summaries]
     if summaries:#Also print the summary
-        summary = "=== EBM Summary ===\n\n"
+        summary = "\n=== EBM Summary ==="
         for sfunc in summaries:
             summary += textwrap.dedent(sfunc) + "\n"
         summary += f"Figures and summary saved in {outdir}\n"
@@ -87,8 +100,7 @@ class DefaultOutput(OutPut):
     
     def summarize(self, model, diags):
         return textwrap.dedent(f"""
-        === EBM Summary ===
-        Years (control, forced): ({model.config['years']//2}, {(model.config['years']+1)//2})
+        Years (control, forced): ({model.config['ctrl_years']}, {model.config['years']-model.config['ctrl_years']})
         Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
         Control global mean T (°C): {diags['_mid']['T_mean']-273.15:.1f}
@@ -174,7 +186,7 @@ class DefaultOutput(OutPut):
         MHTrans_PW = funcs['meridional_transport_PW'](T, x, D) # PW = 10^15 W
         T_mean = funcs['global_mean'](T)
         T_poles = funcs['poles_temperature'](T)
-        Q_x = funcs['Q_x'](x, params['S0'])
+        Q_x = funcs['Q_x'](x, params['S'])
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
 
 class TimeSeriesOutput(OutPut):

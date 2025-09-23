@@ -14,6 +14,9 @@ DELTA_T_MIN = 10.0               # K (lower bound)
 # initial profile amplitude (eq. 17)
 A_PROFILE = 45.0                 # K
 
+# short description of the default parameters
+PARAM_DESCS = {"k1": "ice albedo sensitivity", "k2": "diffusivity sensitivity", "k3": "lapse rate sensitivity", "D0": "background diffusivity", "T0": "initial temperature", "S": "solar forcing", "F": "additional forcing"}
+
 # Wrapper to add model and i as optional input but ignore them
 def Input(func):
     return lambda *args, model=None, i=None, **kwargs: func(*args, **kwargs)

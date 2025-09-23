@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     # Default parameters
     params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0,
-                S0=1365.0, S1=1365.0, F=0.0)
+                S=1365.0, F=0.0)
     # Read parameters from file if it exists and update defaults
     if os.path.exists(PARAMETERS_FILE):
         with open(PARAMETERS_FILE) as f:
@@ -35,7 +35,6 @@ if __name__ == "__main__":
     
     # Create and run model
     climate_model = model.ClimateModel(config, params, modes_list, outputs_list)
-    outputs.print_simulation_info(climate_model.config, climate_model.params)
     climate_model.run()
 
     # Make outputs

@@ -1,5 +1,3 @@
-=== EBM Summary ===
-
 
 === EBM Summary ===
 Years (control, forced): (500, 500)
