@@ -16,6 +16,7 @@ class SeasonalVariation(Mode):
         # Override config
         model.config["dt_years"] = 1/24    # monthly steps
         model.config["years"] = 50
+        model.config["output_dir"] += "_SeVa"
 
         # Replace insolation kernel
         # See Wikipedia Solar Irradiance

@@ -62,9 +62,10 @@ def run_all_outputs(outputs, outdir):
             f.write(summary)
 
 class OutPut:
-    def __init__(self):
-        self.axes_funcs = [] # List of functions to plot on axes_funcs (returns nothing)
-        self.summaries = [] # List of functions to write summaries (returns strings)
+    def __init__(self): pass
+
+    summaries = [] # List of functions to plot on axes_funcs (returns nothing)
+    axes_funcs = [] # List of functions to write summaries (returns strings)
 
     def initialize(self, model): pass
     def step(self, model, i): pass
@@ -72,7 +73,6 @@ class OutPut:
     
 class DefaultOutput(OutPut):
     def __init__(self):
-        super().__init__()
         self.Tg_series = []
         self.diags = {} # Diagnostics
     
@@ -191,7 +191,6 @@ class DefaultOutput(OutPut):
 
 class TimeSeriesOutput(OutPut):
     def __init__(self, vline=False):
-        super().__init__()
         self.Tg_series = []
         self.vline = vline
 
@@ -216,7 +215,6 @@ class TimeSeriesOutput(OutPut):
 
 class SeasonalOutput(OutPut):
     def __init__(self):
-        super().__init__()
         self.history = []
 
     def initialize(self, model):
