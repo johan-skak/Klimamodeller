@@ -7,7 +7,7 @@ CONFIG_FILE = 'config.json'
 
 if __name__ == "__main__":
     # Default config
-    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results", "Forcing": False}
+    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
     # Read config from file if it exists and update defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
@@ -27,8 +27,6 @@ if __name__ == "__main__":
             modes_list.append(getattr(modes, mode_name)())
         else:
             raise ValueError(f"Unknown mode: {mode_name}")
-    if not config["modes"]:
-        config["Forcing"] = True # Default to forcing if no modes
 
     # Gather outputs from modes
     outputs_list = [o for m in modes_list for o in m.outputs]
