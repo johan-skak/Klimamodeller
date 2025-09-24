@@ -115,8 +115,8 @@ def meridional_transport_PW(T, x, D):
     dTdx = np.r_[0, (T[1:] - T[:-1]) / (x[1] - x[0]), 0]
     x_borders = np.r_[-1, (x[1:] + x[:-1]) / 2, 1]
     flux = - D * (1.0 - x_borders**2) * dTdx                    # W/m² (per-area heat flux)
-    HMTrans = 2.0 * np.pi * R_EARTH**2 * flux                 # W (zonal integral around latitude circle)
-    return np.arcsin(x_borders) / np.pi * 180, HMTrans / 1e15                            # PW
+    MHTrans = 2.0 * np.pi * R_EARTH**2 * flux                 # W (zonal integral around latitude circle)
+    return np.arcsin(x_borders) / np.pi * 180, MHTrans / 1e15                            # PW
 
 @Input
 def global_mean(T):
