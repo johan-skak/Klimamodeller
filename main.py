@@ -12,6 +12,9 @@ if __name__ == "__main__":
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
             config |= json.load(f)
+    
+    if config["ctrl_years"] < 0: # Default to half simulation without forcing
+        config["ctrl_years"] = config["years"]//2
 
     # Default parameters
     params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0,

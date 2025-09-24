@@ -11,8 +11,6 @@ class ClimateModel:
         self.outputs = outputs
         self.funcs = {name: func for name, func in vars(phys).items() if callable(func)} # Physics functions
         for m in self.modes: m.check_compatibility(self.modes)
-        if self.config["ctrl_years"] < 0: # Default to half simulation without forcing
-            self.config["ctrl_years"] = self.config["years"]//2
 
     def run(self):
         # Let modes modify config/params/T/funcs as needed
