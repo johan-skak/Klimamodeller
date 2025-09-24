@@ -236,6 +236,16 @@ class SeasonalOutput(OutPut):
     def finalize(self, model):
         self.axes_funcs = [self.panel1, self.panel2]
 
+    #Should have the following panels
+    #1: Temperature profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
+        #Give also global mean maximum and minimum dates and values
+    #2: OLR profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
+    #3: Planetary albedo profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
+    #4: Meridional Heat Transport profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
+    #5: Heat Flux Convergence profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
+    #6: Last year temperature series: global, equator, Denmark, north pole, south pole
+    #Global mean temperature series is accesed via TimeSeriesOutput; thus no panel
+
     def panel1(self, ax):
         # Example: plot last temperature profile
         ax.plot(self.lat, self.T[-1])
@@ -248,3 +258,9 @@ class SeasonalOutput(OutPut):
         ax.plot(self.t, self.T)
         ax.set_title("Temperature near Denmark (56°N) over time")
         ax.set_xlabel("Time (years)"); ax.set_ylabel("°C")
+
+    #Summary should contain
+    #1: (Config:) Modes on (SeVa, boolean with or without SeaDepth), years run, grid points, time step
+    #2: Global mean temperature over last year with (time) min and max in parentheses
+    #3: Same for equator, Denmark, north pole, south pole
+    #4: Global mean OLR, albedo, diffusivity over last year
