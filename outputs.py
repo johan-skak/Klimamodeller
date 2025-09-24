@@ -76,46 +76,56 @@ class DefaultOutput(OutPut):
     diags = {} # Diagnostics
     
     def initialize(self, model):
-        self.diags["_init"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
+        self.diags["init"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
         self.x = model.x
         self.lat = np.degrees(np.arcsin(self.x))
 
     def step(self, model, i):
         if i+1 == model.nsteps//2:
-            self.diags["_mid"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
+            self.diags["mid"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
 
     def finalize(self, model):
-        self.diags["_end"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
-        self.dt_global = self.diags["_end"]["T_mean"] - self.diags["_mid"]["T_mean"]
-        self.polar_ampl = (self.diags["_end"]["T_poles"][1] - self.diags["_mid"]["T_poles"][1] - self.dt_global) / self.dt_global if self.dt_global != 0 else np.nan
+        self.diags["end"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
+        self.dt_global = self.diags["end"]["T_mean"] - self.diags["mid"]["T_mean"]
+        self.polar_ampl = (self.diags["end"]["T_poles"][1] - self.diags["mid"]["T_poles"][1] - self.dt_global) / self.dt_global if self.dt_global != 0 else np.nan
         self.lat_ext = np.r_[-90, self.lat, 90]
-        for case in ["_mid", "_end", "_init"]:
+        for case in ["mid", "end", "init"]:
             self.diags[case]["T_ext"] = np.r_[self.diags[case]["T_poles"][0], self.diags[case]["T"], self.diags[case]["T_poles"][1]]
         # Finally set up axes_funcs and summaries
         self.axes_funcs = [self.panel1, self.panel2, self.panel3, self.panel4, self.panel5, self.panel6]
         self.summaries = [self.summarize(model, self.diags)]
     
     def summarize(self, model, diags):
+        T_ctrl_red = T_forc_red = end_fmt = "\033[0m"
+        if diags['mid']['T_mean'] > 273.15 + 40:
+            T_ctrl_red = "\033[31m"
+        elif diags['mid']['T_mean'] < 273.15:
+            T_ctrl_red = "\033[34m"
+        if diags['end']['T_mean'] > 273.15 + 40:
+            T_forc_red = "\033[31m"
+        elif diags['end']['T_mean'] < 273.15:
+            T_forc_red = "\033[34m"
+
         return textwrap.dedent(f"""
         Years (control, forced): ({model.config['ctrl_years']}, {model.config['years']-model.config['ctrl_years']})
         Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
-        Control global mean T (°C): {diags['_mid']['T_mean']-273.15:.1f}
-        Forced  global mean T (°C): {diags['_end']['T_mean']-273.15:.1f}
-        ΔT global (°C): {diags['_end']['T_mean']-diags['_mid']['T_mean']:.2f}
+        Control global mean T (°C): {T_ctrl_red}{diags['mid']['T_mean']-273.15:.1f}{end_fmt}
+        Forced  global mean T (°C): {T_forc_red}{diags['end']['T_mean']-273.15:.1f}{end_fmt}
+        ΔT global (°C): {diags['end']['T_mean']-diags['mid']['T_mean']:.2f}
 
-        North pole T control / forced (°C): {diags['_mid']['T_poles'][1]-273.15:.1f} / {diags['_end']['T_poles'][1]-273.15:.1f}
+        North pole T control / forced (°C): {diags['mid']['T_poles'][1]-273.15:.1f} / {diags['end']['T_poles'][1]-273.15:.1f}
         North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): {self.polar_ampl:.3f}
 
-        Outgoing longwave radiation (OLR) control / forced (W m⁻²): {diags['_mid']['olr'].mean():.0f} / {diags['_end']['olr'].mean():.0f}
-        Planetary albedo control / forced: {np.average(diags['_mid']['alpha'], weights=diags['_mid']['Q_x']):.3f} / {np.average(diags['_end']['alpha'], weights=diags['_end']['Q_x']):.3f}
-        Diffusivity control / forced (W m⁻² K⁻¹): {diags['_mid']['D']:.3f} / {diags['_end']['D']:.3f}
+        Outgoing longwave radiation (OLR) control / forced (W m⁻²): {diags['mid']['olr'].mean():.0f} / {diags['end']['olr'].mean():.0f}
+        Planetary albedo control / forced: {np.average(diags['mid']['alpha'], weights=diags['mid']['Q_x']):.3f} / {np.average(diags['end']['alpha'], weights=diags['end']['Q_x']):.3f}
+        Diffusivity control / forced (W m⁻² K⁻¹): {diags['mid']['D']:.3f} / {diags['end']['D']:.3f}
         """)
 
     # Panel 1: Temperature profiles  (°C)
     def panel1(self, ax):
         """Plot initial, control and final temperature profiles."""
-        for case, label in zip(["_mid", "_end", "_init"], ["Control", "Final", "Initial"]):
+        for case, label in zip(["mid", "end", "init"], ["Control", "Final", "Initial"]):
             ax.plot(self.lat_ext, self.diags[case]["T_ext"], label=label)
         ax.set_title("Temperature profile")
         ax.set_ylabel("°C")
@@ -123,35 +133,35 @@ class DefaultOutput(OutPut):
     # Panel 2: OLR profiles (W/m²)
     def panel2(self, ax):
         """Plot control and final OLR profiles."""
-        ax.plot(self.lat, self.diags["_mid"]['olr'], label='Control')
-        ax.plot(self.lat, self.diags["_end"]['olr'], label='Forced')
+        ax.plot(self.lat, self.diags["mid"]['olr'], label='Control')
+        ax.plot(self.lat, self.diags["end"]['olr'], label='Forced')
         ax.set_title('Outgoing Longwave Radiation (OLR)'); ax.set_ylabel('W/m²')
         self.Stylize(ax)
     # Panel 3: Albedo profiles
     def panel3(self, ax):
         """Plot control and final albedo profiles."""
-        ax.plot(self.lat, self.diags["_mid"]['alpha'], label='Control')
-        ax.plot(self.lat, self.diags["_end"]['alpha'], label='Forced')
+        ax.plot(self.lat, self.diags["mid"]['alpha'], label='Control')
+        ax.plot(self.lat, self.diags["end"]['alpha'], label='Forced')
         ax.set_title('Planetary Albedo'); ax.set_ylabel('Albedo')
         self.Stylize(ax)
     # Panel 4: Meridional heat transport (PW)
     def panel4(self, ax):
         """Plot control and final meridional heat transport profiles."""
-        ax.plot(self.diags["_mid"]['MHTrans_PW'][0], self.diags["_mid"]['MHTrans_PW'][1], label='Control')
-        ax.plot(self.diags["_end"]['MHTrans_PW'][0], self.diags["_end"]['MHTrans_PW'][1], label='Forced')
+        ax.plot(self.diags["mid"]['MHTrans_PW'][0], self.diags["mid"]['MHTrans_PW'][1], label='Control')
+        ax.plot(self.diags["end"]['MHTrans_PW'][0], self.diags["end"]['MHTrans_PW'][1], label='Forced')
         ax.set_title('Meridional Heat Transport'); ax.set_ylabel('PW (10¹⁵ W)')
         self.Stylize(ax)
     # Heat flux convergence (W/m²)
     def panel5(self, ax):
         """Plot control and final heat flux convergence profiles."""
-        ax.plot(self.lat, self.diags["_mid"]['conv'], label='Control')
-        ax.plot(self.lat, self.diags["_end"]['conv'], label='Forced')
+        ax.plot(self.lat, self.diags["mid"]['conv'], label='Control')
+        ax.plot(self.lat, self.diags["end"]['conv'], label='Forced')
         ax.set_title('Heat Flux Convergence'); ax.set_ylabel('W/m²')
         self.Stylize(ax)
     # Change in zonal mean temperature (°C) + polar amplification
     def panel6(self, ax):
         """Plot change in zonal mean temperature profile."""
-        dT_ext = self.diags["_end"]['T_ext'] - self.diags["_mid"]['T_ext']
+        dT_ext = self.diags["end"]['T_ext'] - self.diags["mid"]['T_ext']
         ax.plot(self.lat_ext, dT_ext, label='Forced - Control')
         ax.set_title('Change in Zonal Mean Temperature'); ax.set_ylabel('ΔT (K)')
         self.Stylize(ax)

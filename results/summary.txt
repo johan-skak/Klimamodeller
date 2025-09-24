@@ -3,8 +3,8 @@
 Years (control, forced): (500, 500)
 Grid points nx: 200, Δt (years): 1
 
-Control global mean T (°C): 15.1
-Forced  global mean T (°C): 18.5
+Control global mean T (°C): [0m15.1[0m
+Forced  global mean T (°C): [0m18.5[0m
 ΔT global (°C): 3.37
 
 North pole T control / forced (°C): -13.8 / -7.5
