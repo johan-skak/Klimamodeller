@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import textwrap # For dedenting summary text
-import os
+import os, datetime
 from matplotlib.ticker import FixedLocator # For custom minor ticks
 import physics as phys
 
@@ -306,9 +306,24 @@ class SeasonalOutput(OutPut):
 
     # ---- Summary ----
     def summarize(self, model):
-        t_last = self.t_last
+        t = self.t_last
+
+        def _date_from_fraction(frac):
+            """Convert a fraction of a year since spring equinox to a date string."""
+            # Anchor on March 21 of an arbitrary year (say year 2000, leap-safe)
+            start = datetime.date(2000, 3, 21)
+            days_in_year = 365
+            offset_days = int(round(frac * days_in_year))
+            date = start + datetime.timedelta(days=offset_days)
+            return date.strftime("%b %d")
+        
         def fmt(series):
-            return f"{series.mean():>6.2f}°C (min {series.min():>5.1f} at {t_last[series.argmin()]%1:>4.2f}y, max {series.max():>5.1f} at {t_last[series.argmax()]%1:>4.2f}y)"
+            min_idx, max_idx = series.argmin(), series.argmax()
+            min_time = t[min_idx] % 1   # fractional year since last equinox
+            max_time = t[max_idx] % 1
+            return (f"{series.mean():>6.2f}°C "
+                    f"(min {series.min():>5.1f} on {_date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
+                    f"max {series.max():>5.1f} on {_date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
 
         global_T = self.last["T"].mean(axis=1) - 273.15
         equator_T = self.last["T"][:, self.locs["Equator"]] - 273.15

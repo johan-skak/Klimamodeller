@@ -10,6 +10,7 @@ class ClimateModel:
         self.modes = modes
         self.outputs = outputs
         self.funcs = {name: func for name, func in vars(phys).items() if callable(func)} # Physics functions
+        self.C = phys.C # Heat capacity may be changed
         for m in self.modes: m.check_compatibility(self.modes)
 
     def run(self):
@@ -31,7 +32,7 @@ class ClimateModel:
         
         for i in range(self.nsteps):
             # Evolve model one step
-            self.T = self.update_temperature(self.T, self.x, self.dt, self.params, self.funcs, i)
+            self.T = self.update_temperature(self.T, self.x, self.params, self.funcs, i)
 
             # Modes hook
             for m in self.modes: m.step(self, i)
@@ -43,7 +44,7 @@ class ClimateModel:
         for m in self.modes: m.finalize(self)
         for o in self.outputs: o.finalize(self)
 
-    def update_temperature(self, T, x, dt, params, funcs, i):
+    def update_temperature(self, T, x, params, funcs, i):
         # Explicit radiative terms
         Q_x = funcs['Q_x'](x, params['S'], model=self, i=i) # The model and i arguments are ignored in default mode but necessary for other modes
         alpha = funcs['albedo_from_T'](T, x, params['k1'], model=self, i=i)
@@ -58,7 +59,7 @@ class ClimateModel:
         # Build L and do Crank–Nicolson step
         aL, bL, cL = funcs['build_diffusion_tridiag'](x, D)
         LT = funcs['apply_L_to_T'](aL, bL, cL, T)
-        coef = dt / phys.C
+        coef = self.dt / self.C
         rhs = T + 0.5 * coef * LT + coef * rad_term
         aA = -0.5 * coef * aL
         bA =  1.0 - 0.5 * coef * bL

@@ -4,11 +4,11 @@
 Modes: ['SeasonalVariation']
 Years run: 100, grid points: 200, Δt (years): 1 / 48
 
-Global mean temperature:  15.76°C (min  15.8 at 0.35y, max  15.8 at 0.60y)
-Equator temperature:      28.67°C (min  28.6 at 0.38y, max  28.7 at 0.10y)
-Denmark (56°N):            2.08°C (min   1.4 at 0.00y, max   2.8 at 0.48y)
-North pole:              -11.85°C (min -12.4 at 0.04y, max -11.3 at 0.44y)
-South pole:              -11.84°C (min -12.4 at 0.54y, max -11.3 at 0.94y)
+Global mean temperature:  15.76°C (min  15.8 on Jul 28 (0.35y), max  15.8 on Oct 28 (0.60y))
+Equator temperature:      28.67°C (min  28.6 on Aug 05 (0.38y), max  28.7 on Apr 28 (0.10y))
+Denmark (56°N):            2.08°C (min   1.4 on Mar 21 (0.00y), max   2.8 on Sep 12 (0.48y))
+North pole:              -11.85°C (min -12.4 on Apr 05 (0.04y), max -11.3 on Aug 28 (0.44y))
+South pole:              -11.84°C (min -12.4 on Oct 05 (0.54y), max -11.3 on Feb 26 (0.94y))
 
 Last-year mean OLR:    240.9 W/m²
 Last-year mean albedo: 0.310
