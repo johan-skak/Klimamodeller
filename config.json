@@ -1,6 +1,6 @@
 {
     "years": 100,
-    "dt_years": 0.01,
+    "dt_years": 0.02,
     "nx": 200,
     "modes": ["SeasonalVariation"],
     "ctrl_years": 0

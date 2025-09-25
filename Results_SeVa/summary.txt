@@ -2,13 +2,13 @@
 === EBM Summary ===
 === Seasonal Diagnostics (last year) ===
 Modes: ['SeasonalVariation']
-Years run: 100, grid points: 200, Δt (years): 1 / 100
+Years run: 100, grid points: 200, Δt (years): 1 / 50
 
-Global mean temperature:  15.77°C (min  15.8 at 0.36y, max  15.8 at 0.61y)
-Equator temperature:      28.67°C (min  28.6 at 0.37y, max  28.7 at 0.12y)
-Denmark (56°N):            2.10°C (min   1.4 at 0.00y, max   2.8 at 0.48y)
-North pole:              -11.83°C (min -12.4 at 0.05y, max -11.2 at 0.44y)
-South pole:              -11.83°C (min -12.4 at 0.55y, max -11.2 at 0.94y)
+Global mean temperature:  15.76°C (min  15.8 at 0.36y, max  15.8 at 0.60y)
+Equator temperature:      28.67°C (min  28.6 at 0.36y, max  28.7 at 0.12y)
+Denmark (56°N):            2.09°C (min   1.4 at 0.00y, max   2.8 at 0.48y)
+North pole:              -11.85°C (min -12.4 at 0.04y, max -11.3 at 0.44y)
+South pole:              -11.84°C (min -12.4 at 0.54y, max -11.3 at 0.94y)
 
 Last-year mean OLR:    240.9 W/m²
 Last-year mean albedo: 0.310
