@@ -23,7 +23,7 @@ class SeasonalVariation(Mode):
             warn(f"Simulation time - \033[4m{years} > 1000 years\033[0m - is to large for reasonable run time. Has been set to fifty years.")
             model.config["years"] = 50
         model.config["years"] = int(years) if years >= 1 else 1 #Run a whole number of years; at least 1
-        model.config["dt_years"] = 1 / round(1 / dt_years)
+        model.config["dt_years"] = 1 / round(1 / dt_years / 4) / 4 #Should be 1 / num where num is divisible by 4
         model.config["output_dir"] += "_SeVa" #Modify output directory name
 
         # Replace insolation kernel
