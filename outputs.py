@@ -223,8 +223,7 @@ class TimeSeriesOutput(OutPut):
 class SeasonalOutput(OutPut):
     def __init__(self):
         self.t = []
-        self.series = {key: [] for key in ["T", "olr", "alpha", "conv", "MHTrans_PW", "D"]} # Dictionary of time series
-    T = [] # temperature in K
+        self.series = {key: [] for key in ["T", "olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x"]} # Dictionary of time series #Delete Q_x
 
     def initialize(self, model):
         self.x = model.x
@@ -233,11 +232,9 @@ class SeasonalOutput(OutPut):
 
     def step(self, model, i):
         self.t.append((i+1) * self.dt)
-        T = model.T - 273.15
-        self.T.append(T.copy())
         diags = DefaultOutput().simulation_diagnostics(model.funcs, model.x, model.T, model.params, model=model, i=i)
         self.series["T"].append(model.T.copy())
-        for key in ["olr", "alpha", "conv", "MHTrans_PW", "D"]:
+        for key in ["olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x"]: #Delete Q_x
             self.series[key].append(diags[key])
 
     def finalize(self, model):
@@ -246,8 +243,8 @@ class SeasonalOutput(OutPut):
             self.series[key] = np.array(self.series[key])
 
         # Extract last year
-        steps_per_year = int(np.ceil(1 / self.dt))
-        last_slice = slice(-steps_per_year, None)
+        steps_per_year = int(round(1 / self.dt)) #Already a whole number up to machine precision
+        last_slice = slice(-steps_per_year-1, None)
         self.last = {key: arr[last_slice] for key, arr in self.series.items()}
         self.t_last = np.array(self.t[last_slice])
 
@@ -270,7 +267,7 @@ class SeasonalOutput(OutPut):
         }
 
         self.axes_funcs = [self.panel1, self.panel2, self.panel3,
-                           self.panel4, self.panel5, self.panel6, self.panel7]
+                           self.panel4, self.panel5, self.panel8, self.panel9, self.panel6] #Delete 8 & 89
         self.summaries = [self.summarize(model)]
 
     # ---- Panels ----
@@ -290,26 +287,28 @@ class SeasonalOutput(OutPut):
     def panel3(self, ax): self._plot_profiles(ax, "alpha", "Albedo", "Seasonal Albedo Profiles")
     def panel4(self, ax): self._plot_profiles(ax, "MHTrans_PW", "PW (10¹⁵ W)", "Seasonal Meridional Heat Transport")
     def panel5(self, ax): self._plot_profiles(ax, "conv", "W/m²", "Seasonal Heat Flux Convergence")
+    def panel8(self, ax): self._plot_profiles(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance") #Delete
 
     def panel6(self, ax):
         for name, idx in self.locs.items():
-            series = (self.last["T"].mean(axis=1) if idx is None else self.last["T"][:, idx]) - 273.15
+            mean_temp = self.last["T"].mean() if idx is None else self.last["T"][:, idx].mean()
+            series = (self.last["T"].mean(axis=1) if idx is None else self.last["T"][:, idx])-mean_temp
             ax.plot(self.t_last, series, label=name)
-        ax.set_title("Seasonal Temperature Time Series (last year)")
+        ax.set_title("Seasonal Temperature Change Time Series (last year)")
         ax.set_xlabel("Time (years)"); ax.set_ylabel("°C"); ax.legend(); ax.grid(True)
-    
-    def panel7(self, ax):
-        # Example: plot temperature near Denmark (lat ~ 56°N) over time
-        lat_idx = np.argmin(np.abs(self.lat - 56))
-        ax.plot(self.t, self.T)
-        ax.set_title("Temperature near Denmark (56°N) over time")
-        ax.set_xlabel("Time (years)"); ax.set_ylabel("°C")
+        
+    def panel9(self, ax): #Delete
+        for name, idx in self.locs.items():
+            series = (self.last["Q_x"].mean(axis=1) if idx is None else self.last["Q_x"][:, idx])
+            ax.plot(self.t_last, series, label=name)
+        ax.set_title("Seasonal Solar Irradiance Time Series (last year)")
+        ax.set_xlabel("Time (years)"); ax.set_ylabel("W/m²"); ax.legend(); ax.grid(True)
 
     # ---- Summary ----
     def summarize(self, model):
         t_last = self.t_last
         def fmt(series):
-            return f"{series.mean():.2f}°C (min {series.min():.1f} at {t_last[series.argmin()]:.2f}y, max {series.max():.1f} at {t_last[series.argmax()]:.2f}y)"
+            return f"{series.mean():>6.2f}°C (min {series.min():>5.1f} at {t_last[series.argmin()]%1:>4.2f}y, max {series.max():>5.1f} at {t_last[series.argmax()]%1:>4.2f}y)"
 
         global_T = self.last["T"].mean(axis=1) - 273.15
         equator_T = self.last["T"][:, self.locs["Equator"]] - 273.15
@@ -320,7 +319,7 @@ class SeasonalOutput(OutPut):
         return textwrap.dedent(f"""
         === Seasonal Diagnostics (last year) ===
         Modes: {model.config.get("modes")}
-        Years run: {model.config["years"]}, grid points: {model.config["nx"]}, Δt (years): {self.dt}
+        Years run: {model.config["years"]}, grid points: {model.config["nx"]}, Δt (years): 1 / {round(1 / self.dt)}
         
         Global mean temperature: {fmt(global_T)}
         Equator temperature:     {fmt(equator_T)}
@@ -328,7 +327,7 @@ class SeasonalOutput(OutPut):
         North pole:              {fmt(north_T)}
         South pole:              {fmt(south_T)}
 
-        Last-year mean OLR:   {self.last['olr'].mean():.1f} W/m²
-        Last-year mean albedo:{self.last['alpha'].mean():.3f}
-        Last-year mean D:     {self.last['D'].mean():.3f} W m⁻² K⁻¹
+        Last-year mean OLR:    {self.last['olr'].mean():.1f} W/m²
+        Last-year mean albedo: {self.last['alpha'].mean():.3f}
+        Last-year mean D:      {self.last['D'].mean():.3f} W m⁻² K⁻¹
         """)

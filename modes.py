@@ -23,12 +23,13 @@ class SeasonalVariation(Mode):
             warn(f"Simulation time - \033[4m{years} > 1000 years\033[0m - is to large for reasonable run time. Has been set to fifty years.")
             model.config["years"] = 50
         model.config["years"] = int(years) if years >= 1 else 1 #Run a whole number of years; at least 1
+        model.config["dt_years"] = 1 / round(1 / dt_years)
         model.config["output_dir"] += "_SeVa" #Modify output directory name
 
         # Replace insolation kernel
         # See Wikipedia Solar Irradiance
         def seasonal_Q(x, S, model, i):
-            t = i * model.config["dt_years"]  # time in years
+            t = (i+1) * model.config["dt_years"]  # time in years
             eps = np.deg2rad(23.44) # obliquity
             theta = 2 * np.pi * t   # annual angle
             delta = np.arcsin(np.sin(eps) * np.sin(theta)) # Current declination δ = sin⁻¹(sin ε sin θ)
