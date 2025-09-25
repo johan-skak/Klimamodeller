@@ -23,7 +23,7 @@ class ClimateModel:
         self.T = phys.T_init(self.x, self.params["T0"])  # Initial temperature profile (K)
 
         self.dt = self.config["dt_years"] * phys.SECONDS_PER_YEAR # time step in seconds
-        self.nsteps = int(round(self.config["years"] / self.config["dt_years"]))
+        self.nsteps = int(np.ceil(self.config["years"] / self.config["dt_years"])) # Run for at least config["years"]
         self.ctrl_nsteps = int(round(self.config["ctrl_years"] / self.config["dt_years"]))
 
         # Let outputs collect initial data

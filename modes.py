@@ -13,13 +13,16 @@ class Mode:
 
 class SeasonalVariation(Mode):
     def initialize(self, model):
+        years = model.config["years"]
+        dt_years = model.config["dt_years"]
         # Override config if necessary
-        if model.config["dt_years"] > 1/12: # is a problem with default settings
-            warn(f"Time step - \033[4m{model.config["dt_years"]} > 1/12 years\033[0m - is to large to capture seasonal variation. Has been set to half a month.")
+        if dt_years > 1/12: # is a problem with default settings
+            warn(f"Time step - \033[4m{dt_years} > 1/12 years\033[0m - is to large to capture seasonal variation. Has been set to half a month.")
             model.config["dt_years"] = 1/24 # half monthly steps
-        if model.config["years"] > 1000: # too long computation time # not relevant with default settings
-            warn(f"Simulation time - \033[4m{model.config["years"]} > 1000 years\033[0m - is to large for reasonable run time. Has been set to fifty years.")
+        if years > 1000: # too long computation time # not relevant with default settings
+            warn(f"Simulation time - \033[4m{years} > 1000 years\033[0m - is to large for reasonable run time. Has been set to fifty years.")
             model.config["years"] = 50
+        model.config["years"] = int(years) if years >= 1 else 1 #Run a whole number of years; at least 1
         model.config["output_dir"] += "_SeVa" #Modify output directory name
 
         # Replace insolation kernel

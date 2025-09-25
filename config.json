@@ -1,5 +1,7 @@
 {
-    "years": 1000,
-    "dt_years": 1,
-    "nx": 200
+    "years": 50,
+    "dt_years": 0.0466,
+    "nx": 200,
+    "modes": ["SeasonalVariation"],
+    "ctrl_years": 0
 }
