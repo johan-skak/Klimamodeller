@@ -178,22 +178,22 @@ class DefaultOutput(OutPut):
         ax.xaxis.set_minor_locator(FixedLocator(minor_ticks))
         ax.grid(True, which='minor', linestyle=':', alpha=0.6)
     
-    def simulation_diagnostics(self, funcs, x, T, params):
+    def simulation_diagnostics(self, funcs, x, T, params, model=None, i=0):
         """Calculate diagnostics from temperature profile T (K) at x = sin(lat) with model parameters params.
 
         Returns
             dict: diagnostic values
         """
-        alpha = funcs['albedo_from_T'](T, x, k1=params['k1'])
-        dTloc = funcs['deltaT_of_Ts'](T, k3=params['k3'])
+        alpha = funcs['albedo_from_T'](T, x, k1=params['k1'], model=model, i=i)
+        dTloc = funcs['deltaT_of_Ts'](T, k3=params['k3'], model=model, i=i)
         olr = phys.SIGMA * (T - dTloc)**4
         D = params['D0'] * max(0.5, 1.0 + params['k2'] * (funcs['global_mean'](T) - phys.T00))
         aL, bL, cL = funcs['build_diffusion_tridiag'](x, D)
         conv = funcs['apply_L_to_T'](aL, bL, cL, T)     # W/m² (convergence)
-        MHTrans_PW = funcs['meridional_transport_PW'](T, x, D) # PW = 10^15 W
-        T_mean = funcs['global_mean'](T)
-        T_poles = funcs['poles_temperature'](T)
-        Q_x = funcs['Q_x'](x, params['S'])
+        MHTrans_PW = funcs['meridional_transport_PW'](T, x, D, model=model, i=i) # PW = 10^15 W
+        T_mean = funcs['global_mean'](T, model=model, i=i)
+        T_poles = funcs['poles_temperature'](T, model=model, i=i)
+        Q_x = funcs['Q_x'](x, params['S'], model=model, i=i)
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
 
 class TimeSeriesOutput(OutPut):
@@ -221,46 +221,114 @@ class TimeSeriesOutput(OutPut):
             ax.legend()
 
 class SeasonalOutput(OutPut):
-    t = [] # time in years
+    def __init__(self):
+        self.t = []
+        self.series = {key: [] for key in ["T", "olr", "alpha", "conv", "MHTrans_PW", "D"]} # Dictionary of time series
     T = [] # temperature in K
 
     def initialize(self, model):
         self.x = model.x
         self.lat = np.degrees(np.arcsin(self.x))
+        self.dt = model.config["dt_years"]
 
     def step(self, model, i):
+        self.t.append((i+1) * self.dt)
         T = model.T - 273.15
-        self.t.append(i*model.config["dt_years"])
         self.T.append(T.copy())
+        diags = DefaultOutput().simulation_diagnostics(model.funcs, model.x, model.T, model.params, model=model, i=i)
+        self.series["T"].append(model.T.copy())
+        for key in ["olr", "alpha", "conv", "MHTrans_PW", "D"]:
+            self.series[key].append(diags[key])
 
     def finalize(self, model):
-        self.axes_funcs = [self.panel1, self.panel2]
+        # Convert to numpy arrays
+        for key in self.series:
+            self.series[key] = np.array(self.series[key])
 
-    #Should have the following panels
-    #1: Temperature profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
-        #Give also global mean maximum and minimum dates and values
-    #2: OLR profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
-    #3: Planetary albedo profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
-    #4: Meridional Heat Transport profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
-    #5: Heat Flux Convergence profiles at end: spring equinox, summer solstice, autumn equinox, winter solstice
-    #6: Last year temperature series: global, equator, Denmark, north pole, south pole
-    #Global mean temperature series is accesed via TimeSeriesOutput; thus no panel
+        # Extract last year
+        steps_per_year = int(np.ceil(1 / self.dt))
+        last_slice = slice(-steps_per_year, None)
+        self.last = {key: arr[last_slice] for key, arr in self.series.items()}
+        self.t_last = np.array(self.t[last_slice])
 
-    def panel1(self, ax):
-        # Example: plot last temperature profile
-        ax.plot(self.lat, self.T[-1])
-        ax.set_title(f"Seasonal profile at step {self.t[-1]}")
-        ax.set_xlabel("Latitude"); ax.set_ylabel("°C")
+        # Seasonal phases (relative indices into last-year arrays)
+        quarter = steps_per_year // 4
+        self.phases = {
+            "Spring eqx": 0,
+            "Summer sol": quarter,
+            "Autumn eqx": 2 * quarter,
+            "Winter sol": 3 * quarter,
+        }
+
+        # Locations of interest (indices along latitude)
+        self.locs = {
+            "Global mean": None,
+            "Equator": np.argmin(np.abs(self.lat - 0)),
+            "Denmark (56°N)": np.argmin(np.abs(self.lat - 56)),
+            "North pole": -1,
+            "South pole": 0,
+        }
+
+        self.axes_funcs = [self.panel1, self.panel2, self.panel3,
+                           self.panel4, self.panel5, self.panel6, self.panel7]
+        self.summaries = [self.summarize(model)]
+
+    # ---- Panels ----
+    def _plot_profiles(self, ax, field, ylabel, title):
+        for label, idx in self.phases.items():
+            data = self.last[field][idx]
+            if field == "MHTrans_PW":   # (x,y) tuple
+                ax.plot(data[0], data[1], label=label)
+            else:
+                values = data - 273.15 if field == "T" else data
+                ax.plot(self.lat, values, label=label)
+        ax.set_title(title); ax.set_ylabel(ylabel)
+        DefaultOutput.Stylize(self, ax)
+
+    def panel1(self, ax): self._plot_profiles(ax, "T", "°C", "Seasonal Temperature Profiles")
+    def panel2(self, ax): self._plot_profiles(ax, "olr", "W/m²", "Seasonal OLR Profiles")
+    def panel3(self, ax): self._plot_profiles(ax, "alpha", "Albedo", "Seasonal Albedo Profiles")
+    def panel4(self, ax): self._plot_profiles(ax, "MHTrans_PW", "PW (10¹⁵ W)", "Seasonal Meridional Heat Transport")
+    def panel5(self, ax): self._plot_profiles(ax, "conv", "W/m²", "Seasonal Heat Flux Convergence")
+
+    def panel6(self, ax):
+        for name, idx in self.locs.items():
+            series = (self.last["T"].mean(axis=1) if idx is None else self.last["T"][:, idx]) - 273.15
+            ax.plot(self.t_last, series, label=name)
+        ax.set_title("Seasonal Temperature Time Series (last year)")
+        ax.set_xlabel("Time (years)"); ax.set_ylabel("°C"); ax.legend(); ax.grid(True)
     
-    def panel2(self, ax):
+    def panel7(self, ax):
         # Example: plot temperature near Denmark (lat ~ 56°N) over time
         lat_idx = np.argmin(np.abs(self.lat - 56))
         ax.plot(self.t, self.T)
         ax.set_title("Temperature near Denmark (56°N) over time")
         ax.set_xlabel("Time (years)"); ax.set_ylabel("°C")
 
-    #Summary should contain
-    #1: (Config:) Modes on (SeVa, boolean with or without SeaDepth), years run, grid points, time step
-    #2: Global mean temperature over last year with (time) min and max in parentheses
-    #3: Same for equator, Denmark, north pole, south pole
-    #4: Global mean OLR, albedo, diffusivity over last year
+    # ---- Summary ----
+    def summarize(self, model):
+        t_last = self.t_last
+        def fmt(series):
+            return f"{series.mean():.2f}°C (min {series.min():.1f} at {t_last[series.argmin()]:.2f}y, max {series.max():.1f} at {t_last[series.argmax()]:.2f}y)"
+
+        global_T = self.last["T"].mean(axis=1) - 273.15
+        equator_T = self.last["T"][:, self.locs["Equator"]] - 273.15
+        denmark_T = self.last["T"][:, self.locs["Denmark (56°N)"]] - 273.15
+        north_T = self.last["T"][:, self.locs["North pole"]] - 273.15
+        south_T = self.last["T"][:, self.locs["South pole"]] - 273.15
+
+        return textwrap.dedent(f"""
+        === Seasonal Diagnostics (last year) ===
+        Modes: {model.config.get("modes")}
+        Years run: {model.config["years"]}, grid points: {model.config["nx"]}, Δt (years): {self.dt}
+        
+        Global mean temperature: {fmt(global_T)}
+        Equator temperature:     {fmt(equator_T)}
+        Denmark (56°N):          {fmt(denmark_T)}
+        North pole:              {fmt(north_T)}
+        South pole:              {fmt(south_T)}
+
+        Last-year mean OLR:   {self.last['olr'].mean():.1f} W/m²
+        Last-year mean albedo:{self.last['alpha'].mean():.3f}
+        Last-year mean D:     {self.last['D'].mean():.3f} W m⁻² K⁻¹
+        """)
