@@ -223,7 +223,7 @@ class TimeSeriesOutput(OutPut):
 class SeasonalOutput(OutPut):
     def __init__(self):
         self.t = []
-        self.series = {key: [] for key in ["T", "olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x"]} # Dictionary of time series #Delete Q_x
+        self.series = {key: [] for key in ["T", "olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x"]}
 
     def initialize(self, model):
         self.x = model.x
@@ -234,7 +234,7 @@ class SeasonalOutput(OutPut):
         self.t.append((i+1) * self.dt)
         diags = DefaultOutput().simulation_diagnostics(model.funcs, model.x, model.T, model.params, model=model, i=i)
         self.series["T"].append(model.T.copy())
-        for key in ["olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x"]: #Delete Q_x
+        for key in ["olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x"]:
             self.series[key].append(diags[key])
 
     def finalize(self, model):
@@ -266,8 +266,8 @@ class SeasonalOutput(OutPut):
             "South pole": 0,
         }
 
-        self.axes_funcs = [self.panel1, self.panel2, self.panel3,
-                           self.panel4, self.panel5, self.panel8, self.panel9, self.panel6] #Delete 8 & 89
+        self.axes_funcs = [self.panel1, self.panel2, self.panel3, self.panel4,
+                           self.panel5, self.panel6, self.panel7, self.panel8]
         self.summaries = [self.summarize(model)]
 
     # ---- Panels ----
@@ -287,22 +287,22 @@ class SeasonalOutput(OutPut):
     def panel3(self, ax): self._plot_profiles(ax, "alpha", "Albedo", "Seasonal Albedo Profiles")
     def panel4(self, ax): self._plot_profiles(ax, "MHTrans_PW", "PW (10¹⁵ W)", "Seasonal Meridional Heat Transport")
     def panel5(self, ax): self._plot_profiles(ax, "conv", "W/m²", "Seasonal Heat Flux Convergence")
-    def panel8(self, ax): self._plot_profiles(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance") #Delete
+    def panel6(self, ax): self._plot_profiles(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance")
+        
+    def panel7(self, ax):
+        for name, idx in self.locs.items():
+            series = (self.last["Q_x"].mean(axis=1) if idx is None else self.last["Q_x"][:, idx])
+            ax.plot(self.t_last, series, label=name)
+        ax.set_title("Seasonal Solar Irradiance Time Series (last year)")
+        ax.set_xlabel("Time (years)"); ax.set_ylabel("W/m²"); ax.legend(); ax.grid(True)
 
-    def panel6(self, ax):
+    def panel8(self, ax):
         for name, idx in self.locs.items():
             mean_temp = self.last["T"].mean() if idx is None else self.last["T"][:, idx].mean()
             series = (self.last["T"].mean(axis=1) if idx is None else self.last["T"][:, idx])-mean_temp
             ax.plot(self.t_last, series, label=name)
         ax.set_title("Seasonal Temperature Change Time Series (last year)")
         ax.set_xlabel("Time (years)"); ax.set_ylabel("°C"); ax.legend(); ax.grid(True)
-        
-    def panel9(self, ax): #Delete
-        for name, idx in self.locs.items():
-            series = (self.last["Q_x"].mean(axis=1) if idx is None else self.last["Q_x"][:, idx])
-            ax.plot(self.t_last, series, label=name)
-        ax.set_title("Seasonal Solar Irradiance Time Series (last year)")
-        ax.set_xlabel("Time (years)"); ax.set_ylabel("W/m²"); ax.legend(); ax.grid(True)
 
     # ---- Summary ----
     def summarize(self, model):

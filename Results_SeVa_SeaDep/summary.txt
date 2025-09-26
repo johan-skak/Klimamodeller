@@ -1,0 +1,16 @@
+
+=== EBM Summary ===
+=== Seasonal Diagnostics (last year) ===
+Modes: ['SeasonalVariation', 'VariableSeaDepth']
+Years run: 100, grid points: 200, Δt (years): 1 / 48
+
+Global mean temperature:  14.27°C (min  12.6 on Mar 13 (0.98y), max  15.8 on Sep 19 (0.50y))
+Equator temperature:      28.01°C (min  27.2 on Feb 11 (0.90y), max  29.3 on Oct 20 (0.58y))
+Denmark (56°N):           -1.83°C (min -12.0 on Mar 21 (0.00y), max   7.5 on Sep 12 (0.48y))
+North pole:              -16.99°C (min -31.0 on Mar 13 (0.98y), max  -4.6 on Aug 20 (0.42y))
+South pole:              -13.19°C (min -24.6 on Aug 28 (0.44y), max   1.8 on Jan 27 (0.85y))
+
+Last-year mean OLR:    238.3 W/m²
+Last-year mean albedo: 0.325
+Last-year mean D:      0.659 W m⁻² K⁻¹
+
