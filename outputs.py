@@ -294,29 +294,24 @@ class SeasonalOutput(OutPut):
         for name, idx in self.locs.items():
             series = (self.last["Q_x"].mean(axis=1) if idx is None else self.last["Q_x"][:, idx])
             ax.plot(self.t_last, series, label=name)
-        ax.set_title("Seasonal Solar Irradiance Time Series (last year)")
-        ax.set_xlabel("Time (years)"); ax.set_ylabel("W/m²"); ax.legend(); ax.grid(True)
+        ax.set_title("Seasonal Solar Irradiance Time Series")
+        ax.set_xticks(self.t_last[np.linspace(0,len(self.t_last)-1, 7, dtype=np.int16)])
+        ax.set_xticklabels([self.date_from_fraction(t) for t in np.linspace(0, 1, 7)])
+        ax.set_xlabel("Date (during the last simulated year)"); ax.set_ylabel("W/m²"); ax.legend(); ax.grid(True)
 
     def panel8(self, ax):
         for name, idx in self.locs.items():
             mean_temp = self.last["T"].mean() if idx is None else self.last["T"][:, idx].mean()
             series = (self.last["T"].mean(axis=1) if idx is None else self.last["T"][:, idx])-mean_temp
             ax.plot(self.t_last, series, label=name)
-        ax.set_title("Seasonal Temperature Change Time Series (last year)")
-        ax.set_xlabel("Time (years)"); ax.set_ylabel("°C"); ax.legend(); ax.grid(True)
+        ax.set_xticks(self.t_last[np.linspace(0,len(self.t_last)-1, 7, dtype=np.int16)])
+        ax.set_xticklabels([self.date_from_fraction(t) for t in np.linspace(0, 1, 7)])
+        ax.set_title("Seasonal Temperature Variation Time Series")
+        ax.set_xlabel("Date (during the last simulated year)"); ax.set_ylabel("°C"); ax.legend(); ax.grid(True)
 
     # ---- Summary ----
     def summarize(self, model):
         t = self.t_last
-
-        def _date_from_fraction(frac):
-            """Convert a fraction of a year since spring equinox to a date string."""
-            # Anchor on March 21 of an arbitrary year (say year 2000, leap-safe)
-            start = datetime.date(2000, 3, 21)
-            days_in_year = 365
-            offset_days = int(round(frac * days_in_year))
-            date = start + datetime.timedelta(days=offset_days)
-            return date.strftime("%b %d")
         
         def color_fmt(n, p=1):
             start_fmt = end_fmt = "\033[0m"
@@ -329,8 +324,8 @@ class SeasonalOutput(OutPut):
             min_time = t[min_idx] % 1   # fractional year since last equinox
             max_time = t[max_idx] % 1
             return (color_fmt(series.mean(), 2) + "°C " +
-                    "(min " + color_fmt(series.min()) + f" on {_date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
-                    f"max " + color_fmt(series.max()) + f" on {_date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
+                    "(min " + color_fmt(series.min()) + f" on {self.date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
+                    f"max " + color_fmt(series.max()) + f" on {self.date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
 
         global_T = self.last["T"].mean(axis=1) - 273.15
         equator_T = self.last["T"][:, self.locs["Equator"]] - 273.15
@@ -353,3 +348,12 @@ class SeasonalOutput(OutPut):
         Last-year mean albedo: {self.last['alpha'].mean():.3f}
         Last-year mean D:      {self.last['D'].mean():.3f} W m⁻² K⁻¹
         """)
+
+    def date_from_fraction(self, frac):
+        """Convert a fraction of a year since spring equinox to a date string."""
+        # Anchor on March 21 of an arbitrary year (say year 2000, leap-safe)
+        start = datetime.date(2000, 3, 21)
+        days_in_year = 365
+        offset_days = int(round(frac * days_in_year))
+        date = start + datetime.timedelta(days=offset_days)
+        return date.strftime("%b %d")
