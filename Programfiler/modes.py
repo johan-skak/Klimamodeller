@@ -47,6 +47,7 @@ class SeasonalVariation(Mode):
 class VariableSeaDepth(Mode):
     def initialize(self, model):
         model.config["output_dir"] += "_SeaDep" #Modify output directory name
+        del model.params["SD"] #Remove unused key from output
 
     def step(self, model, i):
         model.C = self.heat_capacity_profile(model.config["nx"], model.T, model.params["k1"])
