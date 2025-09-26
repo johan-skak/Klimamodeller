@@ -351,3 +351,27 @@ class SeasonalOutput(OutPut):
         offset_days = int(round(frac * days_in_year))
         date = start + datetime.timedelta(days=offset_days)
         return date.strftime("%b %d")
+
+class SeaDepthOutput(OutPut):
+    SeaDepths = [] # Series of sea depths
+
+    def step(self, model, i):
+        self.SeaDepths.append(model.C / phys.C_M)
+    
+    def finalize(self, model):
+        quarter = int(round(1 / model.config['dt_years'])) // 4
+        self.phases = {
+                "Spring eqx": 0,
+                "Summer sol": quarter,
+                "Autumn eqx": 2 * quarter,
+                "Winter sol": 3 * quarter,
+            }
+        self.lat = np.degrees(np.arcsin(model.x))
+        
+        self.axes_funcs = [self.panel]
+    
+    def panel(self, ax):
+        for label, idx in self.phases.items():
+            ax.plot(self.lat, self.SeaDepths[idx], label=label)
+        ax.set_title(r"Heat capacities based on ML depth and % of landmass"); ax.set_ylabel("m (equivalent water depth)")
+        DefaultOutput.Stylize(self, ax)

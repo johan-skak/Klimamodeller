@@ -39,6 +39,8 @@ class VariableSeaDepth(Mode):
 
     def step(self, model, i):
         model.C = phys.heat_capacity_profile(model.config["nx"], model.T, model.params["k1"])
+    
+    outputs = [outputs.SeaDepthOutput()]
 
 def warn(msg):
     """
