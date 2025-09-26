@@ -29,7 +29,7 @@ if __name__ == "__main__":
     modes_list = [] # Is a list of mode class instances
     for mode_name in config["modes"]:
         if hasattr(modes, mode_name):
-            modes_list.append(getattr(modes, mode_name)())
+            modes_list.append(getattr(modes, mode_name)(config["modes"])) # Some modes needs to know what other modes there are to choose correct outputs
         else:
             raise ValueError(f"Unknown mode: {mode_name}")
 

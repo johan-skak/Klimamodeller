@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.interpolate import CubicSpline
+
 
 # ---------------- Physical / model constants ----------------
 SIGMA = 5.67e-8                  # Stefan-Boltzmann (W/m²/K⁴)
@@ -90,7 +92,7 @@ def deltaT_of_Ts(Ts, k3):
     """Equation (13): δT(Ts) = DELTA_T0 + k3 (Ts - T00), with lower bound."""
     return np.maximum(DELTA_T0 + k3 * (Ts - T00), DELTA_T_MIN)
 
-def heat_capacity_profile(nx, T, k1):
+def heat_capacity_profile(x, T, k1):
     """
     Compute latitude-dependent effective heat capacities for a sin(lat)-spaced EBM grid.
     
@@ -123,19 +125,14 @@ def heat_capacity_profile(nx, T, k1):
         See references below. :contentReference[oaicite:0]{index=0}
     - Southern Hemisphere has greater ocean fraction than Northern Hemisphere; we reflect
         that asymmetry in f_ocean(lat). :contentReference[oaicite:1]{index=1}
-    """
-    T = np.asarray(T)
-    assert T.shape == (nx,), "T must be length nx"
-    
+    """    
     # physical constants
     rho = 1000.0        # kg/m^3
     cp = 4186.0         # J/kg/K
     h_land = 8.0        # m, land equivalent (water-equivalent), ~1/30 of deep-ocean reference
     
-    # latitude grid in sin(lat) space
-    x = np.linspace(-1.0, 1.0, nx)        # sin(latitude)
-    lat_rad = np.arcsin(x)                # radians
-    lat_deg = np.degrees(lat_rad)         # degrees, negative = southern hemisphere
+    # latitude in degrees from x = sin(lat)
+    lat_deg = np.degrees(np.arcsin(x))
     
     # --------------------------
     # Ocean mixed-layer depth profile (seasonal-scale, more nuance)
@@ -162,29 +159,36 @@ def heat_capacity_profile(nx, T, k1):
                         30.0])   # near North Pole (shallow seasonal ML do to fresh water)
     
     # interpolate mixed-layer depth onto grid
-    h_ocean = np.interp(lat_deg, lat_knots, h_knots)
+    interpolater = CubicSpline(lat_knots, h_knots, bc_type='clamped')
+    h_ocean = interpolater(lat_deg)
+
+    # # --------------------------
+    # # Asymmetric zonal ocean fraction f_ocean(lat)
+    # # Hard-coded (smooth) zonal ocean fraction knots. Values based on general land/ocean
+    # # geography: Southern hemisphere has more ocean (esp. 30S-60S), Northern hemisphere has
+    # # more land at mid-latitudes (Eurasia, North America). These are smooth, empirical values.
+    # # Source: qualitative/quantitative zonal land fraction diagrams (e.g. land-fraction vs latitude).
+    # lat_knots_f = np.array([-90, -70, -50, -30, -15, 0, 15, 30, 50, 70, 90])
+    # # zonal ocean fraction at knots (0..1). Southern hemisphere has systematically larger ocean fraction.
+    # f_ocean_knots = np.array([0.0,  # Continent/ice cap
+    #                         0.75,   # 70S -> Mostly Antarctic land, but surrounding Southern Ocean begins
+    #                         0.95,   # 50S -> Southern Ocean dominates
+    #                         0.8,  # 30S -> Still ocean-dominated, only S. America, Africa, Australia
+    #                         0.8,   # 15S -> Mostly ocean
+    #                         0.75,  # 0   -> Continents cut across (Africa, S. America, Indonesia)
+    #                         0.75,   # 15N -> Africa + Asia reduce ocean fraction
+    #                         0.55,   # 30N -> Subtropics: Africa, Asia, N. America
+    #                         0.4,  # 50N -> Eurasia + N. America dominate, but N. Atlantic/Pacific present
+    #                         0.65,  # 70N -> Arctic Ocean exists, though partly enclosed
+    #                         1.0])  # Central Arctic Ocean basin
+    data = np.loadtxt("ocean_fraction_by_latitude_5deg.csv", delimiter=",", skiprows=1)
+    lat_knots_f = data[:,0]
+    f_ocean_knots = data[:,1]
     
-    # --------------------------
-    # Asymmetric zonal ocean fraction f_ocean(lat)
-    # Hard-coded (smooth) zonal ocean fraction knots. Values based on general land/ocean
-    # geography: Southern hemisphere has more ocean (esp. 30S-60S), Northern hemisphere has
-    # more land at mid-latitudes (Eurasia, North America). These are smooth, empirical values.
-    # Source: qualitative/quantitative zonal land fraction diagrams (e.g. land-fraction vs latitude).
-    lat_knots_f = np.array([-90, -70, -50, -30, -15, 0, 15, 30, 50, 70, 90])
-    # zonal ocean fraction at knots (0..1). Southern hemisphere has systematically larger ocean fraction.
-    f_ocean_knots = np.array([0.0,  # Continent/ice cap
-                            0.2,   # 70S -> Mostly Antarctic land, but surrounding Southern Ocean begins
-                            0.9,   # 50S -> Southern Ocean dominates
-                            0.85,  # 30S -> Still ocean-dominated, only S. America, Africa, Australia
-                            0.8,   # 15S -> Mostly ocean
-                            0.75,  # 0   -> Continents cut across (Africa, S. America, Indonesia)
-                            0.7,   # 15N -> Africa + Asia reduce ocean fraction
-                            0.6,   # 30N -> Subtropics: Africa, Asia, N. America
-                            0.55,  # 50N -> Eurasia + N. America dominate, but N. Atlantic/Pacific present
-                            0.65,  # 70N -> Arctic Ocean exists, though partly enclosed
-                            1.0])  # Central Arctic Ocean basin
-    f_ocean = np.clip(np.interp(lat_deg, lat_knots_f, f_ocean_knots), 0.0, 1.0)
-    
+    # interpolate ocean fraction onto grid
+    interpolater = CubicSpline(lat_knots_f, f_ocean_knots, bc_type='clamped')
+    f_ocean = np.clip(interpolater(lat_deg), 0.0, 1.0)
+
     # --------------------------
     # --- Ice fraction (same formula as in albedo) ---
     # ice_fraction in [0,1]: 1 => full ice cover (ocean behaves like land shallow)

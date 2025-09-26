@@ -127,7 +127,7 @@ class DefaultOutput(OutPut):
     def panel1(self, ax):
         """Plot initial, control and final temperature profiles."""
         for case, label in zip(["mid", "end", "init"], ["Control", "Final", "Initial"]):
-            ax.plot(self.lat_ext, self.diags[case]["T_ext"], label=label)
+            ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label)
         ax.set_title("Temperature profile")
         ax.set_ylabel("°C")
         self.Stylize(ax)
@@ -353,10 +353,15 @@ class SeasonalOutput(OutPut):
         return date.strftime("%b %d")
 
 class SeaDepthOutput(OutPut):
-    SeaDepths = [] # Series of sea depths
+    T_ext = [] # Series of sea depths
+
+    def initialize(self, model):
+        self.k1 = model.params["k1"]
 
     def step(self, model, i):
-        self.SeaDepths.append(model.C / phys.C_M)
+        T = model.T.copy()
+        T_poles = model.funcs['poles_temperature'](T, model=model, i=i)
+        self.T_ext.append(np.r_[T_poles[0], T, T_poles[1]])
     
     def finalize(self, model):
         quarter = int(round(1 / model.config['dt_years'])) // 4
@@ -365,13 +370,16 @@ class SeaDepthOutput(OutPut):
                 "Summer sol": quarter,
                 "Autumn eqx": 2 * quarter,
                 "Winter sol": 3 * quarter,
-            }
-        self.lat = np.degrees(np.arcsin(model.x))
-        
+            } if "SeasonalVariation" in model.config["modes"] else {"": -1}
+        self.x_ext = np.r_[-1, model.x, 1]
+        self.lat_ext = np.degrees(np.arcsin(self.x_ext))
+
         self.axes_funcs = [self.panel]
     
     def panel(self, ax):
         for label, idx in self.phases.items():
-            ax.plot(self.lat, self.SeaDepths[idx], label=label)
+            ax.plot(self.lat_ext, phys.heat_capacity_profile(self.x_ext, self.T_ext[idx], self.k1) / phys.C_M, label=label)
         ax.set_title(r"Heat capacities based on ML depth and % of landmass"); ax.set_ylabel("m (equivalent water depth)")
         DefaultOutput.Stylize(self, ax)
+        if len(self.phases) == 1:
+            ax.legend_.remove()

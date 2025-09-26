@@ -3,7 +3,13 @@ import numpy as np
 import outputs
 import physics as phys
 
+def Ignore_model(func):
+    return lambda self, modes=None: func(self)
+
 class Mode:
+    @Ignore_model
+    def __init__(self):
+        pass
     def __str__(self):
         return self.__class__.__name__
     def initialize(self, model): pass
@@ -33,14 +39,17 @@ class SeasonalVariation(Mode):
     outputs = [outputs.SeasonalOutput(), outputs.TimeSeriesOutput()]
 
 class VariableSeaDepth(Mode):
+    def __init__(self, modes):
+        if len(modes) == 1:
+            self.outputs.extend([outputs.DefaultOutput(), outputs.TimeSeriesOutput(True)])
+        self.outputs.append(outputs.SeaDepthOutput())
+
     def initialize(self, model):
         model.config["output_dir"] += "_SeaDep" #Modify output directory name
         del model.params["SD"] #Remove unused key from output
 
     def step(self, model, i):
-        model.C = phys.heat_capacity_profile(model.config["nx"], model.T, model.params["k1"])
-    
-    outputs = [outputs.SeaDepthOutput()]
+        model.C = phys.heat_capacity_profile(model.x, model.T, model.params["k1"])
 
 def warn(msg):
     """
