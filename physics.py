@@ -69,6 +69,11 @@ def albedo_from_T(T, x, k1):
     return np.minimum(alpha, 0.7)
 
 @Input
+def diffusion_from_T(T, D0, k2):
+    # T er i default mode T.mean()
+    return D0 * max(0.5, 1.0 + k2 * (T - T00))
+
+@Input
 def deltaT_of_Ts(Ts, k3):
     """Equation (13): δT(Ts) = DELTA_T0 + k3 (Ts - T00), with lower bound."""
     return np.maximum(DELTA_T0 + k3 * (Ts - T00), DELTA_T_MIN)
@@ -117,10 +122,6 @@ def meridional_transport_PW(T, x, D):
     flux = - D * (1.0 - x_borders**2) * dTdx                    # W/m² (per-area heat flux)
     MHTrans = 2.0 * np.pi * R_EARTH**2 * flux                 # W (zonal integral around latitude circle)
     return np.arcsin(x_borders) / np.pi * 180, MHTrans / 1e15                            # PW
-
-@Input
-def global_mean(T):
-    return np.mean(T)
 
 @Input
 def poles_temperature(T):
