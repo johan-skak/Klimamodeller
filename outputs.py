@@ -272,7 +272,7 @@ class SeasonalOutput(OutPut):
         self.summaries = [self.summarize(model)]
 
     # ---- Panels ----
-    def _plot_profiles(self, ax, field, ylabel, title):
+    def plot_profiles(self, ax, field, ylabel, title):
         for label, idx in self.phases.items():
             data = self.last[field][idx]
             if field == "MHTrans_PW":   # (x,y) tuple
@@ -283,31 +283,25 @@ class SeasonalOutput(OutPut):
         ax.set_title(title); ax.set_ylabel(ylabel)
         DefaultOutput.Stylize(self, ax)
 
-    def panel1(self, ax): self._plot_profiles(ax, "T", "°C", "Seasonal Temperature Profiles")
-    def panel2(self, ax): self._plot_profiles(ax, "olr", "W/m²", "Seasonal OLR Profiles")
-    def panel3(self, ax): self._plot_profiles(ax, "alpha", "Albedo", "Seasonal Albedo Profiles")
-    def panel4(self, ax): self._plot_profiles(ax, "MHTrans_PW", "PW (10¹⁵ W)", "Seasonal Meridional Heat Transport")
-    def panel5(self, ax): self._plot_profiles(ax, "conv", "W/m²", "Seasonal Heat Flux Convergence")
-    def panel6(self, ax): self._plot_profiles(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance")
+    def panel1(self, ax): self.plot_profiles(ax, "T", "°C", "Seasonal Temperature Profiles")
+    def panel2(self, ax): self.plot_profiles(ax, "olr", "W/m²", "Seasonal OLR Profiles")
+    def panel3(self, ax): self.plot_profiles(ax, "alpha", "Albedo", "Seasonal Albedo Profiles")
+    def panel4(self, ax): self.plot_profiles(ax, "MHTrans_PW", "PW (10¹⁵ W)", "Seasonal Meridional Heat Transport")
+    def panel5(self, ax): self.plot_profiles(ax, "conv", "W/m²", "Seasonal Heat Flux Convergence")
+    def panel6(self, ax): self.plot_profiles(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance")
         
-    def panel7(self, ax):
+    def plot_time_series(self, ax, field, ylabel, title, mean_is_zero=False):
         for name, idx in self.locs.items():
-            series = (self.last["Q_x"].mean(axis=1) if idx is None else self.last["Q_x"][:, idx])
+            mean = self.last[field].mean() if idx is None else self.last[field][:, idx].mean() if mean_is_zero else 0
+            series = (self.last[field].mean(axis=1) if idx is None else self.last[field][:, idx])-mean
             ax.plot(self.t_last, series, label=name)
-        ax.set_title("Seasonal Solar Irradiance Time Series")
         ax.set_xticks(self.t_last[np.linspace(0,len(self.t_last)-1, 7, dtype=np.int16)])
         ax.set_xticklabels([self.date_from_fraction(t) for t in np.linspace(0, 1, 7)])
-        ax.set_xlabel("Date (during the last simulated year)"); ax.set_ylabel("W/m²"); ax.legend(); ax.grid(True)
+        ax.set_xlabel("Date (during the last simulated year)")
+        ax.set_title(title); ax.set_ylabel(ylabel); ax.legend(); ax.grid(True)
 
-    def panel8(self, ax):
-        for name, idx in self.locs.items():
-            mean_temp = self.last["T"].mean() if idx is None else self.last["T"][:, idx].mean()
-            series = (self.last["T"].mean(axis=1) if idx is None else self.last["T"][:, idx])-mean_temp
-            ax.plot(self.t_last, series, label=name)
-        ax.set_xticks(self.t_last[np.linspace(0,len(self.t_last)-1, 7, dtype=np.int16)])
-        ax.set_xticklabels([self.date_from_fraction(t) for t in np.linspace(0, 1, 7)])
-        ax.set_title("Seasonal Temperature Variation Time Series")
-        ax.set_xlabel("Date (during the last simulated year)"); ax.set_ylabel("°C"); ax.legend(); ax.grid(True)
+    def panel7(self, ax): self.plot_time_series(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance Time Series")
+    def panel8(self, ax): self.plot_time_series(ax, "T", "°C", "Seasonal Temperature Variation Time Series", mean_is_zero=True)
 
     # ---- Summary ----
     def summarize(self, model):
