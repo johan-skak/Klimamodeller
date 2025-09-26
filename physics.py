@@ -2,7 +2,7 @@ import numpy as np
 
 # ---------------- Physical / model constants ----------------
 SIGMA = 5.67e-8                  # Stefan-Boltzmann (W/m²/K⁴)
-C = 1.046e9                      # Heat capacity (J m⁻² K⁻¹), 250 m mixed layer
+C_M = 4184 * 999                   # Heat capacity per meter depth of water (J m⁻² K⁻¹ / m)
 SECONDS_PER_YEAR = 365 * 24 * 3600
 R_EARTH = 6.371e6                # m
 
@@ -15,7 +15,7 @@ DELTA_T_MIN = 10.0               # K (lower bound)
 A_PROFILE = 45.0                 # K
 
 # short description of the default parameters
-PARAM_DESCS = {"k1": "ice albedo sensitivity", "k2": "diffusivity sensitivity", "k3": "lapse rate sensitivity", "D0": "background diffusivity", "T0": "initial temperature", "S": "solar forcing", "F": "additional forcing"}
+PARAM_DESCS = {"k1": "ice albedo sensitivity", "k2": "diffusivity sensitivity", "k3": "lapse rate sensitivity", "D0": "background diffusivity", "T0": "initial temperature", "SD": "mixed layer sea depth", "S": "solar forcing", "F": "additional forcing"}
 
 # Wrapper to add model and i as optional input but ignore them
 def Input(func):

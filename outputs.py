@@ -19,7 +19,8 @@ def print_simulation_info(config, params):
     print(header + "=" * (total_pwidth - len(header))) # number of "=" set to right align with following prints
     # print config details
     for key, value in config.items():
-        print(f"{key:<{max_ckey_len}} : {str(value)}") # - pad key to align the colons
+        formatted = f"{value:.3g}" if isinstance(value, float) else str(value)
+        print(f"{key:<{max_ckey_len}} : {formatted}") # - pad key to align the colons
     print("=" * total_pwidth + "\n")
 
     header = "=== EBM Model Parameters " # new header
@@ -317,13 +318,19 @@ class SeasonalOutput(OutPut):
             date = start + datetime.timedelta(days=offset_days)
             return date.strftime("%b %d")
         
+        def color_fmt(n, p=1):
+            start_fmt = end_fmt = "\033[0m"
+            if n > 40: start_fmt = "\033[31m"
+            elif n < 0: start_fmt = "\033[34m"
+            return f"{start_fmt}{n:>{p+4}.{p}f}{end_fmt}"
+        
         def fmt(series):
             min_idx, max_idx = series.argmin(), series.argmax()
             min_time = t[min_idx] % 1   # fractional year since last equinox
             max_time = t[max_idx] % 1
-            return (f"{series.mean():>6.2f}°C "
-                    f"(min {series.min():>5.1f} on {_date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
-                    f"max {series.max():>5.1f} on {_date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
+            return (color_fmt(series.mean(), 2) + "°C " +
+                    "min " + color_fmt(series.min()) + f" on {_date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
+                    f"max " + color_fmt(series.max()) + f" on {_date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
 
         global_T = self.last["T"].mean(axis=1) - 273.15
         equator_T = self.last["T"][:, self.locs["Equator"]] - 273.15
