@@ -188,7 +188,7 @@ class DefaultOutput(OutPut):
         alpha = funcs['albedo_from_T'](T, x, k1=params['k1'], model=model, i=i)
         dTloc = funcs['deltaT_of_Ts'](T, k3=params['k3'], model=model, i=i)
         olr = phys.SIGMA * (T - dTloc)**4
-        D = funcs["diffusion_from_T"](T.mean(), params['D0'], params['k2'], model=model, i=i)
+        D = funcs["diffusion_from_T"](T, params['D0'], params['k2'], model=model, i=i)
         aL, bL, cL = funcs['build_diffusion_tridiag'](x, D)
         conv = funcs['apply_L_to_T'](aL, bL, cL, T)     # W/m² (convergence)
         MHTrans_PW = funcs['meridional_transport_PW'](T, x, D, model=model, i=i) # PW = 10^15 W

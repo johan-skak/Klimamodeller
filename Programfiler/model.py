@@ -54,7 +54,7 @@ class ClimateModel:
         rad_term = absorbed - olr + params['F'] * (i >= self.ctrl_nsteps) # Only apply forcing after control period
 
         # Diffusivity depends on global mean temperature
-        D = funcs["diffusion_from_T"](T.mean(), params['D0'], params['k2'], model=self, i=i)
+        D = funcs["diffusion_from_T"](T, params['D0'], params['k2'], model=self, i=i)
 
         # Build L and do Crank–Nicolson step
         aL, bL, cL = funcs['build_diffusion_tridiag'](x, D)

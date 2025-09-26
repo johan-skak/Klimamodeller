@@ -4,13 +4,13 @@
 Modes: ['SeasonalVariation', 'VariableSeaDepth']
 Years run: 100, grid points: 200, Δt (years): 1 / 48
 
-Global mean temperature: [0m 18.56[0m°C (min [0m 17.9[0m on Mar 13 (0.98y), max [0m 19.3[0m on Sep 19 (0.50y))
-Equator temperature:     [0m 30.86[0m°C (min [0m 30.5[0m on Jul 21 (0.33y), max [0m 31.1[0m on Nov 12 (0.65y))
-Denmark (56°N):          [0m  5.40[0m°C (min [0m  2.6[0m on Mar 29 (0.02y), max [0m  8.4[0m on Sep 19 (0.50y))
-North pole:              [34m -7.48[0m°C (min [34m-13.7[0m on Mar 21 (0.00y), max [34m -1.4[0m on Aug 20 (0.42y))
-South pole:              [34m -6.81[0m°C (min [34m-11.5[0m on Sep 12 (0.48y), max [34m -1.1[0m on Jan 27 (0.85y))
+Global mean temperature: [0m 17.73[0m°C (min [0m 17.0[0m on Mar 13 (0.98y), max [0m 18.4[0m on Sep 19 (0.50y))
+Equator temperature:     [0m 30.52[0m°C (min [0m 30.2[0m on Jul 21 (0.33y), max [0m 30.8[0m on Nov 12 (0.65y))
+Denmark (56°N):          [0m  3.97[0m°C (min [0m  1.1[0m on Mar 29 (0.02y), max [0m  6.9[0m on Sep 19 (0.50y))
+North pole:              [34m-10.41[0m°C (min [34m-16.3[0m on Mar 21 (0.00y), max [34m -4.7[0m on Aug 20 (0.42y))
+South pole:              [34m -9.37[0m°C (min [34m-13.6[0m on Sep 12 (0.48y), max [34m -4.1[0m on Feb 03 (0.88y))
 
-Last-year mean OLR:    246.2 W/m²
-Last-year mean albedo: 0.305
-Last-year mean D:      0.688 W m⁻² K⁻¹
+Last-year mean OLR:    244.7 W/m²
+Last-year mean albedo: 0.313
+Last-year mean D:      0.682 W m⁻² K⁻¹
 

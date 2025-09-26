@@ -83,9 +83,9 @@ def albedo_from_T(T, x, k1):
     return np.minimum(alpha, 0.7)
 
 @Input
-def diffusion_from_T(T, D0, k2):
-    # T er i default mode T.mean()
-    return D0 * max(0.5, 1.0 + k2 * (T - T00))
+def diffusion_from_T(T, D0, k2, mean=True):
+    T = T.mean() if mean else T
+    return D0 * np.maximum(0.5, 1.0 + k2 * (T - T00))
 
 @Input
 def deltaT_of_Ts(Ts, k3):
@@ -225,6 +225,7 @@ def build_diffusion_tridiag(x, D):
 
     # half-point weights (length nx-1)
     x_half = 0.5 * (x[:-1] + x[1:])
+    D = 0.5 * (D[:-1] + D[1:]) if isinstance(D, np.ndarray) else D
     w_half = D * (1.0 - x_half**2) # diffusivity at cell borders
     
     # interior contributions
@@ -248,6 +249,7 @@ def meridional_transport_PW(T, x, D):
     # dTdx = np.gradient(T, x)
     dTdx = np.r_[0, (T[1:] - T[:-1]) / (x[1] - x[0]), 0]
     x_borders = np.r_[-1, (x[1:] + x[:-1]) / 2, 1]
+    D = np.r_[D[0], (D[1:] + D[:-1]) / 2, D[-1]] if isinstance(D, np.ndarray) else D # Not entirely correct but ok approximation
     flux = - D * (1.0 - x_borders**2) * dTdx                    # W/m² (per-area heat flux)
     MHTrans = 2.0 * np.pi * R_EARTH**2 * flux                 # W (zonal integral around latitude circle)
     return np.arcsin(x_borders) / np.pi * 180, MHTrans / 1e15                            # PW
