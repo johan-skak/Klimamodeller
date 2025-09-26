@@ -1,5 +1,5 @@
 {
-    "years": 50,
+    "years": 100,
     "dt_years": 0.02,
     "nx": 200,
     "modes": ["SeasonalVariation", "VariableSeaDepth"],
