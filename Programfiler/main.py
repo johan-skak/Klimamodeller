@@ -12,6 +12,8 @@ if __name__ == "__main__":
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
             config |= json.load(f)
+
+    config["modes"].sort() # Sort modes alphabetically to have consistent naming of outdir
     
     if config["ctrl_years"] < 0: # Default to half simulation without forcing
         config["ctrl_years"] = config["years"]//2
