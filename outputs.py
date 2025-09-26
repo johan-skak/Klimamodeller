@@ -97,22 +97,22 @@ class DefaultOutput(OutPut):
         self.summaries = [self.summarize(model, self.diags)]
     
     def summarize(self, model, diags):
-        T_ctrl_red = T_forc_red = end_fmt = "\033[0m"
+        T_ctrl_fmt = T_forc_fmt = end_fmt = "\033[0m"
         if diags['mid']['T_mean'] > 273.15 + 40:
-            T_ctrl_red = "\033[31m"
+            T_ctrl_fmt = "\033[31m"
         elif diags['mid']['T_mean'] < 273.15:
-            T_ctrl_red = "\033[34m"
+            T_ctrl_fmt = "\033[34m"
         if diags['end']['T_mean'] > 273.15 + 40:
-            T_forc_red = "\033[31m"
+            T_forc_fmt = "\033[31m"
         elif diags['end']['T_mean'] < 273.15:
-            T_forc_red = "\033[34m"
+            T_forc_fmt = "\033[34m"
 
         return textwrap.dedent(f"""
         Years (control, forced): ({model.config['ctrl_years']}, {model.config['years']-model.config['ctrl_years']})
         Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
-        Control global mean T (°C): {T_ctrl_red}{diags['mid']['T_mean']-273.15:.1f}{end_fmt}
-        Forced  global mean T (°C): {T_forc_red}{diags['end']['T_mean']-273.15:.1f}{end_fmt}
+        Control global mean T (°C): {T_ctrl_fmt}{diags['mid']['T_mean']-273.15:.1f}{end_fmt}
+        Forced  global mean T (°C): {T_forc_fmt}{diags['end']['T_mean']-273.15:.1f}{end_fmt}
         ΔT global (°C): {diags['end']['T_mean']-diags['mid']['T_mean']:.2f}
 
         North pole T control / forced (°C): {diags['mid']['T_poles'][1]-273.15:.1f} / {diags['end']['T_poles'][1]-273.15:.1f}
@@ -329,7 +329,7 @@ class SeasonalOutput(OutPut):
             min_time = t[min_idx] % 1   # fractional year since last equinox
             max_time = t[max_idx] % 1
             return (color_fmt(series.mean(), 2) + "°C " +
-                    "min " + color_fmt(series.min()) + f" on {_date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
+                    "(min " + color_fmt(series.min()) + f" on {_date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
                     f"max " + color_fmt(series.max()) + f" on {_date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
 
         global_T = self.last["T"].mean(axis=1) - 273.15
