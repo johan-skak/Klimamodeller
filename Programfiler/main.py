@@ -17,7 +17,7 @@ if __name__ == "__main__":
         config["ctrl_years"] = config["years"]//2
 
     # Default parameters
-    params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0,
+    params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0, SD=250,
                 S=1365.0, F=0.0)
     # Read parameters from file if it exists and update defaults
     if os.path.exists(PARAMETERS_FILE):

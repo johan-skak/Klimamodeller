@@ -1,7 +1,0 @@
-{
-    "years": 50,
-    "dt_years": 0.02,
-    "nx": 200,
-    "modes": ["SeasonalVariation", "VariableSeaDepth"],
-    "ctrl_years": 0
-}

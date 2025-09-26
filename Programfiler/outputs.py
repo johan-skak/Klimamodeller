@@ -19,7 +19,8 @@ def print_simulation_info(config, params):
     print(header + "=" * (total_pwidth - len(header))) # number of "=" set to right align with following prints
     # print config details
     for key, value in config.items():
-        print(f"{key:<{max_ckey_len}} : {str(value)}") # - pad key to align the colons
+        formatted = f"{value:.3g}" if isinstance(value, float) else str(value)
+        print(f"{key:<{max_ckey_len}} : {formatted}") # - pad key to align the colons
     print("=" * total_pwidth + "\n")
 
     header = "=== EBM Model Parameters " # new header
@@ -96,22 +97,22 @@ class DefaultOutput(OutPut):
         self.summaries = [self.summarize(model, self.diags)]
     
     def summarize(self, model, diags):
-        T_ctrl_red = T_forc_red = end_fmt = "\033[0m"
+        T_ctrl_fmt = T_forc_fmt = end_fmt = "\033[0m"
         if diags['mid']['T_mean'] > 273.15 + 40:
-            T_ctrl_red = "\033[31m"
+            T_ctrl_fmt = "\033[31m"
         elif diags['mid']['T_mean'] < 273.15:
-            T_ctrl_red = "\033[34m"
+            T_ctrl_fmt = "\033[34m"
         if diags['end']['T_mean'] > 273.15 + 40:
-            T_forc_red = "\033[31m"
+            T_forc_fmt = "\033[31m"
         elif diags['end']['T_mean'] < 273.15:
-            T_forc_red = "\033[34m"
+            T_forc_fmt = "\033[34m"
 
         return textwrap.dedent(f"""
         Years (control, forced): ({model.config['ctrl_years']}, {model.config['years']-model.config['ctrl_years']})
         Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
-        Control global mean T (°C): {T_ctrl_red}{diags['mid']['T_mean']-273.15:.1f}{end_fmt}
-        Forced  global mean T (°C): {T_forc_red}{diags['end']['T_mean']-273.15:.1f}{end_fmt}
+        Control global mean T (°C): {T_ctrl_fmt}{diags['mid']['T_mean']-273.15:.1f}{end_fmt}
+        Forced  global mean T (°C): {T_forc_fmt}{diags['end']['T_mean']-273.15:.1f}{end_fmt}
         ΔT global (°C): {diags['end']['T_mean']-diags['mid']['T_mean']:.2f}
 
         North pole T control / forced (°C): {diags['mid']['T_poles'][1]-273.15:.1f} / {diags['end']['T_poles'][1]-273.15:.1f}
@@ -271,7 +272,7 @@ class SeasonalOutput(OutPut):
         self.summaries = [self.summarize(model)]
 
     # ---- Panels ----
-    def _plot_profiles(self, ax, field, ylabel, title):
+    def plot_profiles(self, ax, field, ylabel, title):
         for label, idx in self.phases.items():
             data = self.last[field][idx]
             if field == "MHTrans_PW":   # (x,y) tuple
@@ -282,48 +283,43 @@ class SeasonalOutput(OutPut):
         ax.set_title(title); ax.set_ylabel(ylabel)
         DefaultOutput.Stylize(self, ax)
 
-    def panel1(self, ax): self._plot_profiles(ax, "T", "°C", "Seasonal Temperature Profiles")
-    def panel2(self, ax): self._plot_profiles(ax, "olr", "W/m²", "Seasonal OLR Profiles")
-    def panel3(self, ax): self._plot_profiles(ax, "alpha", "Albedo", "Seasonal Albedo Profiles")
-    def panel4(self, ax): self._plot_profiles(ax, "MHTrans_PW", "PW (10¹⁵ W)", "Seasonal Meridional Heat Transport")
-    def panel5(self, ax): self._plot_profiles(ax, "conv", "W/m²", "Seasonal Heat Flux Convergence")
-    def panel6(self, ax): self._plot_profiles(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance")
+    def panel1(self, ax): self.plot_profiles(ax, "T", "°C", "Seasonal Temperature Profiles")
+    def panel2(self, ax): self.plot_profiles(ax, "olr", "W/m²", "Seasonal OLR Profiles")
+    def panel3(self, ax): self.plot_profiles(ax, "alpha", "Albedo", "Seasonal Albedo Profiles")
+    def panel4(self, ax): self.plot_profiles(ax, "MHTrans_PW", "PW (10¹⁵ W)", "Seasonal Meridional Heat Transport")
+    def panel5(self, ax): self.plot_profiles(ax, "conv", "W/m²", "Seasonal Heat Flux Convergence")
+    def panel6(self, ax): self.plot_profiles(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance")
         
-    def panel7(self, ax):
+    def plot_time_series(self, ax, field, ylabel, title, mean_is_zero=False):
         for name, idx in self.locs.items():
-            series = (self.last["Q_x"].mean(axis=1) if idx is None else self.last["Q_x"][:, idx])
+            mean = self.last[field].mean() if idx is None else self.last[field][:, idx].mean() if mean_is_zero else 0
+            series = (self.last[field].mean(axis=1) if idx is None else self.last[field][:, idx])-mean
             ax.plot(self.t_last, series, label=name)
-        ax.set_title("Seasonal Solar Irradiance Time Series (last year)")
-        ax.set_xlabel("Time (years)"); ax.set_ylabel("W/m²"); ax.legend(); ax.grid(True)
+        ax.set_xticks(self.t_last[np.linspace(0,len(self.t_last)-1, 7, dtype=np.int16)])
+        ax.set_xticklabels([self.date_from_fraction(t) for t in np.linspace(0, 1, 7)])
+        ax.set_xlabel("Date (during the last simulated year)")
+        ax.set_title(title); ax.set_ylabel(ylabel); ax.legend(); ax.grid(True)
 
-    def panel8(self, ax):
-        for name, idx in self.locs.items():
-            mean_temp = self.last["T"].mean() if idx is None else self.last["T"][:, idx].mean()
-            series = (self.last["T"].mean(axis=1) if idx is None else self.last["T"][:, idx])-mean_temp
-            ax.plot(self.t_last, series, label=name)
-        ax.set_title("Seasonal Temperature Change Time Series (last year)")
-        ax.set_xlabel("Time (years)"); ax.set_ylabel("°C"); ax.legend(); ax.grid(True)
+    def panel7(self, ax): self.plot_time_series(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance Time Series")
+    def panel8(self, ax): self.plot_time_series(ax, "T", "°C", "Seasonal Temperature Variation Time Series", mean_is_zero=True)
 
     # ---- Summary ----
     def summarize(self, model):
         t = self.t_last
-
-        def _date_from_fraction(frac):
-            """Convert a fraction of a year since spring equinox to a date string."""
-            # Anchor on March 21 of an arbitrary year (say year 2000, leap-safe)
-            start = datetime.date(2000, 3, 21)
-            days_in_year = 365
-            offset_days = int(round(frac * days_in_year))
-            date = start + datetime.timedelta(days=offset_days)
-            return date.strftime("%b %d")
+        
+        def color_fmt(n, p=1):
+            start_fmt = end_fmt = "\033[0m"
+            if n > 40: start_fmt = "\033[31m"
+            elif n < 0: start_fmt = "\033[34m"
+            return f"{start_fmt}{n:>{p+4}.{p}f}{end_fmt}"
         
         def fmt(series):
             min_idx, max_idx = series.argmin(), series.argmax()
             min_time = t[min_idx] % 1   # fractional year since last equinox
             max_time = t[max_idx] % 1
-            return (f"{series.mean():>6.2f}°C "
-                    f"(min {series.min():>5.1f} on {_date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
-                    f"max {series.max():>5.1f} on {_date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
+            return (color_fmt(series.mean(), 2) + "°C " +
+                    "(min " + color_fmt(series.min()) + f" on {self.date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
+                    f"max " + color_fmt(series.max()) + f" on {self.date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
 
         global_T = self.last["T"].mean(axis=1) - 273.15
         equator_T = self.last["T"][:, self.locs["Equator"]] - 273.15
@@ -346,3 +342,12 @@ class SeasonalOutput(OutPut):
         Last-year mean albedo: {self.last['alpha'].mean():.3f}
         Last-year mean D:      {self.last['D'].mean():.3f} W m⁻² K⁻¹
         """)
+
+    def date_from_fraction(self, frac):
+        """Convert a fraction of a year since spring equinox to a date string."""
+        # Anchor on March 21 of an arbitrary year (say year 2000, leap-safe)
+        start = datetime.date(2000, 3, 21)
+        days_in_year = 365
+        offset_days = int(round(frac * days_in_year))
+        date = start + datetime.timedelta(days=offset_days)
+        return date.strftime("%b %d")
