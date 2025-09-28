@@ -1,9 +1,9 @@
 # main.py
-import os, json
+import os, yaml
 import model, modes, outputs
 
-PARAMETERS_FILE = 'parameters.json'
-CONFIG_FILE = 'config.json'
+PARAMETERS_FILE = 'parameters.yaml'
+CONFIG_FILE = 'config.yaml'
 
 if __name__ == "__main__":
     # Default config
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     # Read config from file if it exists and update defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
-            config |= json.load(f)
+            config |= yaml.safe_load(f)
 
     config["modes"].sort() # Sort modes alphabetically to have consistent naming of outdir
     
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # Read parameters from file if it exists and update defaults
     if os.path.exists(PARAMETERS_FILE):
         with open(PARAMETERS_FILE) as f:
-            params |= json.load(f)
+            params |= yaml.safe_load(f)
 
     modes_list = [] # Is a list of mode class instances
     for mode_name in config["modes"]:

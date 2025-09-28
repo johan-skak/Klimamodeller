@@ -1,0 +1,8 @@
+k1: 0.06 # Ice albedo sensitivity (K^-1)
+k2: 0.01 # Diffusivity sensitivity (K^-1)
+k3: 0.5 # Longwave radiation sensitivity
+D0: 0.66 # Base diffusivity (W/m^2/K)
+T0: 288.0 # Initial temperature (K)
+S: 1365.0 # Solar forcing (W/m^2)
+F: 4 # Extra forcing (W/m^2)
+SD: 250 # Sea depth (m) (of mixed layer)
