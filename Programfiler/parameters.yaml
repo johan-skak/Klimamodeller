@@ -3,6 +3,7 @@ k2: 0.01 # Diffusivity sensitivity (K^-1)
 k3: 0.5 # Longwave radiation sensitivity
 D0: 0.66 # Base diffusivity (W/m^2/K)
 T0: 288.0 # Initial temperature (K)
-S: 1365.0 # Solar forcing (W/m^2)
+S0: 1365.0 # Solar forcing (W/m^2) before control period
+S1:  # Solar forcing (W/m^2) after control period. Leave empty to have no change.
 F: 4 # Extra forcing (W/m^2)
 SD: 250 # Sea depth (m) (of mixed layer)

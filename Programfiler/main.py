@@ -7,7 +7,7 @@ CONFIG_FILE = 'config.yaml'
 
 if __name__ == "__main__":
     # Default config
-    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
+    config = {"years": 1000, "ctrl_years": None, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
     # Read config from file if it exists and update defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
@@ -15,16 +15,19 @@ if __name__ == "__main__":
 
     config["modes"].sort() # Sort modes alphabetically to have consistent naming of outdir
     
-    if config["ctrl_years"] < 0: # Default to half simulation without forcing
+    if config["ctrl_years"] is None or config["ctrl_years"] < 0: # Default to half simulation without forcing
         config["ctrl_years"] = config["years"]//2
 
     # Default parameters
     params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0, SD=250,
-                S=1365.0, F=0.0)
+                S0=1365.0, S1=None, F=0.0)
     # Read parameters from file if it exists and update defaults
     if os.path.exists(PARAMETERS_FILE):
         with open(PARAMETERS_FILE) as f:
             params |= yaml.safe_load(f)
+
+    if params["S1"] is None: # Default to no change in solar forcing
+        params["S1"] = params["S0"]
 
     modes_list = [] # Is a list of mode class instances
     for mode_name in config["modes"]:

@@ -46,7 +46,8 @@ class ClimateModel:
 
     def update_temperature(self, T, x, params, funcs, i):
         # Explicit radiative terms
-        Q_x = funcs['Q_x'](x, params['S'], model=self, i=i) # The model and i arguments are ignored in default mode but necessary for other modes
+        S = params['S0'] if i < self.ctrl_nsteps else params['S1']
+        Q_x = funcs['Q_x'](x, S, model=self, i=i) # The model and i arguments are ignored in default mode but necessary for other modes
         alpha = funcs['albedo_from_T'](T, x, params['k1'], model=self, i=i)
         absorbed = Q_x * (1.0 - alpha)
         dTloc = funcs['deltaT_of_Ts'](T, params['k3'], model=self, i=i)

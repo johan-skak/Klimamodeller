@@ -206,7 +206,7 @@ class DefaultOutput(OutPut):
         MHTrans_PW = funcs['meridional_transport_PW'](T, x, D, model=model, i=i) # PW = 10^15 W
         T_mean = T.mean()
         T_poles = funcs['poles_temperature'](T, model=model, i=i)
-        Q_x = funcs['Q_x'](x, params['S'], model=model, i=i)
+        Q_x = funcs['Q_x'](x, params['S0'], model=model, i=i)
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
 
 class TimeSeriesOutput(OutPut):

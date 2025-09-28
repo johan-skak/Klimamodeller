@@ -17,7 +17,9 @@ DELTA_T_MIN = 10.0               # K (lower bound)
 A_PROFILE = 45.0                 # K
 
 # short description of the default parameters
-PARAM_DESCS = {"k1": "ice albedo sensitivity", "k2": "diffusivity sensitivity", "k3": "longwave radiation sensitivity", "D0": "background diffusivity", "T0": "initial temperature", "SD": "mixed layer sea depth", "S": "solar forcing", "F": "additional forcing"}
+PARAM_DESCS = {"k1": "ice albedo sensitivity", "k2": "diffusivity sensitivity", "k3": "longwave radiation sensitivity",
+               "D0": "background diffusivity", "T0": "initial temperature", "SD": "mixed layer sea depth",
+               "S0": "solar forcing initial", "S1": "solar forcing changed", "F": "additional forcing"}
 
 # Wrapper to add model and i as optional input but ignore them
 def Input(func):

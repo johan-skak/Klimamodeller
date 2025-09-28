@@ -13,11 +13,12 @@ k2 (diffusivity sensitivity)        : 0.01
 k3 (longwave radiation sensitivity) : 0.5
 D0 (background diffusivity)         : 0.66
 T0 (initial temperature)            : 288.0
-S  (solar forcing)                  : 1365.0
+S0 (solar forcing initial)          : 1365.0
+S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 4
 ============================================
 
-Output generated on 2025-09-28 22:17:37
+Output generated on 2025-09-28 22:31:16
 
 === EBM Summary ============================================================================
 
