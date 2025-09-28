@@ -16,7 +16,7 @@ class ClimateModel:
     def run(self):
         # Let modes modify config/params/T/funcs as needed
         for m in self.modes: m.initialize(self)
-        outputs.print_simulation_info(self.config, self.params)
+        self.sim_info = outputs.print_simulation_info(self.config, self.params) # Print simulation info and return as string for use in main.py
 
         # Define grid and initial state
         self.dx = 2.0 / self.config["nx"]

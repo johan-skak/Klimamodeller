@@ -43,4 +43,4 @@ if __name__ == "__main__":
     climate_model.run()
 
     # Make outputs
-    outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"]) # Climate_model.config may be different from input config due to modes
+    outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"], climate_model.sim_info) # Climate_model.config may be different from input config due to modes

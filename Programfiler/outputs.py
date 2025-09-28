@@ -2,9 +2,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import textwrap # For dedenting summary text
-import os, datetime
+import os, datetime, re
 from matplotlib.ticker import FixedLocator # For custom minor ticks
 import physics as phys
+
+def remove_ansi(text):
+    ansi_escape = re.compile(r'\x1B\[[0-9;]*m') # Matches ANSI escape sequences like \033[1;33m
+    return ansi_escape.sub('', text) # Remove ANSI sequences from text
 
 def print_simulation_info(config, params):
     print("Running simulation with the following configuration and parameters\n\033[1mNote\033[0m: some modes may have changed the values specified in the config and parameter files\n")
@@ -16,25 +20,27 @@ def print_simulation_info(config, params):
     total_pwidth = max_pkey_len + max_pval_len + max_pdesc_len + 6
 
     header = "=== EBM Model Configuration "
-    print(header + "=" * (total_pwidth - len(header))) # number of "=" set to right align with following prints
-    # print config details
+    info_str = header + "=" * (total_pwidth - len(header)) + "\n" # The number of "=" set to right align with following prints
+    # config details
     for key, value in config.items():
-        formatted = f"{value:.3g}" if isinstance(value, float) else str(value)
-        print(f"{key:<{max_ckey_len}} : {formatted}") # - pad key to align the colons
-    print("=" * total_pwidth + "\n")
+        formatted = f"{value:.3g}" if isinstance(value, float) else str(value) # Format floats to 3 significant digits
+        info_str += f"{key:<{max_ckey_len}} : {formatted}\n" # - pad key to align the colons
+    info_str += "=" * total_pwidth + "\n\n"
 
     header = "=== EBM Model Parameters " # new header
-    print(header + "=" * (total_pwidth - len(header)))
-    # print parameter details
+    info_str += header + "=" * (total_pwidth - len(header)) + "\n"
+    # parameter details
     for key, value in params.items():
         desc = descs.get(key) or "" # returns empty string if the key is not found
         desc = f"({desc})" # add parentheses to string
-        print(f"{key:<{max_pkey_len}} {desc:<{max_pdesc_len+2}} : {value}")
-    print("=" * total_pwidth + "\n")
+        info_str += f"{key:<{max_pkey_len}} {desc:<{max_pdesc_len+2}} : {value}\n"
+    info_str += "=" * total_pwidth + "\n\n"
+    print(info_str, end="") # no newline at end
 
-    print("\033[1mStarting\033[0m simulation...")
+    print("\033[1mStarting\033[0m simulation...\n")
+    return info_str
 
-def run_all_outputs(outputs, outdir):
+def run_all_outputs(outputs, outdir, sim_info=""):
     print(f"\033[1mFinished\033[0m simulation. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
     os.makedirs(outdir, exist_ok=True)
 
@@ -55,11 +61,17 @@ def run_all_outputs(outputs, outdir):
     summaries = [s for o in outputs for s in o.summaries]
     summary = ""
     if summaries:#Also print the summary
-        summary = "\n=== EBM Summary ==="
         for sfunc in summaries:
             summary += textwrap.dedent(sfunc) + "\n"
+        clean_summary = remove_ansi(summary)
+        #Find max line length
+        max_line_length = max(len(line) for line in clean_summary.split("\n"))
+        header = "=== EBM Summary "
+        pre_text = sim_info + f"Output generated on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n" + header + "=" * (max_line_length - len(header)) + "\n"
+        summary = pre_text + summary
+        clean_summary = pre_text + clean_summary
         with open(f"{outdir}/summary.txt", "w", encoding="utf-8") as f:
-            f.write(summary)
+            f.write(clean_summary)
     summary += f"Figures and summary saved in \033[4m{outdir}\033[0m\n"
     print(summary)
 
