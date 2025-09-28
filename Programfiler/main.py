@@ -13,6 +13,7 @@ if __name__ == "__main__":
         with open(CONFIG_FILE) as f:
             config |= yaml.safe_load(f)
 
+    if config["modes"] is None: config["modes"] = []
     config["modes"].sort() # Sort modes alphabetically to have consistent naming of outdir
     
     if config["ctrl_years"] is None or config["ctrl_years"] < 0: # Default to half simulation without forcing

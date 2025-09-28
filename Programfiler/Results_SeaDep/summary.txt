@@ -1,10 +1,32 @@
+=== EBM Model Configuration ================
+years      : 1000
+ctrl_years : 500
+dt_years   : 1
+nx         : 200
+modes      : ['VariableSeaDepth']
+output_dir : Results_SeaDep
+============================================
 
-=== EBM Summary ===
+=== EBM Model Parameters ===================
+k1 (ice albedo sensitivity)         : 0.06
+k2 (diffusivity sensitivity)        : 0.01
+k3 (longwave radiation sensitivity) : 0.5
+D0 (background diffusivity)         : 0.66
+T0 (initial temperature)            : 288.0
+S0 (solar forcing initial)          : 1365.0
+S1 (solar forcing changed)          : 1365.0
+F  (additional forcing)             : 4
+============================================
+
+Output generated on 2025-09-28 22:47:02
+
+=== EBM Summary =====================================================
+
 Years (control, forced): (500, 500)
 Grid points nx: 200, Δt (years): 1
 
-Control global mean T (°C): [0m15.1[0m
-Forced  global mean T (°C): [0m18.5[0m
+Control global mean T (°C): 15.1
+Forced  global mean T (°C): 18.5
 ΔT global (°C): 3.37
 
 North pole T control / forced (°C): -13.8 / -7.5

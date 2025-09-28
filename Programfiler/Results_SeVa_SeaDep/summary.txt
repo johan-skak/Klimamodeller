@@ -1,5 +1,5 @@
 === EBM Model Configuration ================
-years      : 100
+years      : 50
 ctrl_years : 0
 dt_years   : 0.0208
 nx         : 200
@@ -18,21 +18,21 @@ S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 4
 ============================================
 
-Output generated on 2025-09-28 22:31:16
+Output generated on 2025-09-28 22:52:54
 
 === EBM Summary ============================================================================
 
 === Seasonal Diagnostics (last year) ===
 Modes: ['SeasonalVariation', 'VariableSeaDepth']
-Years run: 100, grid points: 200, Δt (years): 1 / 48
+Years run: 50, grid points: 200, Δt (years): 1 / 48
 
-Global mean temperature:  18.56°C (min  17.9 on Mar 13 (0.98y), max  19.3 on Sep 19 (0.50y))
-Equator temperature:      30.86°C (min  30.5 on Jul 21 (0.33y), max  31.1 on Nov 12 (0.65y))
-Denmark (56°N):            5.40°C (min   2.6 on Mar 29 (0.02y), max   8.4 on Sep 19 (0.50y))
-North pole:               -7.48°C (min -13.7 on Mar 21 (0.00y), max  -1.4 on Aug 20 (0.42y))
-South pole:               -6.81°C (min -11.5 on Sep 12 (0.48y), max  -1.0 on Jan 27 (0.85y))
+Global mean temperature:  18.53°C (min  17.8 on Mar 13 (0.98y), max  19.2 on Sep 19 (0.50y))
+Equator temperature:      30.84°C (min  30.5 on Jul 21 (0.33y), max  31.1 on Nov 12 (0.65y))
+Denmark (56°N):            5.38°C (min   2.6 on Mar 29 (0.02y), max   8.3 on Sep 19 (0.50y))
+North pole:               -7.51°C (min -13.7 on Mar 21 (0.00y), max  -1.5 on Aug 20 (0.42y))
+South pole:               -6.90°C (min -11.6 on Sep 12 (0.48y), max  -1.1 on Jan 27 (0.85y))
 
-Last-year mean OLR:    246.2 W/m²
+Last-year mean OLR:    246.1 W/m²
 Last-year mean albedo: 0.305
 Last-year mean D:      0.688 W m⁻² K⁻¹
 

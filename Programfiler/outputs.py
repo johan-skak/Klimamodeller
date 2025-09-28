@@ -68,7 +68,6 @@ def run_all_outputs(outputs, outdir, sim_info=""):
         max_line_length = max(len(line) for line in clean_summary.split("\n"))
         header = "=== EBM Summary "
         pre_text = sim_info + f"Output generated on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n" + header + "=" * (max_line_length - len(header)) + "\n"
-        summary = pre_text + summary
         clean_summary = pre_text + clean_summary
         with open(f"{outdir}/summary.txt", "w", encoding="utf-8") as f:
             f.write(clean_summary)

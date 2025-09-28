@@ -1,16 +1,39 @@
+=== EBM Model Configuration ================
+years      : 50
+ctrl_years : 0
+dt_years   : 0.0208
+nx         : 200
+modes      : ['SeasonalVariation']
+output_dir : Results_SeVa
+============================================
 
-=== EBM Summary ===
+=== EBM Model Parameters ===================
+k1 (ice albedo sensitivity)         : 0.06
+k2 (diffusivity sensitivity)        : 0.01
+k3 (longwave radiation sensitivity) : 0.5
+D0 (background diffusivity)         : 0.66
+T0 (initial temperature)            : 288.0
+SD (mixed layer sea depth)          : 20
+S0 (solar forcing initial)          : 1365.0
+S1 (solar forcing changed)          : 1365.0
+F  (additional forcing)             : 4
+============================================
+
+Output generated on 2025-09-28 22:50:18
+
+=== EBM Summary ============================================================================
+
 === Seasonal Diagnostics (last year) ===
 Modes: ['SeasonalVariation']
-Years run: 100, grid points: 200, Δt (years): 1 / 48
+Years run: 50, grid points: 200, Δt (years): 1 / 48
 
-Global mean temperature: [0m 13.51[0m°C (min [0m 13.3[0m on Dec 12 (0.73y), max [0m 13.7[0m on Mar 13 (0.98y))
-Equator temperature:     [0m 27.59[0m°C (min [0m 26.7[0m on Jul 28 (0.35y), max [0m 28.4[0m on Apr 20 (0.08y))
-Denmark (56°N):          [34m -1.98[0m°C (min [34m-16.5[0m on Mar 13 (0.98y), max [0m 14.4[0m on Aug 28 (0.44y))
-North pole:              [34m-16.55[0m°C (min [34m-32.1[0m on Mar 29 (0.02y), max [0m  1.4[0m on Aug 28 (0.44y))
-South pole:              [34m-15.91[0m°C (min [34m-32.1[0m on Sep 27 (0.52y), max [0m  1.4[0m on Feb 26 (0.94y))
+Global mean temperature:  17.56°C (min  17.5 on Jun 28 (0.27y), max  17.6 on Oct 05 (0.54y))
+Equator temperature:      30.41°C (min  30.0 on Jul 28 (0.35y), max  30.8 on Apr 28 (0.10y))
+Denmark (56°N):            3.74°C (min  -4.1 on Mar 13 (0.98y), max  12.2 on Sep 04 (0.46y))
+North pole:              -10.10°C (min -18.4 on Apr 05 (0.04y), max  -1.3 on Aug 28 (0.44y))
+South pole:               -9.77°C (min -18.4 on Oct 05 (0.54y), max  -1.3 on Feb 26 (0.94y))
 
-Last-year mean OLR:    237.2 W/m²
-Last-year mean albedo: 0.327
-Last-year mean D:      0.654 W m⁻² K⁻¹
+Last-year mean OLR:    244.4 W/m²
+Last-year mean albedo: 0.312
+Last-year mean D:      0.681 W m⁻² K⁻¹
 
