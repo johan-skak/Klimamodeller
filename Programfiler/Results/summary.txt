@@ -1,6 +1,6 @@
 === EBM Model Configuration ================
-years      : 1000
-ctrl_years : 500
+years      : 500
+ctrl_years : 250
 dt_years   : 1
 nx         : 200
 modes      : []
@@ -19,11 +19,11 @@ S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 4
 ============================================
 
-Output generated on 2025-09-28 22:41:52
+Output generated on 2025-09-29 14:05:17
 
 === EBM Summary =====================================================
 
-Years (control, forced): (500, 500)
+Years (control, forced): (250, 250)
 Grid points nx: 200, Δt (years): 1
 
 Control global mean T (°C): 15.1

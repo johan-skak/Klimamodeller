@@ -40,15 +40,21 @@ def print_simulation_info(config, params):
     print("\033[1mStarting\033[0m simulation...\n")
     return info_str
 
+def aspect_ratio(n, goal):
+    """Calculate number of rows and columns for n subplots to achieve a given aspect ratio goal (width/height)."""
+    h_num_top = int(np.ceil(np.sqrt(goal*n))) # Aim for goal:1 aspect ratio
+    h_num_bottom = int(np.sqrt(goal*n)) # Another option. v_num_top=v_num_bottom+1 unless goal*n is a perfect square
+    h_num = h_num_top if (-n) % h_num_top <= (-n) % h_num_bottom else h_num_bottom # Choose the one that gives least empty plots # Prefers more columns at equality
+    return int(np.ceil(n / h_num)), h_num
+
 def run_all_outputs(outputs, outdir, sim_info=""):
     print(f"\033[1mFinished\033[0m simulation. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
     os.makedirs(outdir, exist_ok=True)
 
     axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]
     if axes_funcs:
-        v_num = int(np.round(np.sqrt(2*len(axes_funcs)))) # Aim for 2:1 aspect ratio
-        h_num = int(np.ceil(len(axes_funcs) / v_num))
-        fig, axs = plt.subplots(v_num, h_num, figsize=(6*h_num, 3.5*v_num))
+        v_num, h_num = aspect_ratio(len(axes_funcs), 1) # Aim for 16:9 aspect ratio of figure
+        fig, axs = plt.subplots(v_num, h_num, figsize=(6*h_num, 27/8*v_num)) # Width:Height = 6*h:27/8*v = 16*h:9*v
         axs = np.atleast_1d(axs).flatten()
         
         for axfunc, subplot_ax in zip(axes_funcs, axs):
@@ -181,7 +187,7 @@ class DefaultOutput(OutPut):
     def Stylize(self, ax):
         ax.set_xlim([-90, 90])
         ax.set_xlabel('Latitude')
-        ax.legend()
+        ax.legend() if ax.get_legend_handles_labels()[1] else None # Only add legend if there are labels
         ax.grid(True)
         ax.set_xticks(np.linspace(-90, 90, 7))
         ax.set_xticklabels([f"{tick:.0f}°" for tick in np.linspace(-90, 90, 7)])
@@ -235,11 +241,13 @@ class TimeSeriesOutput(OutPut):
 class SeasonalOutput(OutPut):
     def __init__(self):
         self.t = []
-        self.series = {key: [] for key in ["T", "olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x"]}
+        self.series = {key: [] for key in ["T", "T_ext", "olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x", "Q_x_ext"]}
 
     def initialize(self, model):
         self.x = model.x
+        self.x_ext = np.r_[-1, self.x, 1] # Extended grid including poles
         self.lat = np.degrees(np.arcsin(self.x))
+        self.lat_ext = np.r_[-90, self.lat, 90]
         self.dt = model.config["dt_years"]
 
     def step(self, model, i):
@@ -248,6 +256,8 @@ class SeasonalOutput(OutPut):
         self.series["T"].append(model.T.copy())
         for key in ["olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x"]:
             self.series[key].append(diags[key])
+        self.series["T_ext"].append(np.r_[diags["T_poles"][0], diags["T"], diags["T_poles"][1]]) # Include poles
+        self.series["Q_x_ext"].append(phys.seasonal_Q(self.x_ext, model.params['S0'] if i < model.ctrl_nsteps else model.params['S1'], model, i)) # Seasonal Q including poles
 
     def finalize(self, model):
         # Convert to numpy arrays
@@ -286,20 +296,22 @@ class SeasonalOutput(OutPut):
     def plot_profiles(self, ax, field, ylabel, title):
         for label, idx in self.phases.items():
             data = self.last[field][idx]
+            # if field == "Q_x_ext": print(data)
+            lat = self.lat if len(data) == len(self.lat) else self.lat_ext
             if field == "MHTrans_PW":   # (x,y) tuple
                 ax.plot(data[0], data[1], label=label)
             else:
-                values = data - 273.15 if field == "T" else data
-                ax.plot(self.lat, values, label=label)
+                values = data - 273.15 if field == "T_ext" else data
+                ax.plot(lat, values, label=label)
         ax.set_title(title); ax.set_ylabel(ylabel)
         DefaultOutput.Stylize(self, ax)
 
-    def panel1(self, ax): self.plot_profiles(ax, "T", "°C", "Seasonal Temperature Profiles")
+    def panel1(self, ax): self.plot_profiles(ax, "T_ext", "°C", "Seasonal Temperature Profiles")
     def panel2(self, ax): self.plot_profiles(ax, "olr", "W/m²", "Seasonal OLR Profiles")
     def panel3(self, ax): self.plot_profiles(ax, "alpha", "Albedo", "Seasonal Albedo Profiles")
     def panel4(self, ax): self.plot_profiles(ax, "MHTrans_PW", "PW (10¹⁵ W)", "Seasonal Meridional Heat Transport")
     def panel5(self, ax): self.plot_profiles(ax, "conv", "W/m²", "Seasonal Heat Flux Convergence")
-    def panel6(self, ax): self.plot_profiles(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance")
+    def panel6(self, ax): self.plot_profiles(ax, "Q_x_ext", "W/m²", "Seasonal Solar Irradiance")
         
     def plot_time_series(self, ax, field, ylabel, title, mean_is_zero=False):
         for name, idx in self.locs.items():
@@ -309,7 +321,7 @@ class SeasonalOutput(OutPut):
         ax.set_xticks(self.t_last[np.linspace(0,len(self.t_last)-1, 7, dtype=np.int16)])
         ax.set_xticklabels([self.date_from_fraction(t) for t in np.linspace(0, 1, 7)])
         ax.set_xlabel("Date (during the last simulated year)")
-        ax.set_title(title); ax.set_ylabel(ylabel); ax.legend(); ax.grid(True)
+        ax.set_title(title); ax.set_ylabel(ylabel); ax.legend(); ax.grid(True), ax.set_xlim(self.t_last[0], self.t_last[-1])
 
     def panel7(self, ax): self.plot_time_series(ax, "Q_x", "W/m²", "Seasonal Solar Irradiance Time Series")
     def panel8(self, ax): self.plot_time_series(ax, "T", "°C", "Seasonal Temperature Variation Time Series", mean_is_zero=True)
@@ -392,5 +404,3 @@ class SeaDepthOutput(OutPut):
             ax.plot(self.lat_ext, phys.heat_capacity_profile(self.x_ext, self.T_ext[idx], self.k1) / phys.C_M, label=label)
         ax.set_title(r"Heat capacities based on ML depth and % of landmass"); ax.set_ylabel("m (equivalent water depth)")
         DefaultOutput.Stylize(self, ax)
-        if len(self.phases) == 1:
-            ax.legend_.remove()
