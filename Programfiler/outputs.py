@@ -47,8 +47,9 @@ def aspect_ratio(n, goal):
     h_num = h_num_top if (-n) % h_num_top <= (-n) % h_num_bottom else h_num_bottom # Choose the one that gives least empty plots # Prefers more columns at equality
     return int(np.ceil(n / h_num)), h_num
 
-def run_all_outputs(outputs, outdir, sim_info=""):
-    print(f"\033[1mFinished\033[0m simulation. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
+def run_all_outputs(outputs, outdir, sim_info="", runtime=None):
+    timedesc = f" in {runtime:.2f} seconds" if runtime is not None else ""
+    print(f"\033[1mFinished\033[0m simulation{timedesc}. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
     os.makedirs(outdir, exist_ok=True)
 
     axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]

@@ -1,5 +1,5 @@
 # main.py
-import os, yaml
+import os, yaml, time
 import model, modes, outputs
 
 PARAMETERS_FILE = 'parameters.yaml'
@@ -44,7 +44,9 @@ if __name__ == "__main__":
     
     # Create and run model
     climate_model = model.ClimateModel(config, params, modes_list, outputs_list)
+    start_time = time.perf_counter()
     climate_model.run()
+    end_time = time.perf_counter()
 
     # Make outputs
-    outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"], climate_model.sim_info) # Climate_model.config may be different from input config due to modes
+    outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"], climate_model.sim_info, end_time - start_time) # Climate_model.config may be different from input config due to modes

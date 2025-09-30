@@ -1,4 +1,4 @@
-k1: 0.06 # Ice albedo sensitivity (K^-1)
+k1: 0.06 # Ice temperature sensitivity (K^-1)
 k2: 0.01 # Diffusivity sensitivity (K^-1)
 k3: 0.5 # Longwave radiation sensitivity
 D0: 0.66 # Base diffusivity (W/m^2/K)
