@@ -183,7 +183,7 @@ def heat_capacity_profile(x, T, k1):
     #                         0.4,  # 50N -> Eurasia + N. America dominate, but N. Atlantic/Pacific present
     #                         0.65,  # 70N -> Arctic Ocean exists, though partly enclosed
     #                         1.0])  # Central Arctic Ocean basin
-    data = np.loadtxt("ocean_fraction_by_latitude_5deg.csv", delimiter=",", skiprows=1)
+    data = np.loadtxt("Datafiler/ocean_fraction_by_latitude_5deg.csv", delimiter=",", skiprows=1)
     lat_knots_f = data[:,0]
     f_ocean_knots = data[:,1]
     
