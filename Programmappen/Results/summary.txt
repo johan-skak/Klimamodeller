@@ -8,7 +8,7 @@ output_dir : Results
 ============================================
 
 === EBM Model Parameters ===================
-k1 (ice albedo sensitivity)         : 0.06
+k1 (ice temperature sensitivity)    : 0.06
 k2 (diffusivity sensitivity)        : 0.01
 k3 (longwave radiation sensitivity) : 0.5
 D0 (background diffusivity)         : 0.66
@@ -19,7 +19,7 @@ S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 4
 ============================================
 
-Output generated on 2025-09-29 14:05:17
+Output generated on 2025-10-02 08:38:47
 
 === EBM Summary =====================================================
 

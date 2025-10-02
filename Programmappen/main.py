@@ -11,13 +11,20 @@ if __name__ == "__main__":
     # Read config from file if it exists and update defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
-            config |= yaml.safe_load(f)
+            f_dict = yaml.safe_load(f)
 
-    if config["modes"] is None: config["modes"] = []
-    config["modes"].sort() # Sort modes alphabetically to have consistent naming of outdir
-    
+        for key, value in f_dict.items():
+            if key not in config:
+                modes.warn(f"Unknown config key: {key}. This key will be ignored.")
+            if value is not None:
+                config[key] = value
+    else:
+        modes.warn(f"No config file found ({CONFIG_FILE}) in current directory. Using default configs.")
+
     if config["ctrl_years"] is None or config["ctrl_years"] < 0: # Default to half simulation without forcing
         config["ctrl_years"] = config["years"]//2
+
+    config["modes"].sort() # Sort modes alphabetically to have consistent naming of outdir
 
     # Default parameters
     params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0, SD=250,
@@ -25,7 +32,15 @@ if __name__ == "__main__":
     # Read parameters from file if it exists and update defaults
     if os.path.exists(PARAMETERS_FILE):
         with open(PARAMETERS_FILE) as f:
-            params |= yaml.safe_load(f)
+            f_dict = yaml.safe_load(f)
+        
+        for key, value in f_dict.items():
+            if key not in params:
+                modes.warn(f"Unknown parameter: {key}. This parameter will be ignored.")
+            if value is not None:
+                params[key] = value
+    else:
+        modes.warn(f"No parameters file found ({PARAMETERS_FILE}) in current directory. Using default parameters.")
 
     if params["S1"] is None: # Default to no change in solar forcing
         params["S1"] = params["S0"]
