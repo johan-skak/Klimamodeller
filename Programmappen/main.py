@@ -7,7 +7,7 @@ CONFIG_FILE = 'config.yaml'
 
 if __name__ == "__main__":
     # Default config
-    config = {"years": 1000, "ctrl_years": None, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
+    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
     # Read config from file if it exists and update defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE) as f:
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     else:
         modes.warn(f"No config file found ({CONFIG_FILE}) in current directory. Using default configs.")
 
-    if config["ctrl_years"] is None or config["ctrl_years"] < 0: # Default to half simulation without forcing
+    if config["ctrl_years"] < 0: # Default to half simulation without forcing
         config["ctrl_years"] = config["years"]//2
 
     config["modes"].sort() # Sort modes alphabetically to have consistent naming of outdir
