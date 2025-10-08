@@ -144,7 +144,7 @@ class DefaultOutput(OutPut):
     # Panel 1: Temperature profiles  (°C)
     def panel1(self, ax):
         """Plot initial, control and final temperature profiles."""
-        for case, label in zip(["mid", "end", "init"], ["Control", "Final", "Initial"]):
+        for case, label in zip(["mid", "end", "init"], ["Control", "Forced", "Initial"]):
             ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label)
         ax.set_title("Temperature profile")
         ax.set_ylabel("°C")
