@@ -19,7 +19,7 @@ S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 4
 ============================================
 
-Output generated on 2025-10-08 14:31:47
+Output generated on 2025-10-09 19:29:25
 
 === EBM Summary =====================================================
 

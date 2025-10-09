@@ -146,6 +146,7 @@ class DefaultOutput(OutPut):
         """Plot initial, control and final temperature profiles."""
         for case, label in zip(["mid", "end", "init"], ["Control", "Forced", "Initial"]):
             ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label)
+        ax.axhline(0, color="#68d2fc", linestyle='--', alpha=0.7) # 0 °C line
         ax.set_title("Temperature profile")
         ax.set_ylabel("°C")
         self.Stylize(ax)
@@ -299,11 +300,13 @@ class SeasonalOutput(OutPut):
             data = self.last[field][idx]
             # if field == "Q_x_ext": print(data)
             lat = self.lat if len(data) == len(self.lat) else self.lat_ext
-            if field == "MHTrans_PW":   # (x,y) tuple
-                ax.plot(data[0], data[1], label=label)
+            if field == "MHTrans_PW":
+                ax.plot(data[0], data[1], label=label) # MHTrans_PW is a tuple: (lat, value)
             else:
                 values = data - 273.15 if field == "T_ext" else data
                 ax.plot(lat, values, label=label)
+            if field == "T_ext":
+                ax.axhline(0, color="#68d2fc", linestyle='--', alpha=0.7) # Add 0 °C line
         ax.set_title(title); ax.set_ylabel(ylabel)
         DefaultOutput.Stylize(self, ax)
 
