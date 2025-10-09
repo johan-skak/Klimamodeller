@@ -8,7 +8,7 @@ output_dir : Results_SeVa
 ============================================
 
 === EBM Model Parameters ===================
-k1 (ice albedo sensitivity)         : 0.06
+k1 (ice temperature sensitivity)    : 0.06
 k2 (diffusivity sensitivity)        : 0.01
 k3 (longwave radiation sensitivity) : 0.5
 D0 (background diffusivity)         : 0.66
@@ -16,10 +16,10 @@ T0 (initial temperature)            : 288.0
 SD (mixed layer sea depth)          : 20
 S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
-F  (additional forcing)             : 4
+F  (additional forcing)             : 0
 ============================================
 
-Output generated on 2025-09-29 14:23:50
+Output generated on 2025-10-09 19:24:52
 
 === EBM Summary ============================================================================
 
@@ -27,13 +27,13 @@ Output generated on 2025-09-29 14:23:50
 Modes: ['SeasonalVariation']
 Years run: 50, grid points: 200, Δt (years): 1 / 48
 
-Global mean temperature:  17.56°C (min  17.5 on Jun 28 (0.27y), max  17.6 on Oct 05 (0.54y))
-Equator temperature:      30.41°C (min  30.0 on Jul 28 (0.35y), max  30.8 on Apr 28 (0.10y))
-Denmark (56°N):            3.74°C (min  -4.1 on Mar 13 (0.98y), max  12.2 on Sep 04 (0.46y))
-North pole:              -10.10°C (min -18.4 on Apr 05 (0.04y), max  -1.3 on Aug 28 (0.44y))
-South pole:               -9.77°C (min -18.4 on Oct 05 (0.54y), max  -1.3 on Feb 26 (0.94y))
+Global mean temperature:  13.94°C (min  13.8 on Jan 04 (0.79y), max  14.0 on Apr 05 (0.04y))
+Equator temperature:      27.87°C (min  27.4 on Jul 28 (0.35y), max  28.3 on Apr 28 (0.10y))
+Denmark (56°N):           -1.15°C (min  -8.6 on Mar 13 (0.98y), max   7.1 on Sep 04 (0.46y))
+North pole:              -16.48°C (min -23.4 on Apr 05 (0.04y), max  -9.6 on Sep 04 (0.46y))
+South pole:              -16.20°C (min -23.4 on Oct 05 (0.54y), max  -9.6 on Mar 06 (0.96y))
 
-Last-year mean OLR:    244.4 W/m²
-Last-year mean albedo: 0.312
-Last-year mean D:      0.681 W m⁻² K⁻¹
+Last-year mean OLR:    237.7 W/m²
+Last-year mean albedo: 0.324
+Last-year mean D:      0.657 W m⁻² K⁻¹
 
