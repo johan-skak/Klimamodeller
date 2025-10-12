@@ -47,11 +47,19 @@ def aspect_ratio(n, goal):
     h_num = h_num_top if (-n) % h_num_top <= (-n) % h_num_bottom else h_num_bottom # Choose the one that gives least empty plots # Prefers more columns at equality
     return int(np.ceil(n / h_num)), h_num
 
-def run_all_outputs(outputs, outdir, sim_info="", runtime=None):
-    timedesc = f" in {runtime:.2f} seconds" if runtime is not None else ""
-    print(f"\033[1mFinished\033[0m simulation{timedesc}. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
-    os.makedirs(outdir, exist_ok=True)
+def generate_outputs_data(outputs, outdir, sim_info=""):
+    """Generate all outputs (figures and summary text) and return them. If no outputs are defined, return None.
+    Parameters:
+        - outputs: List of output objects to generate data for.
+        - outdir: Directory to save output files (string).
+        - sim_info: String containing information about simulation parameters and configuration.
 
+    Returns:
+        - fig: Matplotlib figure object containing all plots, or None if no plots were generated.
+        - summary: Summary string with ANSI formatting, or None if no summary was generated.
+        - clean_summary: Summary string without ANSI formatting, or None if no summary was generated.
+    """
+    # Make plots
     axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]
     if axes_funcs:
         v_num, h_num = aspect_ratio(len(axes_funcs), 1) # Aim for 16:9 aspect ratio of figure
@@ -63,8 +71,8 @@ def run_all_outputs(outputs, outdir, sim_info="", runtime=None):
         for ax in axs[len(axes_funcs):]:
             ax.axis('off')  # Turn off unused subplots
         fig.tight_layout()
-        fig.savefig(f"{outdir}/ebm_panels.png", dpi=150)
 
+    # Make summary
     summaries = [s for o in outputs for s in o.summaries]
     summary = ""
     if summaries:#Also print the summary
@@ -76,23 +84,49 @@ def run_all_outputs(outputs, outdir, sim_info="", runtime=None):
         header = "=== EBM Summary "
         pre_text = sim_info + f"Output generated on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n" + header + "=" * (max_line_length - len(header)) + "\n"
         clean_summary = pre_text + clean_summary
+    summary += f"Figures and summary saved in \033[4m{outdir}\033[0m\n"
+
+    return fig, axes_funcs, summary, clean_summary if summaries else None
+
+def run_all_outputs(outputs, outdir, sim_info="", runtime=None, app=False):
+    """Generate and save all outputs (figures and summary text) and return them if in app mode.
+    Parameters:
+        - outputs: List of output objects to generate data for.
+        - outdir: Directory to save output files (string).
+        - sim_info: String containing information about simulation parameters and configuration.
+        - runtime: Optional float indicating the runtime of the simulation in seconds.
+        - app: Boolean indicating if running in app mode (e.g., Streamlit). If True, returns outputs instead of saving to files.
+    
+    Returns (if app is True):
+        - fig: Matplotlib figure object containing all plots, or None if no plots were generated.
+        - clean_summary: Summary string without ANSI formatting, or None if no summary was generated.
+    """
+    fig, axes_funcs, summary, clean_summary = generate_outputs_data(outputs, outdir, sim_info)
+    
+    if not app: # Normal script mode
+        timedesc = f" in {runtime:.2f} seconds" if runtime is not None else ""
+        print(f"\033[1mFinished\033[0m simulation{timedesc}. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
+        os.makedirs(outdir, exist_ok=True)
+        fig.savefig(f"{outdir}/ebm_panels.png", dpi=150)
         with open(f"{outdir}/summary.txt", "w", encoding="utf-8") as f:
             f.write(clean_summary)
-    summary += f"Figures and summary saved in \033[4m{outdir}\033[0m\n"
-    print(summary)
+        print(summary)
+    else:
+        return axes_funcs, clean_summary # For Streamlit app
 
 class OutPut:
-    def __init__(self): pass
-
-    summaries = [] # List of functions to plot on axes_funcs (returns nothing)
-    axes_funcs = [] # List of functions to write summaries (returns strings)
+    def __init__(self):
+        self.summaries = [] # List of functions to plot on axes_funcs (returns nothing)
+        self.axes_funcs = [] # List of functions to write summaries (returns strings)
 
     def initialize(self, model): pass
     def step(self, model, i): pass
     def finalize(self, model): pass
     
 class DefaultOutput(OutPut):
-    diags = {} # Diagnostics
+    def __init__(self):
+        super().__init__()
+        self.diags = {} # Diagnostics
     
     def initialize(self, model):
         self.diags["init"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
@@ -218,6 +252,7 @@ class DefaultOutput(OutPut):
 
 class TimeSeriesOutput(OutPut):
     def __init__(self, vline=False):
+        super().__init__()
         self.Tg_series = []
         self.vline = vline
 
@@ -242,6 +277,7 @@ class TimeSeriesOutput(OutPut):
 
 class SeasonalOutput(OutPut):
     def __init__(self):
+        super().__init__()
         self.t = []
         self.series = {key: [] for key in ["T", "T_ext", "olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x", "Q_x_ext"]}
 
@@ -380,7 +416,9 @@ class SeasonalOutput(OutPut):
         return date.strftime("%b %d")
 
 class SeaDepthOutput(OutPut):
-    T_ext = [] # Series of sea depths
+    def __init__(self):
+        super().__init__()
+        self.T_ext = [] # Series of sea depths
 
     def initialize(self, model):
         self.k1 = model.params["k1"]

@@ -5,46 +5,15 @@ import model, modes, outputs
 PARAMETERS_FILE = 'parameters.yaml'
 CONFIG_FILE = 'config.yaml'
 
-if __name__ == "__main__":
-    # Default config
-    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
-    # Read config from file if it exists and update defaults
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE) as f:
-            f_dict = yaml.safe_load(f)
-
-        for key, value in f_dict.items():
-            if key not in config:
-                modes.warn(f"Unknown config key: {key}. This key will be ignored.")
-            if value is not None:
-                config[key] = value
-    else:
-        modes.warn(f"No config file found ({CONFIG_FILE}) in current directory. Using default configs.")
-
-    if config["ctrl_years"] < 0: # Default to half simulation without forcing
+def main(config, params, app=False):
+    # Adjust config and params if necessary
+    if config["ctrl_years"] is None or config["ctrl_years"] < 0: # Default to half simulation without forcing
         config["ctrl_years"] = config["years"]//2
-
-    config["modes"].sort() # Sort modes alphabetically to have consistent naming of outdir
-
-    # Default parameters
-    params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0, SD=250,
-                S0=1365.0, S1=None, F=0.0)
-    # Read parameters from file if it exists and update defaults
-    if os.path.exists(PARAMETERS_FILE):
-        with open(PARAMETERS_FILE) as f:
-            f_dict = yaml.safe_load(f)
-        
-        for key, value in f_dict.items():
-            if key not in params:
-                modes.warn(f"Unknown parameter: {key}. This parameter will be ignored.")
-            if value is not None:
-                params[key] = value
-    else:
-        modes.warn(f"No parameters file found ({PARAMETERS_FILE}) in current directory. Using default parameters.")
-
+    config["modes"].sort() # Sort modes alphabetically to have consistent naming of output directories
     if params["S1"] is None: # Default to no change in solar forcing
         params["S1"] = params["S0"]
 
+    # Create mode instances
     modes_list = [] # Is a list of mode class instances
     for mode_name in config["modes"]:
         if hasattr(modes, mode_name):
@@ -64,4 +33,45 @@ if __name__ == "__main__":
     end_time = time.perf_counter()
 
     # Make outputs
-    outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"], climate_model.sim_info, end_time - start_time) # Climate_model.config may be different from input config due to modes
+    out = outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"], climate_model.sim_info, end_time - start_time, app) # Climate_model.config may be different from input config due to modes
+    if app: return out # Only relevant for Streamlit app
+
+def configure_program():
+    # Default config
+    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
+
+    # Default parameters
+    params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0, SD=250,
+                S0=1365.0, S1=None, F=0.0)
+    
+    # Read config from file if it exists and update defaults
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE) as f:
+            f_dict = yaml.safe_load(f)
+
+        for key, value in f_dict.items():
+            if key not in config:
+                modes.warn(f"Unknown config key: {key}. This key will be ignored.")
+            if value is not None:
+                config[key] = value
+    else:
+        modes.warn(f"No config file found ({CONFIG_FILE}) in current directory. Using default configs.")
+
+    # Read parameters from file if it exists and update defaults
+    if os.path.exists(PARAMETERS_FILE):
+        with open(PARAMETERS_FILE) as f:
+            f_dict = yaml.safe_load(f)
+        
+        for key, value in f_dict.items():
+            if key not in params:
+                modes.warn(f"Unknown parameter: {key}. This parameter will be ignored.")
+            if value is not None:
+                params[key] = value
+    else:
+        modes.warn(f"No parameters file found ({PARAMETERS_FILE}) in current directory. Using default parameters.")
+
+    return config, params
+
+if __name__== "__main__":
+    config, params = configure_program() # Read config and params from files or use defaults
+    main(config, params) # Run model with config and params from files
