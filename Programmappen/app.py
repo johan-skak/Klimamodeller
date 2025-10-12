@@ -1,5 +1,6 @@
 import streamlit as st
 import matplotlib.pyplot as plt
+import re
 from main import main
 
 # Formatting of selected options in multiselect
@@ -89,7 +90,7 @@ def plot_in_tabs(axes_funcs, hash_code):
     choice = st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed")
     st.pyplot(figs[titles.index(choice)])
 
-@st.cache_data # Hash_code is only for hashing uniquely
+# @st.cache_data # Hash_code is only for hashing uniquely
 def make_plots_and_titles(_axes_funcs, hash_code):
     figs = []
     titles = []
@@ -103,7 +104,104 @@ def make_plots_and_titles(_axes_funcs, hash_code):
 def make_summary(summaries):
     if not summaries: return ""
     summary = "\n\n".join(summaries)
-    return summary
+    return ansi_to_html(summary)
+
+def ansi_to_html(s):
+    """Convert basic ANSI colors to HTML spans."""
+    colors = {
+        "31": "red",
+        "32": "green",
+        "33": "yellow",
+        "34": "blue",
+        "35": "magenta",
+        "36": "cyan",
+        "90": "gray",
+    }
+    style = """
+        <style>
+        pre {
+                white-space: pre-wrap;       /* preserve spacing + wrap long lines */
+                word-break: break-word;      /* allow breaking inside long words */
+                font-size: 0.95rem;
+                font-family: Arial, sans-serif;
+                line-height: 1.5;
+                padding: 0.5rem;
+                background: #f9f9f9;
+                border-radius: 0.5rem;
+                overflow-wrap: anywhere;
+                color: #31333f;              /* Streamlit default text color */
+            }
+        </style>
+    """
+    color_style = ""
+    for color in colors.values():
+        color_style += f".{color} {{color: {color};}}\n"
+    style += f"<style>\n{color_style}</style>"
+
+    # Replace \033[<n>m with <span style="color:...">
+    for code, color in colors.items():
+        s = re.sub(fr"\033\[{code}m", f"<span class='{color}'>", s)
+    # Reset code
+    s = re.sub(r"\033\[0m", "</span>", s)
+    # Warn if any unhandled codes remain
+    if re.search(r"\033\[\d+m", s):
+        st.info("Warning: Unhandled ANSI codes remain in summary.")
+    return f"{style}<pre>{format_terminal_output(s)}</pre>"
+
+def format_terminal_output(text: str) -> str:
+    lines = [l.rstrip() for l in text.splitlines()]
+    html_lines = []
+    block = []
+
+    def make_space(string, pattern, space):
+        return re.sub(fr"({pattern})",
+                    fr"<span style='display:inline-block; min-width:{space}em; text-align:right;'>\1</span>", 
+                    string)
+
+    def estimate_pixel_width(s: str, px_per_char=8, px_per_wide=12, px_per_medium_wide=10, px_per_narrow=5):
+        wide = sum(1 for c in s if c in "W@")
+        medium_wide = sum(1 for c in s if c in "mM")
+        narrow = sum(1 for c in s if c in "iIl.,;:'|!1 ()-°")
+        normal = len(s) - wide - narrow - medium_wide
+        return wide * px_per_wide + medium_wide * px_per_medium_wide + narrow * px_per_narrow + normal * px_per_char + 5
+
+    def flush_block(block):
+        """Render one logical block"""
+        if not block:
+            return ""
+        # Check if all lines have exactly one colon
+        if all(line.count(":") == 1 for line in block):
+            # Align them
+            max_px = max(estimate_pixel_width(line.split(":", 1)[0]) for line in block)
+            html = "<div style='display:table'>"
+            for line in block:
+                key, val = line.split(":", 1)
+                # Highlight numbers with inline-block spans (optional)
+                val_html = make_space(val.strip(), r"\s*[+-]?\d+[.,]\d{2}(?!(\d|[a-z]))", 2.9) # Numbers like 123.45 or -0.52
+                val_html = make_space(val_html, r"\s*[+-]?\d+[.,]\d{1}(?!(\d|[a-z]))", 2.3) # Numbers like 123.4 or -0.5
+                val_html = make_space(val_html, r"[A-Z][a-z]{2}", 1.8) # 3-letter month abbreviations
+                html += f"""
+                <div style='display:flex; justify-content:flex-start;'>
+                    <div style='min-width:{max_px}px; text-align:left;'>{key.strip()}:</div>
+                    <div style='flex:1; text-align:left;'>{val_html}</div>
+                </div>
+                """
+            html += "</div><br>"
+            return html
+        else:
+            # Otherwise, flat text block
+            return "<div style='margin:0.3em 0;'>" + "<br>".join(block) + "</div><br>"
+
+    # Group lines
+    for line in lines + [""]:
+        if not line.strip(): # Empty line indicates new block
+            html_lines.append(flush_block(block))
+            block = []
+        else:
+            block.append(line)
+
+    # Combine all
+    return ''.join(html_lines)
 
 def set_keyed_inputs(defaults_dict):
     for k, v in defaults_dict.items():
@@ -200,4 +298,5 @@ with col_out1:
 with col_out2:
     st.header("Sammenfatning af simulation")
     if summaries:
-        st.text(make_summary(summaries))
+        print("Summaries:", summaries[0])
+        st.html(make_summary(summaries))

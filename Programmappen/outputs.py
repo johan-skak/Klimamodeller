@@ -113,7 +113,7 @@ def run_all_outputs(outputs, outdir, sim_info="", runtime=None, app=False):
             f.write(clean_summary)
         print(summary)
     else:
-        return axes_funcs, [remove_ansi(s) for s in summaries] # For Streamlit app
+        return axes_funcs, summaries # For Streamlit app
 
 class OutPut:
     def __init__(self):
@@ -164,8 +164,8 @@ class DefaultOutput(OutPut):
         Years (control, forced): ({model.config['ctrl_years']}, {model.config['years']-model.config['ctrl_years']})
         Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
-        Control global mean T (°C): {T_ctrl_fmt}{diags['mid']['T_mean']-273.15:.1f}{end_fmt}
-        Forced  global mean T (°C): {T_forc_fmt}{diags['end']['T_mean']-273.15:.1f}{end_fmt}
+        Control global mean T (°C): {T_ctrl_fmt}{diags['mid']['T_mean']-273.15:.2f}{end_fmt}
+        Forced global mean T (°C): {T_forc_fmt}{diags['end']['T_mean']-273.15:.2f}{end_fmt}
         ΔT global (°C): {diags['end']['T_mean']-diags['mid']['T_mean']:.2f}
 
         North pole T control / forced (°C): {diags['mid']['T_poles'][1]-273.15:.1f} / {diags['end']['T_poles'][1]-273.15:.1f}
@@ -396,11 +396,11 @@ class SeasonalOutput(OutPut):
         Modes: {model.config.get("modes")}
         Years run: {model.config["years"]}, grid points: {model.config["nx"]}, Δt (years): 1 / {round(1 / self.dt)}
         
-        Global mean temperature: {fmt(global_T)}
-        Equator temperature:     {fmt(equator_T)}
-        Denmark (56°N):          {fmt(denmark_T)}
-        North pole:              {fmt(north_T)}
-        South pole:              {fmt(south_T)}
+        {"Global mean temperature:":<24}{fmt(global_T)}
+        {"Equator temperature:":<24}{fmt(equator_T)}
+        {"Denmark (56°N):":<24}{fmt(denmark_T)}
+        {"North pole:":<24}{fmt(north_T)}
+        {"South pole:":<24}{fmt(south_T)}
 
         Last-year mean OLR:    {self.last['olr'].mean():.1f} W/m²
         Last-year mean albedo: {self.last['alpha'].mean():.3f}
