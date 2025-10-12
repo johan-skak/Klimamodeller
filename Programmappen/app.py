@@ -78,21 +78,32 @@ tabs_html = """
 
 @st.cache_data
 def run(params, config):
-    print("Running main with params:", params, "and config:", config)
-    axes_funcs, summary = main(config | {"output_dir": "Results"}, params, app=True) # output_dir is ignored in app mode but must be a string 
-    return axes_funcs, summary
+    return main(config | {"output_dir": "Results"}, params, app=True) # output_dir is ignored in app mode but must be a string 
 
-def plot_in_tabs(axes_funcs):
+def plot_in_tabs(axes_funcs, hash_code):
+    figs, titles = make_plots_and_titles(axes_funcs, hash_code)
+    if not figs:
+        st.info("Ingen figurer at vise. Prøv at ændre parametre eller konfiguration.")
+        return
+    st.markdown(tabs_html, unsafe_allow_html=True)
+    choice = st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed")
+    st.pyplot(figs[titles.index(choice)])
+
+@st.cache_data # Hash_code is only for hashing uniquely
+def make_plots_and_titles(_axes_funcs, hash_code):
     figs = []
     titles = []
-    for ax_func in axes_funcs:
+    for ax_func in _axes_funcs:
         fig, ax = plt.subplots()
         ax_func(ax)
         figs.append(fig)
         titles.append(ax.get_title())
-    st.markdown(tabs_html, unsafe_allow_html=True)
-    choice = st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed")
-    st.pyplot(figs[titles.index(choice)])
+    return figs, titles
+
+def make_summary(summaries):
+    if not summaries: return ""
+    summary = "\n\n".join(summaries)
+    return summary
 
 def set_keyed_inputs(defaults_dict):
     for k, v in defaults_dict.items():
@@ -182,10 +193,11 @@ with st.form("input_form"):
     submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og konfiguration", width="stretch")
 
 # Run simulation and show outputs
+axes_funcs, summaries = run(params, config)
 col_out1, col_out2 = st.columns(2, border=True)
 with col_out1:
-    axes_funcs, summary = run(params, config)
-    plot_in_tabs(axes_funcs)
+    plot_in_tabs(axes_funcs, summaries)
 with col_out2:
-    if summary:
-        st.text("Sammenfatning af simulation:  " + summary)
+    st.header("Sammenfatning af simulation")
+    if summaries:
+        st.text(make_summary(summaries))

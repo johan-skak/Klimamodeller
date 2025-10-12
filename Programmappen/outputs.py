@@ -47,10 +47,11 @@ def aspect_ratio(n, goal):
     h_num = h_num_top if (-n) % h_num_top <= (-n) % h_num_bottom else h_num_bottom # Choose the one that gives least empty plots # Prefers more columns at equality
     return int(np.ceil(n / h_num)), h_num
 
-def generate_outputs_data(outputs, outdir, sim_info=""):
+def generate_outputs_data(axes_funcs, summaries, outdir, sim_info=""):
     """Generate all outputs (figures and summary text) and return them. If no outputs are defined, return None.
     Parameters:
-        - outputs: List of output objects to generate data for.
+        - axes_funcs: List of functions to draw axes for plots
+        - summaries: List of summary strings for each output
         - outdir: Directory to save output files (string).
         - sim_info: String containing information about simulation parameters and configuration.
 
@@ -60,7 +61,6 @@ def generate_outputs_data(outputs, outdir, sim_info=""):
         - clean_summary: Summary string without ANSI formatting, or None if no summary was generated.
     """
     # Make plots
-    axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]
     if axes_funcs:
         v_num, h_num = aspect_ratio(len(axes_funcs), 1) # Aim for 16:9 aspect ratio of figure
         fig, axs = plt.subplots(v_num, h_num, figsize=(6*h_num, 27/8*v_num)) # Width:Height = 6*h:27/8*v = 16*h:9*v
@@ -73,7 +73,6 @@ def generate_outputs_data(outputs, outdir, sim_info=""):
         fig.tight_layout()
 
     # Make summary
-    summaries = [s for o in outputs for s in o.summaries]
     summary = ""
     if summaries:#Also print the summary
         for sfunc in summaries:
@@ -86,10 +85,10 @@ def generate_outputs_data(outputs, outdir, sim_info=""):
         clean_summary = pre_text + clean_summary
     summary += f"Figures and summary saved in \033[4m{outdir}\033[0m\n"
 
-    return fig, axes_funcs, summary, clean_summary if summaries else None
+    return fig, summary, clean_summary if summaries else None
 
 def run_all_outputs(outputs, outdir, sim_info="", runtime=None, app=False):
-    """Generate and save all outputs (figures and summary text) and return them if in app mode.
+    """Generate and save all outputs (figures and summary text) or return output generators if in app mode.
     Parameters:
         - outputs: List of output objects to generate data for.
         - outdir: Directory to save output files (string).
@@ -98,12 +97,14 @@ def run_all_outputs(outputs, outdir, sim_info="", runtime=None, app=False):
         - app: Boolean indicating if running in app mode (e.g., Streamlit). If True, returns outputs instead of saving to files.
     
     Returns (if app is True):
-        - fig: Matplotlib figure object containing all plots, or None if no plots were generated.
-        - clean_summary: Summary string without ANSI formatting, or None if no summary was generated.
+        - axes_funcs: List of functions to draw axes for plots.
+        - summaries: List of summary strings for each output.
     """
-    fig, axes_funcs, summary, clean_summary = generate_outputs_data(outputs, outdir, sim_info)
+    axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]
+    summaries = [s for o in outputs for s in o.summaries]
     
     if not app: # Normal script mode
+        fig, summary, clean_summary = generate_outputs_data(axes_funcs, summaries, outdir, sim_info)
         timedesc = f" in {runtime:.2f} seconds" if runtime is not None else ""
         print(f"\033[1mFinished\033[0m simulation{timedesc}. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
         os.makedirs(outdir, exist_ok=True)
@@ -112,7 +113,7 @@ def run_all_outputs(outputs, outdir, sim_info="", runtime=None, app=False):
             f.write(clean_summary)
         print(summary)
     else:
-        return axes_funcs, clean_summary # For Streamlit app
+        return axes_funcs, [remove_ansi(s) for s in summaries] # For Streamlit app
 
 class OutPut:
     def __init__(self):
