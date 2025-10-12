@@ -164,11 +164,11 @@ class DefaultOutput(OutPut):
         Years (control, forced): ({model.config['ctrl_years']}, {model.config['years']-model.config['ctrl_years']})
         Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
-        Control global mean T (°C): {T_ctrl_fmt}{diags['mid']['T_mean']-273.15:.2f}{end_fmt}
-        Forced global mean T (°C): {T_forc_fmt}{diags['end']['T_mean']-273.15:.2f}{end_fmt}
-        ΔT global (°C): {diags['end']['T_mean']-diags['mid']['T_mean']:.2f}
+        Control global mean T (°C): {temp_fmt(diags['mid']['T_mean']-273.15,1)}
+        Forced global mean T (°C): {temp_fmt(diags['end']['T_mean']-273.15,1)}
+        ΔT global (°C): {diags['end']['T_mean']-diags['mid']['T_mean']:.1f}
 
-        North pole T control / forced (°C): {diags['mid']['T_poles'][1]-273.15:.1f} / {diags['end']['T_poles'][1]-273.15:.1f}
+        North pole T control / forced (°C): {temp_fmt(diags['mid']['T_poles'][1]-273.15,1)} / {temp_fmt(diags['end']['T_poles'][1]-273.15,1)}
         North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): {self.polar_ampl:.3f}
 
         Outgoing longwave radiation (OLR) control / forced (W m⁻²): {diags['mid']['olr'].mean():.0f} / {diags['end']['olr'].mean():.0f}
@@ -371,19 +371,13 @@ class SeasonalOutput(OutPut):
     def summarize(self, model):
         t = self.t_last
         
-        def color_fmt(n, p=1):
-            start_fmt = end_fmt = "\033[0m"
-            if n > 40: start_fmt = "\033[31m"
-            elif n < 0: start_fmt = "\033[34m"
-            return f"{start_fmt}{n:>{p+4}.{p}f}{end_fmt}"
-        
         def fmt(series):
             min_idx, max_idx = series.argmin(), series.argmax()
             min_time = t[min_idx] % 1   # fractional year since last equinox
             max_time = t[max_idx] % 1
-            return (color_fmt(series.mean(), 2) + "°C " +
-                    "(min " + color_fmt(series.min()) + f" on {self.date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
-                    f"max " + color_fmt(series.max()) + f" on {self.date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
+            return (temp_fmt(series.mean(), 2) + "°C " +
+                    "(min " + temp_fmt(series.min()) + f" on {self.date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
+                    f"max " + temp_fmt(series.max()) + f" on {self.date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
 
         global_T = self.last["T"].mean(axis=1) - 273.15
         equator_T = self.last["T"][:, self.locs["Equator"]] - 273.15
@@ -447,3 +441,9 @@ class SeaDepthOutput(OutPut):
             ax.plot(self.lat_ext, phys.heat_capacity_profile(self.x_ext, self.T_ext[idx], self.k1) / phys.C_M, label=label)
         ax.set_title(r"Heat capacities based on ML depth and % of landmass"); ax.set_ylabel("m (equivalent water depth)")
         DefaultOutput.Stylize(self, ax)
+      
+def temp_fmt(n, p=1):
+    start_fmt = end_fmt = "\033[0m"
+    if n > 40: start_fmt = "\033[31m"
+    elif n < 0: start_fmt = "\033[34m"
+    return f"{start_fmt}{n:>{p+4}.{p}f}{end_fmt}"

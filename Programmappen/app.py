@@ -76,7 +76,6 @@ tabs_html = """
     </style>
 """
 
-
 @st.cache_data
 def run(params, config):
     return main(config | {"output_dir": "Results"}, params, app=True) # output_dir is ignored in app mode but must be a string 
@@ -84,7 +83,7 @@ def run(params, config):
 def plot_in_tabs(axes_funcs, hash_code):
     figs, titles = make_plots_and_titles(axes_funcs, hash_code)
     if not figs:
-        st.info("Ingen figurer at vise. Prøv at ændre parametre eller konfiguration.")
+        st.info("Ingen figurer at vise. Prøv at ændre parametre eller opsætning.")
         return
     st.markdown(tabs_html, unsafe_allow_html=True)
     choice = st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed")
@@ -109,10 +108,10 @@ def make_summary(summaries):
 def ansi_to_html(s):
     """Convert basic ANSI colors to HTML spans."""
     colors = {
-        "31": "red",
+        "31": "#ff5100", # orange-red
         "32": "green",
         "33": "yellow",
-        "34": "blue",
+        "34": "#00aeff", # ice-blue
         "35": "magenta",
         "36": "cyan",
         "90": "gray",
@@ -126,7 +125,7 @@ def ansi_to_html(s):
                 font-family: Arial, sans-serif;
                 line-height: 1.5;
                 padding: 0.5rem;
-                background: #f9f9f9;
+                background: #1ea8493d;  /* Light green background */
                 border-radius: 0.5rem;
                 overflow-wrap: anywhere;
                 color: #31333f;              /* Streamlit default text color */
@@ -134,13 +133,13 @@ def ansi_to_html(s):
         </style>
     """
     color_style = ""
-    for color in colors.values():
-        color_style += f".{color} {{color: {color};}}\n"
+    for code, color in colors.items():
+        color_style += f"._{code} {{color: {color};}}\n"
     style += f"<style>\n{color_style}</style>"
 
     # Replace \033[<n>m with <span style="color:...">
     for code, color in colors.items():
-        s = re.sub(fr"\033\[{code}m", f"<span class='{color}'>", s)
+        s = re.sub(fr"\033\[{code}m", f"<span class='_{code}'>", s)
     # Reset code
     s = re.sub(r"\033\[0m", "</span>", s)
     # Warn if any unhandled codes remain
@@ -148,7 +147,7 @@ def ansi_to_html(s):
         st.info("Warning: Unhandled ANSI codes remain in summary.")
     return f"{style}<pre>{format_terminal_output(s)}</pre>"
 
-def format_terminal_output(text: str) -> str:
+def format_terminal_output(text):
     lines = [l.rstrip() for l in text.splitlines()]
     html_lines = []
     block = []
@@ -199,6 +198,7 @@ def format_terminal_output(text: str) -> str:
             block = []
         else:
             block.append(line)
+    html_lines[-1] = html_lines[-1].rstrip("<br>") # Remove very last <br>
 
     # Combine all
     return ''.join(html_lines)
@@ -275,8 +275,8 @@ with st.form("input_form"):
                 if value is not None: params[key] = value
 
     with col2:
-        with st.expander("⚙️ Konfiguration"):
-            st.header("Konfiguration")
+        with st.expander("⚙️ Opsætning"):
+            st.header("Opsætning")
             # Overwrite config dict with user input when form is submitted
             years       = st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
             ctrl_years  = st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
@@ -288,7 +288,7 @@ with st.form("input_form"):
                 if value is not None:
                     config[key] = value
 
-    submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og konfiguration", width="stretch")
+    submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og opsætning", width="stretch")
 
 # Run simulation and show outputs
 axes_funcs, summaries = run(params, config)
@@ -298,5 +298,4 @@ with col_out1:
 with col_out2:
     st.header("Sammenfatning af simulation")
     if summaries:
-        print("Summaries:", summaries[0])
         st.html(make_summary(summaries))
