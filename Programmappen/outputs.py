@@ -259,7 +259,8 @@ class TimeSeriesOutput(OutPut):
     def initialize(self, model):
         self.dt = model.config["dt_years"]
         self.Tg_series.append(model.T.mean() - 273.15)
-        self.vline = model.config["ctrl_years"] > 0 and model.params['F'] != 0 # Whether to draw vertical line at forcing time
+         # Whether to draw vertical line at forcing time
+        self.vline = model.config["ctrl_years"] > 0 and (model.params['F'] != 0 or model.params['S1'] != model.params['S0'])
 
     def step(self, model, i):
         self.Tg_series.append(model.T.mean() - 273.15)
