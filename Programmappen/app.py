@@ -3,23 +3,6 @@ import matplotlib.pyplot as plt
 import re
 from main import main
 
-# Formatting of selected options in multiselect
-st.markdown("""
-    <style>
-        /* --- Highlight of selected options --- */
-        span[data-baseweb="tag"] {
-            background-color: #80b080 !important;
-        }
-            
-        /* Change the max width of the main content area */
-        .block-container {
-            max-width: 90%;
-            width: 1500px;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-
 tabs_html = """
     <style>
         /* Scrollable container */
@@ -224,8 +207,21 @@ DEFAULT_SEVA_SEADEP_CONFIG = DEFAULT_SEVA_CONFIG | dict(modes=["SeasonalVariatio
 params = DEFAULT_PARAMS.copy()
 config = DEFAULT_CONFIG.copy()
 
+# Set page config
+st.markdown("""
+    <style>            
+        /* Change the max width of the main content area */
+        .block-container {
+            max-width: 90%;
+            width: 1500px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- Begin Streamlit app ---
 st.title("Energibalance model af Jordens klima")
+
+st.toggle("Vis alle parametre", key="show_all_params", value=False)
 
 # Top buttons in one row
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
@@ -264,12 +260,14 @@ with st.form("input_form"):
             F  = st.number_input(r"F: Ekstra strålingspåvirkning (W/m²)", value=DEFAULT_PARAMS["F"], key="F", step=1.0)
             SD = st.number_input("SD: Varmekapacitet i meter havdybde (m)", value=DEFAULT_PARAMS["SD"], key="SD", step=10)
             D0 = st.number_input("D0: Diffusionskoefficient (m²/s)", value=DEFAULT_PARAMS["D0"], key="D0", step=0.1)
-            T0 = st.number_input("T0: Initial temperatur (K)", value=DEFAULT_PARAMS["T0"], key="T0", step=10)
-            S0 = st.number_input("S0: Solindstråling under kontrolperiode (W/m²)", value=DEFAULT_PARAMS["S0"], key="S0", step=50)
-            S1 = st.number_input("S1: Solindstråling efter kontrolperiode (W/m²) (lad stå tom for ingen ændring)", value=DEFAULT_PARAMS["S1"], key="S1", step=50)
-            k1 = st.number_input("k1: Temperatursensitivitet for isdannelse (K⁻¹)", value=DEFAULT_PARAMS["k1"], key="k1", step=0.01)
-            k2 = st.number_input("k2: Temperatursensitivitet for diffusivitet (K⁻¹)", value=DEFAULT_PARAMS["k2"], key="k2", step=0.005)
-            k3 = st.number_input("k3: Feedbackstyrke af drivhuseffekten", value=DEFAULT_PARAMS["k3"], key="k3", step=0.1)
+            if st.session_state.show_all_params:
+                T0 = st.number_input("T0: Initial temperatur (K)", value=DEFAULT_PARAMS["T0"], key="T0", step=10)
+                S0 = st.number_input("S0: Solindstråling under kontrolperiode (W/m²)", value=DEFAULT_PARAMS["S0"], key="S0", step=50)
+                S1 = st.number_input("S1: Solindstråling efter kontrolperiode (W/m²) (lad stå tom for ingen ændring)", value=DEFAULT_PARAMS["S1"], key="S1", step=50)
+                k1 = st.number_input("k1: Temperatursensitivitet for isdannelse (K⁻¹)", value=DEFAULT_PARAMS["k1"], key="k1", step=0.01)
+                k2 = st.number_input("k2: Temperatursensitivitet for diffusivitet (K⁻¹)", value=DEFAULT_PARAMS["k2"], key="k2", step=0.005)
+                k3 = st.number_input("k3: Feedbackstyrke af drivhuseffekten", value=DEFAULT_PARAMS["k3"], key="k3", step=0.1)
+            else: T0, S0, S1, k1, k2, k3 = (DEFAULT_PARAMS[k] for k in ("T0", "S0", "S1", "k1", "k2", "k3"))
             input_dict = dict(F=F, SD=SD, D0=D0, T0=T0, S0=S0, S1=S1, k1=k1, k2=k2, k3=k3)
             for key, value in input_dict.items():
                 if value is not None: params[key] = value
@@ -282,7 +280,13 @@ with st.form("input_form"):
             ctrl_years  = st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
             dt_years    = st.number_input("Tidsskridt (år)", value=DEFAULT_CONFIG["dt_years"], key="dt_years", step=0.01, min_value=0.01, max_value=10.0)
             nx          = st.number_input("Antal gitterpunkter", value=DEFAULT_CONFIG["nx"], key="nx", step=100, min_value=10, max_value=1000)
-            modes       = st.multiselect("Modeller", options=["SeasonalVariation", "VariableSeaDepth"], default=DEFAULT_CONFIG["modes"], key="modes")
+            st.markdown("""<style> 
+                    /* --- Highlight of selected options in multiselect --- */
+                    span[data-baseweb="tag"] {
+                        background-color: #80b080 !important;
+                    }
+                </style>""", unsafe_allow_html=True)
+            modes       = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth"], default=DEFAULT_CONFIG["modes"], key="modes")
             input_dict  = dict(years=years, ctrl_years=ctrl_years, dt_years=dt_years, nx=nx, modes=modes)
             for key, value in input_dict.items():
                 if value is not None:
