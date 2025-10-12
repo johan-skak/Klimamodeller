@@ -24,7 +24,7 @@ def main(config, params, app=False):
     # Gather outputs from modes
     outputs_list = [o for m in modes_list for o in m.outputs]
     if not outputs_list:
-        outputs_list = [outputs.DefaultOutput(), outputs.TimeSeriesOutput(True)] # Default outputs with forcing line
+        outputs_list = [outputs.DefaultOutput(), outputs.TimeSeriesOutput()] # Default outputs with forcing line
     
     # Create and run model
     climate_model = model.ClimateModel(config, params, modes_list, outputs_list)

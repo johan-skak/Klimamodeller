@@ -252,14 +252,14 @@ class DefaultOutput(OutPut):
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
 
 class TimeSeriesOutput(OutPut):
-    def __init__(self, vline=False):
+    def __init__(self):
         super().__init__()
         self.Tg_series = []
-        self.vline = vline
 
     def initialize(self, model):
         self.dt = model.config["dt_years"]
         self.Tg_series.append(model.T.mean() - 273.15)
+        self.vline = model.config["ctrl_years"] > 0 and model.params['F'] != 0 # Whether to draw vertical line at forcing time
 
     def step(self, model, i):
         self.Tg_series.append(model.T.mean() - 273.15)

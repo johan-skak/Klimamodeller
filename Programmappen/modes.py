@@ -20,7 +20,7 @@ class Mode:
 class SeasonalVariation(Mode):
     def __init__(self, modes):
         super().__init__()
-        self.outputs.extend([outputs.SeasonalOutput(), outputs.TimeSeriesOutput(True)])
+        self.outputs.extend([outputs.SeasonalOutput(), outputs.TimeSeriesOutput()])
 
     def initialize(self, model):
         years = model.config["years"]
@@ -43,7 +43,7 @@ class VariableSeaDepth(Mode):
     def __init__(self, modes):
         super().__init__()
         if len(modes) == 1:
-            self.outputs.extend([outputs.DefaultOutput(), outputs.TimeSeriesOutput(True)])
+            self.outputs.extend([outputs.DefaultOutput(), outputs.TimeSeriesOutput()])
         self.outputs.append(outputs.SeaDepthOutput())
 
     def initialize(self, model):

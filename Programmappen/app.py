@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 import re
 from main import main
@@ -9,6 +10,7 @@ tabs_html = """
         div[aria-label="Vælg figur:"] {
         overflow-x: auto;
         flex-wrap: nowrap;
+        margin-bottom: 1rem;
         }
 
         /* Hide default radio dots */
@@ -68,9 +70,12 @@ def plot_in_tabs(axes_funcs, hash_code):
     if not figs:
         st.info("Ingen figurer at vise. Prøv at ændre parametre eller opsætning.")
         return
+    
+    # Remember last choice if possible
+    index = titles.index(st.session_state.get("choice", titles[0])) if st.session_state.get("choice") in titles else 0
     st.markdown(tabs_html, unsafe_allow_html=True)
-    choice = st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed")
-    st.pyplot(figs[titles.index(choice)])
+    st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed", key="choice", index=index)
+    st.pyplot(figs[titles.index(st.session_state["choice"])])
 
 # @st.cache_data # Hash_code is only for hashing uniquely
 def make_plots_and_titles(_axes_funcs, hash_code):
@@ -188,20 +193,10 @@ def format_terminal_output(text):
 
 def set_keyed_inputs(defaults_dict):
     for k, v in defaults_dict.items():
-        if k not in st.session_state: raise ValueError(f"Key {k} not in session_state")
-        st.session_state[k] = v
+        st.session_state[k] = v # Update forms and create keys if they don't exist yet (toggle off)
 
 DEFAULT_PARAMS = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288, SD=250, S0=1365, S1=None, F=4.0)
 DEFAULT_CONFIG = dict(years=1000, ctrl_years=None, dt_years=1.0, nx=200, modes=[])
-
-DEFAULT_SEVA_PARAMS = DEFAULT_PARAMS | dict(F=0.0, SD=20) # No forcing in seasonal variation mode
-DEFAULT_SEVA_CONFIG = DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation"])
-
-DEFAULT_SEADEP_PARAMS = DEFAULT_PARAMS | dict(F=0.0, SD=None)
-DEFAULT_SEADEP_CONFIG = DEFAULT_CONFIG | dict(modes=["VariableSeaDepth"])
-
-DEFAULT_SEVA_SEADEP_PARAMS = DEFAULT_SEVA_PARAMS | dict(SD=None)
-DEFAULT_SEVA_SEADEP_CONFIG = DEFAULT_SEVA_CONFIG | dict(modes=["SeasonalVariation", "VariableSeaDepth"])
 
 # Initialize with default values each time the script is rerun
 params = DEFAULT_PARAMS.copy()
@@ -235,20 +230,20 @@ with col_btn2:
     # --- Seasonal Variation button ---
     if st.button("Sæsonvariation", icon="🌱"):
         # Set the relevant keyed input widgets to their default values
-        set_keyed_inputs(DEFAULT_SEVA_PARAMS)
-        set_keyed_inputs(DEFAULT_SEVA_CONFIG)
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=20))  # No forcing in seasonal variation mode
+        set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation"]))
 with col_btn3:
     # --- Variable Sea Depth button ---
     if st.button("Variabel havdybde", icon="🌊"):
         # Set the relevant keyed input widgets to their default values
-        set_keyed_inputs(DEFAULT_SEADEP_PARAMS)
-        set_keyed_inputs(DEFAULT_SEADEP_CONFIG)
+        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=None))  # Sea depth is irrelevant in this mode
+        set_keyed_inputs(DEFAULT_CONFIG | dict(modes=["VariableSeaDepth"]))
 with col_btn4:
     # --- Seasonal Variation + Variable Sea Depth button ---
     if st.button("🌱🌊 Sæsonvariation + Variabel havdybde"):
         # Set the relevant keyed input widgets to their default values
-        set_keyed_inputs(DEFAULT_SEVA_SEADEP_PARAMS)
-        set_keyed_inputs(DEFAULT_SEVA_SEADEP_CONFIG)
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=None)) # No forcing and sea depth is irrelevant
+        set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation", "VariableSeaDepth"]))
 
 
 with st.form("input_form"):
@@ -303,3 +298,86 @@ with col_out2:
     st.header("Sammenfatning af simulation")
     if summaries:
         st.html(make_summary(summaries))
+
+# import json
+
+# scroll_tabs = components.declare_component(name="scroll_tabs", path="./frontend")
+
+# def tab_component(titles, selected):
+#     # Escape data for JS
+#     titles_json = json.dumps(titles)
+#     selected_json = json.dumps(selected)
+
+#     html = f"""
+#         <html>
+#         <head>
+#         <style>
+#             body {{
+#                 font-family: sans-serif;
+#                 margin: 0;
+#             }}
+#             #tabs {{
+#                 overflow-x: auto;
+#                 white-space: nowrap;
+#                 padding: 4px;
+#                 border-bottom: 1px solid #ccc;
+#                 width: 500px;
+#             }}
+#             .tab {{
+#                 display: inline-block;
+#                 padding: 6px 12px;
+#                 margin: 0 2px;
+#                 border-radius: 6px;
+#                 cursor: pointer;
+#                 background: #eee;
+#                 color: #333;
+#                 user-select: none;
+#                 white-space: nowrap;
+#             }}
+#             .tab.selected {{
+#                 background: #0078ff;
+#                 color: white;
+#                 font-weight: 600;
+#             }}
+#         </style>
+#         </head>
+#         <body>
+#         <div id="tabs"></div>
+#         <script>
+#                 const titles = {titles_json};
+#                 const selected = {selected_json};
+#                 const container = document.getElementById("tabs");
+
+#                 titles.forEach(t => {{
+#                     const el = document.createElement("div");
+#                     el.className = "tab" + (t === selected ? " selected" : "");
+#                     el.textContent = t;
+#                     el.onclick = () => {{
+#                         window.parent.postMessage(
+#                         {{isStreamlitMessage: true, type: 'streamlit:setComponentValue', value: t}},
+#                         "*"
+#                         );
+#                     }};
+#                     container.appendChild(el);
+#                 }});
+
+#                 // Scroll to the selected one after rendering
+#                 const sel = container.querySelector(".selected");
+#                 if (sel) sel.scrollIntoView({{ behavior: "smooth", inline: "center" }});
+#         </script>
+#         </body>
+#         </html>
+#     """
+#     return scroll_tabs(html=html, height=60)
+
+# # Example Streamlit usage
+# titles = ["Global Mean Surface Temperature", "Equator", "Denmark (56°N)", "North pole", "South pole"]
+# selected = st.session_state.get("choice", titles[0])
+# selected
+
+# clicked = tab_component(titles, selected)
+
+# if clicked != selected:
+#     var = clicked
+
+# st.write("Selected:", var)
