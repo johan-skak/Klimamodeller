@@ -47,7 +47,7 @@ def aspect_ratio(n, goal):
     h_num = h_num_top if (-n) % h_num_top <= (-n) % h_num_bottom else h_num_bottom # Choose the one that gives least empty plots # Prefers more columns at equality
     return int(np.ceil(n / h_num)), h_num
 
-def generate_outputs_data(axes_funcs, summaries, outdir, sim_info=""):
+def generate_outputs_data(axes_funcs, summaries, outdir="", sim_info=""):
     """Generate all outputs (figures and summary text) and return them. If no outputs are defined, return None.
     Parameters:
         - axes_funcs: List of functions to draw axes for plots

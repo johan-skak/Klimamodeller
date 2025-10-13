@@ -1,8 +1,9 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
-import re
+import re, io
 from main import main
+from outputs import generate_outputs_data, print_simulation_info
 
 class ButtonGroup:
     def __init__(self, specials=None, funcs=None):
@@ -222,6 +223,12 @@ def set_keyed_inputs(defaults_dict):
     for k, v in defaults_dict.items():
         st.session_state[k] = v # Update forms and create keys if they don't exist yet (toggle off)
 
+def make_png(fig):
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches='tight')
+    buf.seek(0)
+    return buf
+
 # Initialize run_away state to false
 if "run_away" not in st.session_state:
     st.session_state.run_away = False
@@ -287,7 +294,18 @@ with st.sidebar:
 
 
 # --- Begin Streamlit app ---
-st.title("Energibalance model af Jordens klima")
+col_header1, col_header2 = st.columns([6, 1])
+col_header1.title("Energibalance model af Jordens klima")
+col_header2.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
+if col_header2.button("Lav filer til download", type="primary"):
+    if "axes_funcs" not in st.session_state or "summaries" not in st.session_state:
+        st.error("Kør først simuleringen før du kan lave filer til download.")
+    else:
+        sim_info = print_simulation_info(st.session_state["config"], st.session_state["params"])
+        fig, _, clean_summary = generate_outputs_data(st.session_state["axes_funcs"], st.session_state["summaries"], sim_info=sim_info)
+        png_buf = make_png(fig)
+        col_header2.download_button("Download figurer (.png)", png_buf, file_name="Klimamodel_figurer.png", on_click="ignore", mime="image/png")
+        col_header2.download_button("Download opsummering (.txt)", clean_summary.encode('utf-8'), file_name="Klimamodel_opsummering.txt", on_click="ignore")
 
 st.toggle("Vis alle parametre", key="show_all_params", value=False)
 
@@ -362,14 +380,14 @@ with st.form("input_form"):
     submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og opsætning", width="stretch")
 
 # Run simulation and show outputs
-axes_funcs, summaries = run(st.session_state.params, st.session_state.config)
+st.session_state.axes_funcs, st.session_state.summaries = run(st.session_state.params, st.session_state.config)
 col_out1, col_out2 = st.columns(2, border=True)
 with col_out1:
-    plot_in_tabs(axes_funcs, summaries)
+    plot_in_tabs(st.session_state.axes_funcs, st.session_state.summaries)
 with col_out2:
     st.header("Sammenfatning af simulation")
-    if summaries:
-        st.html(make_summary(summaries))
+    if st.session_state.summaries:
+        st.html(make_summary(st.session_state.summaries))
     
     # st.markdown("---")
     # st.header("Om denne app")
