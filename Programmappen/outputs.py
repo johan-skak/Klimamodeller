@@ -181,7 +181,7 @@ class DefaultOutput(OutPut):
         """Plot initial, control and final temperature profiles."""
         for case, label in zip(["mid", "end", "init"], ["Control", "Forced", "Initial"]):
             ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label)
-        ax.axhline(0, color="#68d2fc", linestyle='--', alpha=0.7) # 0 °C line
+        ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # 0 °C line
         ax.set_title("Temperature profile")
         ax.set_ylabel("°C")
         self.Stylize(ax)
@@ -344,7 +344,7 @@ class SeasonalOutput(OutPut):
                 values = data - 273.15 if field == "T_ext" else data
                 ax.plot(lat, values, label=label)
             if field == "T_ext":
-                ax.axhline(0, color="#68d2fc", linestyle='--', alpha=0.7) # Add 0 °C line
+                ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # Add 0 °C line
         ax.set_title(title); ax.set_ylabel(ylabel)
         DefaultOutput.Stylize(self, ax)
 

@@ -4,6 +4,33 @@ import matplotlib.pyplot as plt
 import re
 from main import main
 
+class ButtonGroup:
+    def __init__(self, specials=None, funcs=None):
+        self.specials = specials if isinstance(specials, list) else ( [specials] if specials else [] )
+        self.funcs = funcs if isinstance(funcs, list) else ( [funcs] if funcs else [] )
+        if len(self.specials) != len(self.funcs):
+            raise ValueError("specials and funcs must have the same length")
+        self.clicked = None
+
+    def button(self, label, special=None, **kwargs):
+        """Creates a Streamlit button and remembers if it was clicked."""
+        def run_first(inFunc=None):
+            """Run the inFunc first (if any), then the special funcs that match the special argument (if any)."""
+            if inFunc: inFunc()
+            # Call the functions with True/False depending on whether the special button was clicked
+            for _special, func in zip(self.specials, self.funcs):
+                func(_special == special)
+        
+        # Callback runs run_first then any on_click function given in kwargs
+        inFunc = kwargs.pop("on_click", None)
+        kwargs["on_click"] = lambda: run_first(inFunc)
+
+        if st.button(label, **kwargs):
+            self.clicked = label
+            # st.session_state["last_clicked"] = label
+
+        return self.clicked == label
+
 tabs_html = """
     <style>
         /* Scrollable container */
@@ -63,7 +90,7 @@ tabs_html = """
 
 @st.cache_data
 def run(params, config):
-    return main(config | {"output_dir": "Results"}, params, app=True) # output_dir is ignored in app mode but must be a string 
+    return main(config | {"output_dir": "Results"}, params, app=True) # output_dir is speciald in app mode but must be a string 
 
 def plot_in_tabs(axes_funcs, hash_code):
     figs, titles = make_plots_and_titles(axes_funcs, hash_code)
@@ -195,14 +222,26 @@ def set_keyed_inputs(defaults_dict):
     for k, v in defaults_dict.items():
         st.session_state[k] = v # Update forms and create keys if they don't exist yet (toggle off)
 
+# Initialize run_away state to false
+if "run_away" not in st.session_state:
+    st.session_state.run_away = False
+# Function to set run_away
+def set_run_away(Bool):
+    st.session_state.run_away = Bool
+# Create ButtonGroup instance
+btns = ButtonGroup("run_away", set_run_away)
+
+
 DEFAULT_PARAMS = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288, SD=250, S0=1365, S1=None, F=4.0)
 DEFAULT_CONFIG = dict(years=1000, ctrl_years=None, dt_years=1.0, nx=200, modes=[])
 
-# Initialize with default values each time the script is rerun
-params = DEFAULT_PARAMS.copy()
-config = DEFAULT_CONFIG.copy()
+# Initialize with default values if not already done
+if "params" not in st.session_state or "config" not in st.session_state:
+    st.session_state.params = DEFAULT_PARAMS.copy()
+    st.session_state.config = DEFAULT_CONFIG.copy()
 
 # Set page config
+st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍")
 st.markdown("""
     <style>            
         /* Change the max width of the main content area */
@@ -213,6 +252,40 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Sidebar for more presets and info
+st.markdown("<style> div.stHorizontalBlock:has(.slim-container) {gap: 0.3em} </style>", unsafe_allow_html=True)
+with st.sidebar:
+    st.markdown("---")
+    st.header("Forudindstillinger")
+    st.markdown("Nogle forudindstillinger for standard-eksperimenter.")
+    if btns.button("Standardtilstand", icon="🔄"):
+        set_keyed_inputs(DEFAULT_PARAMS)
+        set_keyed_inputs(DEFAULT_CONFIG)
+    if btns.button("Nul-diffusion", icon=":material/mode_fan_off:"):
+        set_keyed_inputs(DEFAULT_PARAMS | dict(D0 = 0.0, F=0.0))  # No forcing in seasonal variation mode
+        set_keyed_inputs(DEFAULT_CONFIG)
+    if btns.button("Snebold-Jorden", icon="❄️"):
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, T0=235))  # No forcing and no sea depth
+        set_keyed_inputs(DEFAULT_CONFIG)
+    if btns.button("Havdybde 2000 m", icon="🌊"):
+        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=2000))
+        set_keyed_inputs(DEFAULT_CONFIG)
+        st.session_state.choice = "Global Mean Surface Temperature"
+    if btns.button("Havdybde 20 m", icon="🪨"):
+        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))
+        set_keyed_inputs(DEFAULT_CONFIG)
+        st.session_state.choice = "Global Mean Surface Temperature"
+    if btns.button("Løbsk drivhuseffekt", special="run_away", icon="🔥"):
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=20, k3=1.1))  # Strong forcing and strong feedback
+        set_keyed_inputs(DEFAULT_CONFIG)
+        st.session_state.choice = "Global Mean Surface Temperature"
+    if st.session_state.run_away: # Show input field if the last button click was runaway
+        col_run_away1, col_run_away2 = st.columns([1, 2])
+        col_run_away1.markdown("<div class='slim-container'>Indstil k3:</div>", unsafe_allow_html=True)
+        col_run_away2.number_input("Label", label_visibility="collapsed", value=1.1, key="k3_runaway", step=0.1)
+        st.session_state["k3"] = st.session_state["k3_runaway"]
+
+
 # --- Begin Streamlit app ---
 st.title("Energibalance model af Jordens klima")
 
@@ -222,25 +295,25 @@ st.toggle("Vis alle parametre", key="show_all_params", value=False)
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
 with col_btn1:
     # --- Default button ---
-    if st.button("Standardtilstand", icon="🔄"):
+    if btns.button("Standardtilstand", icon="🔄"):
         # Set the relevant keyed input widgets to their default values
         set_keyed_inputs(DEFAULT_PARAMS)
         set_keyed_inputs(DEFAULT_CONFIG)
 with col_btn2:
     # --- Seasonal Variation button ---
-    if st.button("Sæsonvariation", icon="🌱"):
+    if btns.button("Sæsonvariation", icon="🌱"):
         # Set the relevant keyed input widgets to their default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=20))  # No forcing in seasonal variation mode
         set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation"]))
 with col_btn3:
     # --- Variable Sea Depth button ---
-    if st.button("Variabel havdybde", icon="🌊"):
+    if btns.button("Variabel havdybde", icon="🌊"):
         # Set the relevant keyed input widgets to their default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=None))  # Sea depth is irrelevant in this mode
         set_keyed_inputs(DEFAULT_CONFIG | dict(modes=["VariableSeaDepth"]))
 with col_btn4:
     # --- Seasonal Variation + Variable Sea Depth button ---
-    if st.button("🌱🌊 Sæsonvariation + Variabel havdybde"):
+    if btns.button("🌱🌊 Sæsonvariation + Variabel havdybde"):
         # Set the relevant keyed input widgets to their default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=None)) # No forcing and sea depth is irrelevant
         set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation", "VariableSeaDepth"]))
@@ -252,29 +325,28 @@ with st.form("input_form"):
         with st.expander("🧮 Parametre"):
             st.header("Parametre")
             # Overwrite params dict with user input when form is submitted
-            F  = st.number_input(r"F: Ekstra strålingspåvirkning (W/m²)", value=DEFAULT_PARAMS["F"], key="F", step=1.0)
-            SD = st.number_input("SD: Varmekapacitet i meter havdybde (m)", value=DEFAULT_PARAMS["SD"], key="SD", step=10)
-            D0 = st.number_input("D0: Diffusionskoefficient (m²/s)", value=DEFAULT_PARAMS["D0"], key="D0", step=0.1)
+            st.number_input(r"F: Ekstra strålingspåvirkning (W/m²)", value=DEFAULT_PARAMS["F"], key="F", step=1.0)
+            st.number_input("SD: Varmekapacitet i meter havdybde (m)", value=DEFAULT_PARAMS["SD"], key="SD", step=10)
+            st.number_input("D0: Diffusionskoefficient (m²/s)", value=DEFAULT_PARAMS["D0"], key="D0", step=0.1)
+            st.number_input("T0: Initial temperatur (K)", value=DEFAULT_PARAMS["T0"], key="T0", step=10)
             if st.session_state.show_all_params:
-                T0 = st.number_input("T0: Initial temperatur (K)", value=DEFAULT_PARAMS["T0"], key="T0", step=10)
-                S0 = st.number_input("S0: Solindstråling under kontrolperiode (W/m²)", value=DEFAULT_PARAMS["S0"], key="S0", step=50)
-                S1 = st.number_input("S1: Solindstråling efter kontrolperiode (W/m²) (lad stå tom for ingen ændring)", value=DEFAULT_PARAMS["S1"], key="S1", step=50)
-                k1 = st.number_input("k1: Temperatursensitivitet for isdannelse (K⁻¹)", value=DEFAULT_PARAMS["k1"], key="k1", step=0.01)
-                k2 = st.number_input("k2: Temperatursensitivitet for diffusivitet (K⁻¹)", value=DEFAULT_PARAMS["k2"], key="k2", step=0.005)
-                k3 = st.number_input("k3: Feedbackstyrke af drivhuseffekten", value=DEFAULT_PARAMS["k3"], key="k3", step=0.1)
-            else: T0, S0, S1, k1, k2, k3 = (DEFAULT_PARAMS[k] for k in ("T0", "S0", "S1", "k1", "k2", "k3"))
-            input_dict = dict(F=F, SD=SD, D0=D0, T0=T0, S0=S0, S1=S1, k1=k1, k2=k2, k3=k3)
-            for key, value in input_dict.items():
-                if value is not None: params[key] = value
+                st.number_input("S0: Solindstråling under kontrolperiode (W/m²)", value=DEFAULT_PARAMS["S0"], key="S0", step=50)
+                st.number_input("S1: Solindstråling efter kontrolperiode (W/m²) (lad stå tom for ingen ændring)", value=DEFAULT_PARAMS["S1"], key="S1", step=50)
+                st.number_input("k1: Temperatursensitivitet for isdannelse (K⁻¹)", value=DEFAULT_PARAMS["k1"], key="k1", step=0.01)
+                st.number_input("k2: Temperatursensitivitet for diffusivitet (K⁻¹)", value=DEFAULT_PARAMS["k2"], key="k2", step=0.005)
+                st.number_input("k3: Feedbackstyrke af drivhuseffekten", value=DEFAULT_PARAMS["k3"], key="k3", step=0.1)
+            for key in DEFAULT_PARAMS.keys():
+                value = st.session_state.get(key)
+                if value is not None: st.session_state.params[key] = value
 
     with col2:
         with st.expander("⚙️ Opsætning"):
             st.header("Opsætning")
             # Overwrite config dict with user input when form is submitted
-            years       = st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
-            ctrl_years  = st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
-            dt_years    = st.number_input("Tidsskridt (år)", value=DEFAULT_CONFIG["dt_years"], key="dt_years", step=0.01, min_value=0.01, max_value=10.0)
-            nx          = st.number_input("Antal gitterpunkter", value=DEFAULT_CONFIG["nx"], key="nx", step=100, min_value=10, max_value=1000)
+            st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
+            st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
+            st.number_input("Tidsskridt (år)", value=DEFAULT_CONFIG["dt_years"], key="dt_years", step=0.01, min_value=0.01, max_value=10.0)
+            st.number_input("Antal gitterpunkter", value=DEFAULT_CONFIG["nx"], key="nx", step=100, min_value=10, max_value=1000)
             st.markdown("""<style> 
                     /* --- Highlight of selected options in multiselect --- */
                     span[data-baseweb="tag"] {
@@ -282,15 +354,15 @@ with st.form("input_form"):
                     }
                 </style>""", unsafe_allow_html=True)
             modes       = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth"], default=DEFAULT_CONFIG["modes"], key="modes")
-            input_dict  = dict(years=years, ctrl_years=ctrl_years, dt_years=dt_years, nx=nx, modes=modes)
-            for key, value in input_dict.items():
+            for key in DEFAULT_CONFIG.keys():
+                value = st.session_state.get(key)
                 if value is not None:
-                    config[key] = value
+                    st.session_state.config[key] = value
 
     submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og opsætning", width="stretch")
 
 # Run simulation and show outputs
-axes_funcs, summaries = run(params, config)
+axes_funcs, summaries = run(st.session_state.params, st.session_state.config)
 col_out1, col_out2 = st.columns(2, border=True)
 with col_out1:
     plot_in_tabs(axes_funcs, summaries)
@@ -298,6 +370,30 @@ with col_out2:
     st.header("Sammenfatning af simulation")
     if summaries:
         st.html(make_summary(summaries))
+    
+    # st.markdown("---")
+    # st.header("Om denne app")
+    # st.markdown("""
+    #     Denne app er lavet af [Johan Skak](https://github.com/JohanSkak) 
+    #     i samarbejde med Egil Kaas, professor i klimafysik ved Niels Bohr Institutet, Københavns Universitet,
+    #     og Ludvig Pio, studentermedhjælper ved samme institut.
+    #     Formålet med appen er at give en simpel introduktion til, hvordan Jordens klima fungerer,
+    #     og hvordan forskellige faktorer påvirker klimaet.
+    #     Appen er baseret på en simpel energibalance model, som simulerer Jordens klima over tid.
+    #     Kildekoden til appen og modellen kan findes på [GitHub](https://github.com/JohanSkak/Klimamodeller).
+    #     """)
+
+
+
+
+
+
+
+
+
+
+
+
 
 # import json
 

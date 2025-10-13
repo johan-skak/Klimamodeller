@@ -24,3 +24,9 @@ I øjeblikket er OLR=\\sigma(T-D\_T)^4, altså et 4. gradspolynomium. Måske kun
 
 Alt kode skal kommenteres og funktioner skal dokumenteres (med """Beskrivelse""").
 
+
+
+**DefaultOuput Forced**
+
+Sørg for at ctrl labels kun er synlige hvis der er forskel på ctrl og forced.
+
