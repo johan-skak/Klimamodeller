@@ -103,7 +103,11 @@ def plot_in_tabs(axes_funcs, hash_code):
     index = titles.index(st.session_state.get("choice", titles[0])) if st.session_state.get("choice") in titles else 0
     st.markdown(tabs_html, unsafe_allow_html=True)
     st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed", key="choice", index=index)
-    st.pyplot(figs[titles.index(st.session_state["choice"])])
+    fig = figs[titles.index(st.session_state["choice"])]
+    if not isinstance(fig, plt.Figure):
+        ani = fig() # Call the function to get the animation
+        components.html(ani.to_jshtml(), height=1000)
+    else: st.pyplot(figs[titles.index(st.session_state["choice"])])
 
 # @st.cache_data # Hash_code is only for hashing uniquely
 def make_plots_and_titles(_axes_funcs, hash_code):
@@ -111,8 +115,11 @@ def make_plots_and_titles(_axes_funcs, hash_code):
     titles = []
     for ax_func in _axes_funcs:
         fig, ax = plt.subplots()
-        ax_func(ax)
-        figs.append(fig)
+        ani_func = ax_func(ax)
+        if ani_func is not None:
+            figs.append(ani_func)
+        else:
+            figs.append(fig)
         titles.append(ax.get_title())
     return figs, titles
 
@@ -247,7 +254,7 @@ st.session_state.params = DEFAULT_PARAMS.copy()
 st.session_state.config = DEFAULT_CONFIG.copy()
 
 # Set page config
-st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍")
+st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍",)
 st.markdown("""
     <style>            
         /* Change the max width of the main content area */
@@ -270,15 +277,15 @@ with st.sidebar:
     if btns.button("Nul-diffusion", icon=":material/mode_fan_off:"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(D0 = 0.0, F=0.0))  # No forcing in seasonal variation mode
         set_keyed_inputs(DEFAULT_CONFIG)
-    if btns.button("Snebold-Jorden", icon="❄️"):
-        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, T0=235))  # No forcing and no sea depth
-        set_keyed_inputs(DEFAULT_CONFIG)
     if btns.button("Havdybde 2000 m", icon="🌊"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=2000))
         set_keyed_inputs(DEFAULT_CONFIG)
         st.session_state.choice = "Global Mean Surface Temperature"
     if btns.button("Havdybde 20 m", icon="🪨"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))
+        set_keyed_inputs(DEFAULT_CONFIG)
+    if btns.button("Snebold-Jorden", icon="❄️"):
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, T0=245))  # No forcing and no sea depth
         set_keyed_inputs(DEFAULT_CONFIG)
         st.session_state.choice = "Global Mean Surface Temperature"
     if btns.button("Løbsk drivhuseffekt", special="run_away", icon="🔥"):
@@ -293,10 +300,10 @@ with st.sidebar:
 
 
 # --- Begin Streamlit app ---
-col_header1, col_header2 = st.columns([6, 1])
+col_header1, col_header2, col_header3 = st.columns([4.5, 1, 1.3])
 col_header1.title("Energibalance model af Jordens klima")
 col_header2.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
-if col_header2.button("Lav filer til download", type="primary"):
+if col_header2.button("Lav datafiler til download", type="primary"):
     if "axes_funcs" not in st.session_state or "summaries" not in st.session_state:
         st.error("Kør først simuleringen før du kan lave filer til download.")
     else:
@@ -305,6 +312,8 @@ if col_header2.button("Lav filer til download", type="primary"):
         png_buf = make_png(fig)
         col_header2.download_button("Download figurer (.png)", png_buf, file_name="Klimamodel_figurer.png", on_click="ignore", mime="image/png")
         col_header2.download_button("Download opsummering (.txt)", clean_summary.encode('utf-8'), file_name="Klimamodel_opsummering.txt", on_click="ignore")
+col_header3.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
+col_header3.download_button("Download modelbeskrivelse (.pdf)", open("Energybalancemodel.pdf", "rb").read(), file_name="Energybalancemodel.pdf", on_click="ignore", mime="application/pdf", type="primary")
 
 st.toggle("Vis alle parametre", key="show_all_params", value=False)
 

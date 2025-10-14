@@ -5,6 +5,7 @@ import textwrap # For dedenting summary text
 import os, datetime, re
 from matplotlib.ticker import FixedLocator # For custom minor ticks
 import physics as phys
+import AnimateOnEarth as Earth
 
 def remove_ansi(text):
     ansi_escape = re.compile(r'\x1B\[[0-9;]*m') # Matches ANSI escape sequences like \033[1;33m
@@ -442,7 +443,33 @@ class SeaDepthOutput(OutPut):
             ax.plot(self.lat_ext, phys.heat_capacity_profile(self.x_ext, self.T_ext[idx], self.k1) / phys.C_M, label=label)
         ax.set_title(r"Heat capacities based on ML depth and % of landmass"); ax.set_ylabel("m (equivalent water depth)")
         DefaultOutput.Stylize(self, ax)
-      
+
+class TemperatureOnEarthOutput(OutPut):
+    def __init__(self):
+        super().__init__()
+        self.T_ext_series = []
+
+    def initialize(self, model):
+        self.dt = model.config["dt_years"]
+        self.x = model.x
+        self.lat = np.degrees(np.arcsin(self.x))
+        self.x_ext = np.r_[-1, self.x, 1] # Extended grid including poles
+        self.lat_ext = np.r_[-90, self.lat, 90]
+
+    def step(self, model, i):
+        T_poles = model.funcs['poles_temperature'](model.T)
+        self.T_ext_series.append(np.r_[T_poles[0], model.T, T_poles[1]] - 273.15) # Store in °C
+
+    def finalize(self, model):
+        T_poles = model.funcs['poles_temperature'](model.T)
+        self.T_ext_series.append(np.r_[T_poles[0], model.T, T_poles[1]] - 273.15) # Store in °C
+        self.T_ext_series = np.array(self.T_ext_series)
+        self.axes_funcs = [self.panel]
+
+    def panel(self, ax):
+        """Plot temperature on Earth surface (latitude vs time)."""
+        return Earth.animate_on_earth(self.lat_ext, self.T_ext_series, ax=ax, title="Surface Temperature at end (°C)", cbar_label="°C")
+
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"
     if n > 40: start_fmt = "\033[31m"
