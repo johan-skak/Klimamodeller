@@ -468,7 +468,7 @@ class TemperatureOnEarthOutput(OutPut):
 
     def panel(self, ax):
         """Plot temperature on Earth surface (latitude vs time)."""
-        return Earth.animate_on_earth(self.lat_ext, self.T_ext_series, ax=ax, title="Surface Temperature at end (°C)", cbar_label="°C")
+        return Earth.animate_on_earth(self.lat_ext, self.T_ext_series, ax=ax, title="Animation of surface temperature", cbar_label="°C")
 
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"
