@@ -313,7 +313,7 @@ if col_header2.button("Lav datafiler til download", type="primary"):
         col_header2.download_button("Download figurer (.png)", png_buf, file_name="Klimamodel_figurer.png", on_click="ignore", mime="image/png")
         col_header2.download_button("Download opsummering (.txt)", clean_summary.encode('utf-8'), file_name="Klimamodel_opsummering.txt", on_click="ignore")
 col_header3.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
-col_header3.download_button("Download modelbeskrivelse (.pdf)", open("Energybalancemodel.pdf", "rb").read(), file_name="Energybalancemodel.pdf", on_click="ignore", mime="application/pdf", type="primary")
+# col_header3.download_button("Download modelbeskrivelse (.pdf)", open("Energybalancemodel.pdf", "rb").read(), file_name="Energybalancemodel.pdf", on_click="ignore", mime="application/pdf", type="primary")
 
 st.toggle("Vis alle parametre", key="show_all_params", value=False)
 
