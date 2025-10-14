@@ -158,7 +158,7 @@ def ansi_to_html(s):
                 padding: 0.5rem;
                 background: #1ea8493d;  /* Light green background */
                 border-radius: 0.5rem;
-                overflow-wrap: anywhere;
+                overflow-x: auto; /* Enable horizontal scrolling if needed */
                 color: #31333f;              /* Streamlit default text color */
             }
         </style>
@@ -206,7 +206,6 @@ def format_terminal_output(text):
             max_val_px = max(estimate_pixel_width(re.sub(r'<[^>]+>', '', line.split(":", 1)[1][1:])) for line in block)
             html = f"""<div class='block' style='display:grid;
                         grid-template-columns: minmax({int(max_key_px*0.6)}px, {max_key_px}px) {max_val_px}px; /* First col min 60% of max, second col fixed */
-                        overflow-x: auto; /* Enable horizontal scrolling if needed */
                         align-items:end;'>"""
             for line in block:
                 key, val = line.split(":", 1)
