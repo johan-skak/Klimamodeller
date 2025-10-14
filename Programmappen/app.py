@@ -105,9 +105,14 @@ def plot_in_tabs(axes_funcs, hash_code):
     st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed", key="choice", index=index)
     fig = figs[titles.index(st.session_state["choice"])]
     if not isinstance(fig, plt.Figure):
-        ani = fig() # Call the function to get the animation
-        components.html(ani.to_jshtml(), height=1000)
+        html = call_animate_on_earth(fig, hash_code) # Call the function to get the animation
+        components.html(html, height=1000)
     else: st.pyplot(figs[titles.index(st.session_state["choice"])])
+
+@st.cache_data
+def call_animate_on_earth(_func, hash_code):
+    print("Creating animation...")
+    return _func()
 
 # @st.cache_data # Hash_code is only for hashing uniquely
 def make_plots_and_titles(_axes_funcs, hash_code):

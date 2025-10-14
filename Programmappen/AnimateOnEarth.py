@@ -95,6 +95,7 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
     ax.set_title(title) # Set initial title. Useful in app
 
     def wrapper():
+        print("Inside wrapper...")
         # --- parameters ---
         res = 400 # resolution (pixels per axis)
 
@@ -127,8 +128,8 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
         ax.set_aspect('equal')
         ax.axis('off')
         plt.colorbar(im, fraction=0.046, pad=0.04, label=cbar_label)
-
-        return ani
+        print("Animation created.")
+        return ani.to_jshtml()
     
     return wrapper # Lazy evaluation to avoid creating figure when not needed
 
