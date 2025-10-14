@@ -101,7 +101,7 @@ def plot_in_tabs(axes_funcs, hash_code):
     
     # Remember last choice if possible
     index = titles.index(st.session_state.get("choice", titles[0])) if st.session_state.get("choice") in titles else 0
-    st.markdown(tabs_html, unsafe_allow_html=True)
+    st.html(tabs_html)
     st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed", key="choice", index=index)
     fig = figs[titles.index(st.session_state["choice"])]
     size = 6
@@ -285,7 +285,7 @@ st.session_state.config = DEFAULT_CONFIG.copy()
 
 # Set page config
 st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍",)
-st.markdown("""
+st.html("""
     <style>            
         /* Change the max width of the main content area */
         .block-container {
@@ -293,10 +293,10 @@ st.markdown("""
             width: 1500px;
         }
     </style>
-""", unsafe_allow_html=True)
+""")
 
 # Sidebar for more presets and info
-st.markdown("<style> div.stHorizontalBlock:has(.slim-container) {gap: 0.3em} </style>", unsafe_allow_html=True)
+st.html("<style> div.stHorizontalBlock:has(.slim-container) {gap: 0.3em} </style>")
 with st.sidebar:
     st.markdown("---")
     st.header("Forudindstillinger")
@@ -324,7 +324,7 @@ with st.sidebar:
         st.session_state.choice = "Global Mean Surface Temperature"
     if st.session_state.run_away: # Show input field if the last button click was runaway
         col_run_away1, col_run_away2 = st.columns([1, 2])
-        col_run_away1.markdown("<div class='slim-container'>Indstil k3:</div>", unsafe_allow_html=True)
+        col_run_away1.html("<div class='slim-container'>Indstil k3:</div>")
         col_run_away2.number_input("Label", label_visibility="collapsed", value=1.1, key="k3_runaway", step=0.1)
         st.session_state["k3"] = st.session_state["k3_runaway"]
 
@@ -332,7 +332,7 @@ with st.sidebar:
 # --- Begin Streamlit app ---
 col_header1, col_header2, col_header3 = st.columns([4.5, 1, 1.3])
 col_header1.title("Energibalancemodel af Jordens klima")
-col_header2.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
+col_header2.html("<div style='height: 32px'></div>")
 if col_header2.button("Lav datafiler til download", type="primary"):
     if "axes_funcs" not in st.session_state or "summaries" not in st.session_state:
         st.error("Kør først simuleringen før du kan lave filer til download.")
@@ -342,7 +342,7 @@ if col_header2.button("Lav datafiler til download", type="primary"):
         png_buf = make_png(fig)
         col_header2.download_button("Download figurer (.png)", png_buf, file_name="Klimamodel_figurer.png", on_click="ignore", mime="image/png")
         col_header2.download_button("Download opsummering (.txt)", clean_summary.encode('utf-8'), file_name="Klimamodel_opsummering.txt", on_click="ignore")
-col_header3.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
+col_header3.html("<div style='height: 32px'></div>")
 col_header3.download_button("Download modelbeskrivelse (.pdf)", open(os.path.join(os.path.dirname(__file__),"Energybalancemodel.pdf"), "rb").read(), file_name="Energybalancemodel.pdf", on_click="ignore", mime="application/pdf", type="primary")
 
 st.toggle("Vis alle parametre", key="show_all_params", value=False, on_change=show_params_expander)
@@ -403,12 +403,12 @@ with st.form("input_form"):
             st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
             st.number_input("Tidsskridt (år)", value=DEFAULT_CONFIG["dt_years"], key="dt_years", step=0.01, min_value=0.01, max_value=10.0)
             st.number_input("Antal gitterpunkter", value=DEFAULT_CONFIG["nx"], key="nx", step=100, min_value=10, max_value=1000)
-            st.markdown("""<style> 
+            st.html("""<style> 
                     /* --- Highlight of selected options in multiselect --- */
                     span[data-baseweb="tag"] {
                         background-color: #80b080 !important;
                     }
-                </style>""", unsafe_allow_html=True)
+                </style>""")
             modes       = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth"], default=DEFAULT_CONFIG["modes"], key="modes")
             for key in DEFAULT_CONFIG.keys():
                 value = st.session_state.get(key)
