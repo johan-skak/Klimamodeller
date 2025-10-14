@@ -106,7 +106,7 @@ def plot_in_tabs(axes_funcs, hash_code):
     fig = figs[titles.index(st.session_state["choice"])]
     if not isinstance(fig, plt.Figure):
         html = call_animate_on_earth(fig, hash_code) # Call the function to get the animation
-        components.html(html, height=1000)
+        components.html(html, height=670)
     else: st.pyplot(figs[titles.index(st.session_state["choice"])])
 
 @st.cache_data
