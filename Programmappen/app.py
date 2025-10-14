@@ -104,15 +104,18 @@ def plot_in_tabs(axes_funcs, hash_code):
     st.markdown(tabs_html, unsafe_allow_html=True)
     st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed", key="choice", index=index)
     fig = figs[titles.index(st.session_state["choice"])]
+    size = 6
     if not isinstance(fig, plt.Figure):
-        html = call_animate_on_earth(fig, hash_code) # Call the function to get the animation
-        components.html(html, height=670)
-    else: st.pyplot(figs[titles.index(st.session_state["choice"])])
+        html = call_animate_on_earth(fig, size, hash_code) # Call the function to get the animation
+        components.html(html, height=size*100+70)
+    else:
+        # fig.set_size_inches(size, size)
+        st.pyplot(figs[titles.index(st.session_state["choice"])])
 
 @st.cache_data
-def call_animate_on_earth(_func, hash_code):
+def call_animate_on_earth(_func, size, hash_code):
     print("Creating animation...")
-    return _func()
+    return _func(size)
 
 # @st.cache_data # Hash_code is only for hashing uniquely
 def make_plots_and_titles(_axes_funcs, hash_code):
@@ -201,10 +204,8 @@ def format_terminal_output(text):
             # Compute maximal widths of each column over all lines
             max_key_px = max(estimate_pixel_width(line.split(":", 1)[0]) for line in block)
             max_val_px = max(estimate_pixel_width(re.sub(r'<[^>]+>', '', line.split(":", 1)[1][1:])) for line in block)
-            print(max_val_px, [re.sub(r'<[^>]+>', '', line.split(":", 1)[1][1:]) for line in block])
             html = f"""<div class='block' style='display:grid;
                         grid-template-columns: minmax({int(max_key_px*0.6)}px, {max_key_px}px) {max_val_px}px; /* First col min 60% of max, second col fixed */
-                        column-gap:0;
                         overflow-x: auto; /* Enable horizontal scrolling if needed */
                         align-items:end;'>"""
             for line in block:
@@ -253,6 +254,18 @@ def make_png(fig):
     fig.savefig(buf, format="png", bbox_inches='tight')
     buf.seek(0)
     return buf
+
+# Initialize expand state to false
+if "expand" not in st.session_state:
+    st.session_state.expand = False
+if "show_all_params" not in st.session_state:
+    st.session_state.show_all_params = False
+# Function to toggle expand state
+def show_params_expander():
+    if st.session_state.show_all_params:
+        st.session_state.expand = True
+    else:
+        st.session_state.expand = False
 
 # Initialize run_away state to false
 if "run_away" not in st.session_state:
@@ -319,7 +332,7 @@ with st.sidebar:
 
 # --- Begin Streamlit app ---
 col_header1, col_header2, col_header3 = st.columns([4.5, 1, 1.3])
-col_header1.title("Energibalance model af Jordens klima")
+col_header1.title("Energibalancemodel af Jordens klima")
 col_header2.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
 if col_header2.button("Lav datafiler til download", type="primary"):
     if "axes_funcs" not in st.session_state or "summaries" not in st.session_state:
@@ -333,7 +346,7 @@ if col_header2.button("Lav datafiler til download", type="primary"):
 col_header3.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
 col_header3.download_button("Download modelbeskrivelse (.pdf)", open(os.path.join(os.path.dirname(__file__),"Energybalancemodel.pdf"), "rb").read(), file_name="Energybalancemodel.pdf", on_click="ignore", mime="application/pdf", type="primary")
 
-st.toggle("Vis alle parametre", key="show_all_params", value=False)
+st.toggle("Vis alle parametre", key="show_all_params", value=False, on_change=show_params_expander)
 
 # Top buttons in one row
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
@@ -366,7 +379,7 @@ with col_btn4:
 with st.form("input_form"):
     col1, col2 = st.columns(2) # Spacing column in the middle
     with col1:
-        with st.expander("🧮 Parametre"):
+        with st.expander("🧮 Parametre", expanded=st.session_state.expand):
             st.header("Parametre")
             # Overwrite params dict with user input when form is submitted
             st.number_input(r"F: Ekstra strålingspåvirkning (W/m²)", value=DEFAULT_PARAMS["F"], key="F", step=1.0)

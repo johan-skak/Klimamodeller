@@ -94,7 +94,7 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
     """
     ax.set_title(title) # Set initial title. Useful in app
 
-    def wrapper():
+    def wrapper(size):
         print("Inside wrapper...")
         # --- parameters ---
         res = 400 # resolution (pixels per axis)
@@ -109,7 +109,7 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
         lat = np.degrees(np.arcsin(Y)) * np.sign(Y) # latitude
 
         # --- plot setup ---
-        _, ax = plt.subplots(figsize=(6, 6))
+        _, ax = plt.subplots(figsize=(size, size))
 
         im = draw_earth(ax, np.min(T_series), np.max(T_series), res)
 
@@ -119,7 +119,7 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
             mask = X**2 + Y**2 <= 1
             T_plot[~mask] = np.nan
             im.set_array(T_plot)
-            ax.set_title(f"{title} ({frame} years)")
+            ax.set_title(f"{title} ({frame} years)", fontdict={'fontsize': 16*size/6})
             return im,
 
         ani = FuncAnimation(plt.gcf(), update, frames=np.linspace(0, len(T_series)-1, 51, dtype=int), interval=interval, blit=True)
