@@ -47,12 +47,20 @@ def aspect_ratio(n, goal):
     h_num = h_num_top if (-n) % h_num_top <= (-n) % h_num_bottom else h_num_bottom # Choose the one that gives least empty plots # Prefers more columns at equality
     return int(np.ceil(n / h_num)), h_num
 
-def run_all_outputs(outputs, outdir, sim_info="", runtime=None):
-    timedesc = f" in {runtime:.2f} seconds" if runtime is not None else ""
-    print(f"\033[1mFinished\033[0m simulation{timedesc}. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
-    os.makedirs(outdir, exist_ok=True)
+def generate_outputs_data(axes_funcs, summaries, outdir="", sim_info=""):
+    """Generate all outputs (figures and summary text) and return them. If no outputs are defined, return None.
+    Parameters:
+        - axes_funcs: List of functions to draw axes for plots
+        - summaries: List of summary strings for each output
+        - outdir: Directory to save output files (string).
+        - sim_info: String containing information about simulation parameters and configuration.
 
-    axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]
+    Returns:
+        - fig: Matplotlib figure object containing all plots, or None if no plots were generated.
+        - summary: Summary string with ANSI formatting, or None if no summary was generated.
+        - clean_summary: Summary string without ANSI formatting, or None if no summary was generated.
+    """
+    # Make plots
     if axes_funcs:
         v_num, h_num = aspect_ratio(len(axes_funcs), 1) # Aim for 16:9 aspect ratio of figure
         fig, axs = plt.subplots(v_num, h_num, figsize=(6*h_num, 27/8*v_num)) # Width:Height = 6*h:27/8*v = 16*h:9*v
@@ -63,9 +71,8 @@ def run_all_outputs(outputs, outdir, sim_info="", runtime=None):
         for ax in axs[len(axes_funcs):]:
             ax.axis('off')  # Turn off unused subplots
         fig.tight_layout()
-        fig.savefig(f"{outdir}/ebm_panels.png", dpi=150)
 
-    summaries = [s for o in outputs for s in o.summaries]
+    # Make summary
     summary = ""
     if summaries:#Also print the summary
         for sfunc in summaries:
@@ -76,23 +83,51 @@ def run_all_outputs(outputs, outdir, sim_info="", runtime=None):
         header = "=== EBM Summary "
         pre_text = sim_info + f"Output generated on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n" + header + "=" * (max_line_length - len(header)) + "\n"
         clean_summary = pre_text + clean_summary
+    summary += f"Figures and summary saved in \033[4m{outdir}\033[0m\n"
+
+    return fig, summary, clean_summary if summaries else None
+
+def run_all_outputs(outputs, outdir, sim_info="", runtime=None, app=False):
+    """Generate and save all outputs (figures and summary text) or return output generators if in app mode.
+    Parameters:
+        - outputs: List of output objects to generate data for.
+        - outdir: Directory to save output files (string).
+        - sim_info: String containing information about simulation parameters and configuration.
+        - runtime: Optional float indicating the runtime of the simulation in seconds.
+        - app: Boolean indicating if running in app mode (e.g., Streamlit). If True, returns outputs instead of saving to files.
+    
+    Returns (if app is True):
+        - axes_funcs: List of functions to draw axes for plots.
+        - summaries: List of summary strings for each output.
+    """
+    axes_funcs = [ax_func for o in outputs for ax_func in o.axes_funcs]
+    summaries = [s for o in outputs for s in o.summaries]
+    
+    if not app: # Normal script mode
+        fig, summary, clean_summary = generate_outputs_data(axes_funcs, summaries, outdir, sim_info)
+        timedesc = f" in {runtime:.2f} seconds" if runtime is not None else ""
+        print(f"\033[1mFinished\033[0m simulation{timedesc}. Generating outputs and saving in the \033[4m{outdir}\033[0m folder")
+        os.makedirs(outdir, exist_ok=True)
+        fig.savefig(f"{outdir}/ebm_panels.png", dpi=150)
         with open(f"{outdir}/summary.txt", "w", encoding="utf-8") as f:
             f.write(clean_summary)
-    summary += f"Figures and summary saved in \033[4m{outdir}\033[0m\n"
-    print(summary)
+        print(summary)
+    else:
+        return axes_funcs, summaries # For Streamlit app
 
 class OutPut:
-    def __init__(self): pass
-
-    summaries = [] # List of functions to plot on axes_funcs (returns nothing)
-    axes_funcs = [] # List of functions to write summaries (returns strings)
+    def __init__(self):
+        self.summaries = [] # List of functions to plot on axes_funcs (returns nothing)
+        self.axes_funcs = [] # List of functions to write summaries (returns strings)
 
     def initialize(self, model): pass
     def step(self, model, i): pass
     def finalize(self, model): pass
     
 class DefaultOutput(OutPut):
-    diags = {} # Diagnostics
+    def __init__(self):
+        super().__init__()
+        self.diags = {} # Diagnostics
     
     def initialize(self, model):
         self.diags["init"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
@@ -129,11 +164,11 @@ class DefaultOutput(OutPut):
         Years (control, forced): ({model.config['ctrl_years']}, {model.config['years']-model.config['ctrl_years']})
         Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
-        Control global mean T (°C): {T_ctrl_fmt}{diags['mid']['T_mean']-273.15:.1f}{end_fmt}
-        Forced  global mean T (°C): {T_forc_fmt}{diags['end']['T_mean']-273.15:.1f}{end_fmt}
-        ΔT global (°C): {diags['end']['T_mean']-diags['mid']['T_mean']:.2f}
+        Control global mean T (°C): {temp_fmt(diags['mid']['T_mean']-273.15,1)}
+        Forced global mean T (°C): {temp_fmt(diags['end']['T_mean']-273.15,1)}
+        ΔT global (°C): {diags['end']['T_mean']-diags['mid']['T_mean']:.1f}
 
-        North pole T control / forced (°C): {diags['mid']['T_poles'][1]-273.15:.1f} / {diags['end']['T_poles'][1]-273.15:.1f}
+        North pole T control / forced (°C): {temp_fmt(diags['mid']['T_poles'][1]-273.15,1)} / {temp_fmt(diags['end']['T_poles'][1]-273.15,1)}
         North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): {self.polar_ampl:.3f}
 
         Outgoing longwave radiation (OLR) control / forced (W m⁻²): {diags['mid']['olr'].mean():.0f} / {diags['end']['olr'].mean():.0f}
@@ -146,7 +181,7 @@ class DefaultOutput(OutPut):
         """Plot initial, control and final temperature profiles."""
         for case, label in zip(["mid", "end", "init"], ["Control", "Forced", "Initial"]):
             ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label)
-        ax.axhline(0, color="#68d2fc", linestyle='--', alpha=0.7) # 0 °C line
+        ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # 0 °C line
         ax.set_title("Temperature profile")
         ax.set_ylabel("°C")
         self.Stylize(ax)
@@ -217,13 +252,15 @@ class DefaultOutput(OutPut):
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
 
 class TimeSeriesOutput(OutPut):
-    def __init__(self, vline=False):
+    def __init__(self):
+        super().__init__()
         self.Tg_series = []
-        self.vline = vline
 
     def initialize(self, model):
         self.dt = model.config["dt_years"]
         self.Tg_series.append(model.T.mean() - 273.15)
+         # Whether to draw vertical line at forcing time
+        self.vline = model.config["ctrl_years"] > 0 and (model.params['F'] != 0 or model.params['S1'] != model.params['S0'])
 
     def step(self, model, i):
         self.Tg_series.append(model.T.mean() - 273.15)
@@ -242,6 +279,7 @@ class TimeSeriesOutput(OutPut):
 
 class SeasonalOutput(OutPut):
     def __init__(self):
+        super().__init__()
         self.t = []
         self.series = {key: [] for key in ["T", "T_ext", "olr", "alpha", "conv", "MHTrans_PW", "D", "Q_x", "Q_x_ext"]}
 
@@ -306,7 +344,7 @@ class SeasonalOutput(OutPut):
                 values = data - 273.15 if field == "T_ext" else data
                 ax.plot(lat, values, label=label)
             if field == "T_ext":
-                ax.axhline(0, color="#68d2fc", linestyle='--', alpha=0.7) # Add 0 °C line
+                ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # Add 0 °C line
         ax.set_title(title); ax.set_ylabel(ylabel)
         DefaultOutput.Stylize(self, ax)
 
@@ -334,19 +372,13 @@ class SeasonalOutput(OutPut):
     def summarize(self, model):
         t = self.t_last
         
-        def color_fmt(n, p=1):
-            start_fmt = end_fmt = "\033[0m"
-            if n > 40: start_fmt = "\033[31m"
-            elif n < 0: start_fmt = "\033[34m"
-            return f"{start_fmt}{n:>{p+4}.{p}f}{end_fmt}"
-        
         def fmt(series):
             min_idx, max_idx = series.argmin(), series.argmax()
             min_time = t[min_idx] % 1   # fractional year since last equinox
             max_time = t[max_idx] % 1
-            return (color_fmt(series.mean(), 2) + "°C " +
-                    "(min " + color_fmt(series.min()) + f" on {self.date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
-                    f"max " + color_fmt(series.max()) + f" on {self.date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
+            return (temp_fmt(series.mean(), 2) + "°C " +
+                    "(min " + temp_fmt(series.min()) + f" on {self.date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
+                    f"max " + temp_fmt(series.max()) + f" on {self.date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
 
         global_T = self.last["T"].mean(axis=1) - 273.15
         equator_T = self.last["T"][:, self.locs["Equator"]] - 273.15
@@ -359,11 +391,11 @@ class SeasonalOutput(OutPut):
         Modes: {model.config.get("modes")}
         Years run: {model.config["years"]}, grid points: {model.config["nx"]}, Δt (years): 1 / {round(1 / self.dt)}
         
-        Global mean temperature: {fmt(global_T)}
-        Equator temperature:     {fmt(equator_T)}
-        Denmark (56°N):          {fmt(denmark_T)}
-        North pole:              {fmt(north_T)}
-        South pole:              {fmt(south_T)}
+        {"Global mean temperature:":<24}{fmt(global_T)}
+        {"Equator temperature:":<24}{fmt(equator_T)}
+        {"Denmark (56°N):":<24}{fmt(denmark_T)}
+        {"North pole:":<24}{fmt(north_T)}
+        {"South pole:":<24}{fmt(south_T)}
 
         Last-year mean OLR:    {self.last['olr'].mean():.1f} W/m²
         Last-year mean albedo: {self.last['alpha'].mean():.3f}
@@ -380,7 +412,9 @@ class SeasonalOutput(OutPut):
         return date.strftime("%b %d")
 
 class SeaDepthOutput(OutPut):
-    T_ext = [] # Series of sea depths
+    def __init__(self):
+        super().__init__()
+        self.T_ext = [] # Series of sea depths
 
     def initialize(self, model):
         self.k1 = model.params["k1"]
@@ -408,3 +442,9 @@ class SeaDepthOutput(OutPut):
             ax.plot(self.lat_ext, phys.heat_capacity_profile(self.x_ext, self.T_ext[idx], self.k1) / phys.C_M, label=label)
         ax.set_title(r"Heat capacities based on ML depth and % of landmass"); ax.set_ylabel("m (equivalent water depth)")
         DefaultOutput.Stylize(self, ax)
+      
+def temp_fmt(n, p=1):
+    start_fmt = end_fmt = "\033[0m"
+    if n > 40: start_fmt = "\033[31m"
+    elif n < 0: start_fmt = "\033[34m"
+    return f"{start_fmt}{n:>{p+4}.{p}f}{end_fmt}"

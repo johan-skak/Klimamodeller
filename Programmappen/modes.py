@@ -9,16 +9,19 @@ def Ignore_model(func):
 class Mode:
     @Ignore_model
     def __init__(self):
-        pass
+        self.outputs = [] # List of output class instances
     def __str__(self):
         return self.__class__.__name__
     def initialize(self, model): pass
     def step(self, model, i): pass
     def finalize(self, model): pass
     def check_compatibility(self, modes): pass
-    outputs = [] # Is a list of output class instances
 
 class SeasonalVariation(Mode):
+    def __init__(self, modes):
+        super().__init__()
+        self.outputs.extend([outputs.SeasonalOutput(), outputs.TimeSeriesOutput()])
+
     def initialize(self, model):
         years = model.config["years"]
         dt_years = model.config["dt_years"]
@@ -35,13 +38,12 @@ class SeasonalVariation(Mode):
 
         # Replace insolation kernel
         model.funcs['Q_x'] = phys.seasonal_Q # Replaces Q_x with seasonal_Q in ClimateModel object
-    
-    outputs = [outputs.SeasonalOutput(), outputs.TimeSeriesOutput()]
 
 class VariableSeaDepth(Mode):
     def __init__(self, modes):
+        super().__init__()
         if len(modes) == 1:
-            self.outputs.extend([outputs.DefaultOutput(), outputs.TimeSeriesOutput(True)])
+            self.outputs.extend([outputs.DefaultOutput(), outputs.TimeSeriesOutput()])
         self.outputs.append(outputs.SeaDepthOutput())
 
     def initialize(self, model):
