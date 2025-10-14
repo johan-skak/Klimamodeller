@@ -198,20 +198,33 @@ def format_terminal_output(text):
             return ""
         # Check if all lines have exactly one colon
         if all(line.count(":") == 1 for line in block):
-            # Align them
-            max_px = max(estimate_pixel_width(line.split(":", 1)[0]) for line in block)
-            html = "<div style='display:table'>"
+            # Compute maximal widths of each column over all lines
+            max_key_px = max(estimate_pixel_width(line.split(":", 1)[0]) for line in block)
+            max_val_px = max(estimate_pixel_width(re.sub(r'<[^>]+>', '', line.split(":", 1)[1][1:])) for line in block)
+            print(max_val_px, [re.sub(r'<[^>]+>', '', line.split(":", 1)[1][1:]) for line in block])
+            html = f"""<div class='block' style='display:grid;
+                        grid-template-columns: minmax({int(max_key_px*0.6)}px, {max_key_px}px) {max_val_px}px; /* First col min 60% of max, second col fixed */
+                        column-gap:0;
+                        overflow-x: auto; /* Enable horizontal scrolling if needed */
+                        align-items:end;'>"""
             for line in block:
                 key, val = line.split(":", 1)
                 # Highlight numbers with inline-block spans (optional)
-                val_html = make_space(val.strip(), r"\s*[+-]?\d+[.,]\d{2}(?!(\d|[a-z]))", 2.9) # Numbers like 123.45 or -0.52
+                val_html = make_space(val[1:], r"\s*[+-]?\d+[.,]\d{2}(?!(\d|[a-z]))", 2.9) # Numbers like 123.45 or -0.52
                 val_html = make_space(val_html, r"\s*[+-]?\d+[.,]\d{1}(?!(\d|[a-z]))", 2.3) # Numbers like 123.4 or -0.5
                 val_html = make_space(val_html, r"[A-Z][a-z]{2}", 1.8) # 3-letter month abbreviations
                 html += f"""
-                <div style='display:flex; justify-content:flex-start;'>
-                    <div style='min-width:{max_px}px; text-align:left;'>{key.strip()}:</div>
-                    <div style='flex:1; text-align:left;'>{val_html}</div>
-                </div>
+                <div style='
+                    grid-column:1;
+                    text-align:left;
+                    white-space:normal;
+                    word-break:break-word;
+                '>{key.strip()}:</div>
+                <div style='
+                    grid-column:2;
+                    text-align:right;
+                    word-break:break-word;
+                '>{val_html}</div>
                 """
             html += "</div><br>"
             return html
