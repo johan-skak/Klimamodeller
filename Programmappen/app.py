@@ -242,10 +242,9 @@ btns = ButtonGroup("run_away", set_run_away)
 DEFAULT_PARAMS = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288, SD=250, S0=1365, S1=None, F=4.0)
 DEFAULT_CONFIG = dict(years=1000, ctrl_years=None, dt_years=1.0, nx=200, modes=[])
 
-# Initialize with default values if not already done
-if "params" not in st.session_state or "config" not in st.session_state:
-    st.session_state.params = DEFAULT_PARAMS.copy()
-    st.session_state.config = DEFAULT_CONFIG.copy()
+# Initialize with default values
+st.session_state.params = DEFAULT_PARAMS.copy()
+st.session_state.config = DEFAULT_CONFIG.copy()
 
 # Set page config
 st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍")
