@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import cartopy.io.shapereader as shpreader
 from matplotlib.animation import FuncAnimation
 from matplotlib.colors import ListedColormap
-
+#
 def plot_on_earth(inLat=None,T=None, ax=None, title="Temperature map of the Earth", cbar_label="Temperature [°C]"):
     """
     Plot a simple temperature map of the Earth as seen from space,
