@@ -106,8 +106,11 @@ def plot_in_tabs(axes_funcs, hash_code):
     fig = figs[titles.index(st.session_state["choice"])]
     size = 6
     if not isinstance(fig, plt.Figure):
+        style = """<style>.animation {width: 100%} .animation img {width: 100%; margin-top: -15px; margin-bottom: -20px}
+                    .anim-controls > input {width: 100% !important} body {margin: 0}</style>"""
         html = call_animate_on_earth(fig, size, hash_code) # Call the function to get the animation
-        components.html(html, height=size*100+70)
+        st.html("<style>.stElementContainer:has(iframe) {aspect-ratio: 1 / 1.25; height: auto;} .stVerticalBlock:has(iframe) {gap: 0;} div[aria-label='Vælg figur:'] {margin: 0;}</style>")
+        components.html(style+html)
     else:
         # fig.set_size_inches(size, size)
         st.pyplot(figs[titles.index(st.session_state["choice"])])

@@ -119,7 +119,7 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
             mask = X**2 + Y**2 <= 1
             T_plot[~mask] = np.nan
             im.set_array(T_plot)
-            ax.set_title(f"{title} ({frame} years)", fontdict={'fontsize': 16*size/6})
+            ax.set_title(f"{title} ({frame} years)", fontdict={'fontsize': 16*size/6}, pad=20)
             return im,
 
         ani = FuncAnimation(plt.gcf(), update, frames=np.linspace(0, len(T_series)-1, 51, dtype=int), interval=interval, blit=True)
@@ -128,7 +128,6 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
         ax.set_aspect('equal')
         ax.axis('off')
         plt.colorbar(im, fraction=0.046, pad=0.04, label=cbar_label)
-        print("Animation created.")
         return ani.to_jshtml()
     
     return wrapper # Lazy evaluation to avoid creating figure when not needed
