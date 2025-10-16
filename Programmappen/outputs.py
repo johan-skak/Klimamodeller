@@ -454,9 +454,10 @@ class SeaDepthOutput(OutPut):
         DefaultOutput.Stylize(self, ax)
 
 class TemperatureOnEarthOutput(OutPut):
-    def __init__(self):
+    def __init__(self, last_year_only=False):
         super().__init__()
         self.T_ext_series = []
+        self.last_year_only = last_year_only
 
     def initialize(self, model):
         self.dt = model.config["dt_years"]
@@ -473,11 +474,16 @@ class TemperatureOnEarthOutput(OutPut):
         T_poles = model.funcs['poles_temperature'](model.T)
         self.T_ext_series.append(np.r_[T_poles[0], model.T, T_poles[1]] - 273.15) # Store in °C
         self.T_ext_series = np.array(self.T_ext_series)
+        if self.last_year_only:
+            # Extract last year
+            steps_per_year = int(round(1 / self.dt)) #Already a whole number up to machine precision
+            last_slice = slice(-steps_per_year-1, None)
+            self.T_ext_series = self.T_ext_series[last_slice]
         self.axes_funcs = [self.panel]
 
     def panel(self, ax):
         """Plot temperature on Earth surface (latitude vs time)."""
-        return Earth.animate_on_earth(self.lat_ext, self.T_ext_series, ax=ax, title="Animation of surface temperature", cbar_label="°C")
+        return Earth.animate_on_earth(self.lat_ext, self.T_ext_series, self.dt, ax=ax, title="Animation of surface temperature", cbar_label="°C")
 
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"

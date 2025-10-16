@@ -3,13 +3,14 @@ import numpy as np
 import outputs
 import physics as phys
 
-def Ignore_model(func):
-    return lambda self, modes=None: func(self)
+def Ignore_modes(func):
+    return lambda self, modes=None, app_mode=False: func(self, app_mode=app_mode)
 
 class Mode:
-    @Ignore_model
-    def __init__(self):
+    @Ignore_modes
+    def __init__(self, app_mode=False):
         self.outputs = [] # List of output class instances
+        self.app_mode = app_mode
     def __str__(self):
         return self.__class__.__name__
     def initialize(self, model): pass
@@ -18,9 +19,10 @@ class Mode:
     def check_compatibility(self, modes): pass
 
 class SeasonalVariation(Mode):
-    def __init__(self, modes):
-        super().__init__()
+    def __init__(self, modes, app_mode=False):
+        super().__init__(app_mode=app_mode)
         self.outputs.extend([outputs.TimeSeriesOutput(), outputs.SeasonalOutput()])
+        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput(last_year_only=True))
 
     def initialize(self, model):
         years = model.config["years"]
@@ -40,10 +42,11 @@ class SeasonalVariation(Mode):
         model.funcs['Q_x'] = phys.seasonal_Q # Replaces Q_x with seasonal_Q in ClimateModel object
 
 class VariableSeaDepth(Mode):
-    def __init__(self, modes):
-        super().__init__()
+    def __init__(self, modes, app_mode=False):
+        super().__init__(app_mode=app_mode)
         if len(modes) == 1:
             self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
+            if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
         self.outputs.append(outputs.SeaDepthOutput())
 
     def initialize(self, model):

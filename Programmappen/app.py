@@ -91,7 +91,7 @@ tabs_html = """
 
 @st.cache_data
 def run(params, config):
-    return main(config | {"output_dir": "Results"}, params, app=True) # output_dir is speciald in app mode but must be a string 
+    return main(config | {"output_dir": "Results"}, params, app_mode=True) # output_dir is speciald in app mode but must be a string 
 
 def plot_in_tabs(axes_funcs, hash_code):
     figs, titles = make_plots_and_titles(axes_funcs, hash_code)

@@ -5,7 +5,7 @@ import model, modes, outputs
 PARAMETERS_FILE = 'parameters.yaml'
 CONFIG_FILE = 'config.yaml'
 
-def main(config, params, app=False):
+def main(config, params, app_mode=False):
     # Adjust config and params if necessary
     if config["ctrl_years"] is None or config["ctrl_years"] < 0: # Default to half simulation without forcing
         config["ctrl_years"] = config["years"]//2
@@ -17,7 +17,7 @@ def main(config, params, app=False):
     modes_list = [] # Is a list of mode class instances
     for mode_name in config["modes"]:
         if hasattr(modes, mode_name):
-            modes_list.append(getattr(modes, mode_name)(config["modes"])) # Some modes needs to know what other modes there are to choose correct outputs
+            modes_list.append(getattr(modes, mode_name)(config["modes"], app_mode)) # Some modes needs to know what other modes there are to choose correct outputs
         else:
             raise ValueError(f"Unknown mode: {mode_name}")
 
@@ -25,7 +25,7 @@ def main(config, params, app=False):
     outputs_list = [o for m in modes_list for o in m.outputs]
     if not outputs_list:
         outputs_list = [outputs.TimeSeriesOutput(), outputs.DefaultOutput()] # Default outputs with forcing line
-        if app: outputs_list.append(outputs.TemperatureOnEarthOutput()) # Add Earth surface output in app mode
+        if app_mode: outputs_list.append(outputs.TemperatureOnEarthOutput()) # Add Earth surface output in app mode
     
     # Create and run model
     climate_model = model.ClimateModel(config, params, modes_list, outputs_list)
@@ -34,8 +34,8 @@ def main(config, params, app=False):
     end_time = time.perf_counter()
 
     # Make outputs
-    out = outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"], climate_model.sim_info, end_time - start_time, app) # Climate_model.config may be different from input config due to modes
-    if app: return out # Only relevant for Streamlit app
+    out = outputs.run_all_outputs(outputs_list, climate_model.config["output_dir"], climate_model.sim_info, end_time - start_time, app_mode) # Climate_model.config may be different from input config due to modes
+    if app_mode: return out # Only relevant for Streamlit app
 
 def configure_program():
     # Default config

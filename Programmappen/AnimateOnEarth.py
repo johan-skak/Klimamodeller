@@ -67,7 +67,7 @@ def plot_on_earth(inLat=None,T=None, ax=None, title="Temperature map of the Eart
     plt.title(title)
     plt.show()
 
-def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Temperature on Earth", cbar_label="°C"):
+def animate_on_earth(inLat, T_series, dt_years, interval=80, ax=None, title="Surface Temperature on Earth", cbar_label="°C"):
     """
     Create an animation of temperature maps of the Earth as seen from space,
     centered on 0°N, 0°E, with coastlines.
@@ -95,7 +95,6 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
     ax.set_title(title) # Set initial title. Useful in app
 
     def wrapper(size):
-        print("Inside wrapper...")
         # --- parameters ---
         res = 400 # resolution (pixels per axis)
 
@@ -106,7 +105,7 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
 
         # --- map (x,y) to spherical coords ---
         # observer above equator
-        lat = np.degrees(np.arcsin(Y)) * np.sign(Y) # latitude
+        lat = np.degrees(np.arcsin(Y)) # latitude
 
         # --- plot setup ---
         _, ax = plt.subplots(figsize=(size, size))
@@ -119,7 +118,8 @@ def animate_on_earth(inLat, T_series, interval=80, ax=None, title="Surface Tempe
             mask = X**2 + Y**2 <= 1
             T_plot[~mask] = np.nan
             im.set_array(T_plot)
-            ax.set_title(f"{title} ({frame} years)", fontdict={'fontsize': 16*size/6}, pad=20)
+            time = f"{frame*dt_years:.0f} years" if dt_years.is_integer() else f"{frame*dt_years:.2f} years"
+            ax.set_title(f"{title} ({time})", fontdict={'fontsize': 16*size/6}, pad=20)
             return im,
 
         ani = FuncAnimation(plt.gcf(), update, frames=np.linspace(0, len(T_series)-1, 51, dtype=int), interval=interval, blit=True)
