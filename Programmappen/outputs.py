@@ -144,10 +144,15 @@ class DefaultOutput(OutPut):
         self.dt_global = self.diags["end"]["T_mean"] - self.diags["mid"]["T_mean"]
         self.polar_ampl = (self.diags["end"]["T_poles"][1] - self.diags["mid"]["T_poles"][1] - self.dt_global) / self.dt_global if self.dt_global != 0 else np.nan
         self.lat_ext = np.r_[-90, self.lat, 90]
-        for case in ["mid", "end", "init"]:
+        # Set cases and labels depending on whether there was a (significant) control run
+        self.cases = ["init", "mid", "end"] if model.config["ctrl_years"] > 0 and (model.params['F'] != 0 or model.params['S1'] != model.params['S0']) else ["init", "end"]
+        self.labels = ["Initial", "Control", "Forced"] if len(self.cases) == 3 else ["Initial", "Final"]
+        self.colors = ["C2", "C0", "C1"] if len(self.cases) == 3 else ["C2", "C1"]
+        for case in self.cases:
             self.diags[case]["T_ext"] = np.r_[self.diags[case]["T_poles"][0], self.diags[case]["T"], self.diags[case]["T_poles"][1]]
         # Finally set up axes_funcs and summaries
-        self.axes_funcs = [self.panel1, self.panel2, self.panel3, self.panel4, self.panel5, self.panel6]
+        self.axes_funcs = [self.panel1, self.panel2, self.panel3, self.panel4, self.panel5]
+        self.axes_funcs.append(self.panel6) if len(self.cases) == 3 else None # Only add panel6 if there was a control run
         self.summaries = [self.summarize(model, self.diags)]
     
     def summarize(self, model, diags):
@@ -180,38 +185,42 @@ class DefaultOutput(OutPut):
     # Panel 1: Temperature profiles  (°C)
     def panel1(self, ax):
         """Plot initial, control and final temperature profiles."""
-        for case, label in zip(["mid", "end", "init"], ["Control", "Forced", "Initial"]):
-            ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label)
+        for case, label, color in zip(self.cases, self.labels, self.colors):
+            ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label, color=color)
         ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # 0 °C line
-        ax.set_title("Temperature profile")
+        ax.set_title("Temperature Profile")
         ax.set_ylabel("°C")
         self.Stylize(ax)
     # Panel 2: OLR profiles (W/m²)
     def panel2(self, ax):
         """Plot control and final OLR profiles."""
-        ax.plot(self.lat, self.diags["mid"]['olr'], label='Control')
-        ax.plot(self.lat, self.diags["end"]['olr'], label='Forced')
+        for case, label, color in zip(self.cases, self.labels, self.colors):
+            if case == "init": continue
+            ax.plot(self.lat, self.diags[case]['olr'], label=label, color=color)
         ax.set_title('Outgoing Longwave Radiation (OLR)'); ax.set_ylabel('W/m²')
         self.Stylize(ax)
     # Panel 3: Albedo profiles
     def panel3(self, ax):
         """Plot control and final albedo profiles."""
-        ax.plot(self.lat, self.diags["mid"]['alpha'], label='Control')
-        ax.plot(self.lat, self.diags["end"]['alpha'], label='Forced')
+        for case, label, color in zip(self.cases, self.labels, self.colors):
+            if case == "init": continue
+            ax.plot(self.lat, self.diags[case]['alpha'], label=label, color=color)
         ax.set_title('Planetary Albedo'); ax.set_ylabel('Albedo')
         self.Stylize(ax)
     # Panel 4: Meridional heat transport (PW)
     def panel4(self, ax):
         """Plot control and final meridional heat transport profiles."""
-        ax.plot(self.diags["mid"]['MHTrans_PW'][0], self.diags["mid"]['MHTrans_PW'][1], label='Control')
-        ax.plot(self.diags["end"]['MHTrans_PW'][0], self.diags["end"]['MHTrans_PW'][1], label='Forced')
+        for case, label, color in zip(self.cases, self.labels, self.colors):
+            if case == "init": continue
+            ax.plot(self.diags[case]['MHTrans_PW'][0], self.diags[case]['MHTrans_PW'][1], label=label, color=color)
         ax.set_title('Meridional Heat Transport'); ax.set_ylabel('PW (10¹⁵ W)')
         self.Stylize(ax)
     # Heat flux convergence (W/m²)
     def panel5(self, ax):
         """Plot control and final heat flux convergence profiles."""
-        ax.plot(self.lat, self.diags["mid"]['conv'], label='Control')
-        ax.plot(self.lat, self.diags["end"]['conv'], label='Forced')
+        for case, label, color in zip(self.cases, self.labels, self.colors):
+            if case == "init": continue
+            ax.plot(self.lat, self.diags[case]['conv'], label=label, color=color)
         ax.set_title('Heat Flux Convergence'); ax.set_ylabel('W/m²')
         self.Stylize(ax)
     # Change in zonal mean temperature (°C) + polar amplification

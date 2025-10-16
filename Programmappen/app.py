@@ -320,6 +320,7 @@ with st.sidebar:
     if btns.button("Nul-diffusion", icon=":material/mode_fan_off:"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(D0 = 0.0, F=0.0))  # No forcing in seasonal variation mode
         set_keyed_inputs(DEFAULT_CONFIG)
+        st.session_state.choice = "Temperature Profile"
     if btns.button("Havdybde 2000 m", icon="🌊"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=2000))
         set_keyed_inputs(DEFAULT_CONFIG)
@@ -327,14 +328,15 @@ with st.sidebar:
     if btns.button("Havdybde 20 m", icon="🪨"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))
         set_keyed_inputs(DEFAULT_CONFIG)
+        st.session_state.choice = "Global Mean Surface Temperature"
     if btns.button("Snebold-Jorden", icon="❄️"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, T0=245))  # No forcing and no sea depth
         set_keyed_inputs(DEFAULT_CONFIG)
-        st.session_state.choice = "Global Mean Surface Temperature"
+        st.session_state.choice = "Temperature Profile"
     if btns.button("Løbsk drivhuseffekt", special="run_away", icon="🔥"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=20, k3=1.1))  # Strong forcing and strong feedback
         set_keyed_inputs(DEFAULT_CONFIG)
-        st.session_state.choice = "Global Mean Surface Temperature"
+        st.session_state.choice = "Temperature Profile"
     if st.session_state.run_away: # Show input field if the last button click was runaway
         col_run_away1, col_run_away2 = st.columns([1, 2])
         col_run_away1.html("<div class='slim-container'>Indstil k3:</div>")
@@ -470,7 +472,7 @@ col_out1, col_out2 = st.columns(2, border=True)
 with col_out1:
     plot_in_tabs(st.session_state.axes_funcs, st.session_state.summaries)
 with col_out2:
-    st.header("Sammenfatning af simulation")
+    st.subheader("Sammenfatning af experiment")
     if st.session_state.summaries:
         st.html(make_summary(st.session_state.summaries))
 
