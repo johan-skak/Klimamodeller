@@ -32,6 +32,7 @@ class ButtonGroup:
 
         return self.clicked == label
 
+st.html("<style> .stElementContainer:has(.no-gap) {margin-top: -1em; margin-bottom: -1em;} </style>")
 tabs_html = """
     <style>
         /* Scrollable container */
@@ -62,7 +63,6 @@ tabs_html = """
         div[aria-label="Vælg figur:"] label div {
             transition: color 0.2s;
             font-size: 14px;
-            color: #31333f; /* Default Streamlit text color */
             padding-left: 3.5px;
             padding-right: 3.5px;
         }
@@ -117,7 +117,6 @@ def plot_in_tabs(axes_funcs, hash_code):
 
 @st.cache_data
 def call_animate_on_earth(_func, size, hash_code):
-    print("Creating animation...")
     return _func(size)
 
 # @st.cache_data # Hash_code is only for hashing uniquely
@@ -206,34 +205,23 @@ def format_terminal_output(text):
         if all(line.count(":") == 1 for line in block):
             # Compute maximal widths of each column over all lines
             max_key_px = max(estimate_pixel_width(line.split(":", 1)[0]) for line in block)
-            max_val_px = max(estimate_pixel_width(re.sub(r'<[^>]+>', '', line.split(":", 1)[1][1:])) for line in block)
-            html = f"""<div class='block' style='display:grid;
-                        grid-template-columns: minmax({int(max_key_px*0.6)}px, {max_key_px}px) {max_val_px}px; /* First col min 60% of max, second col fixed */
-                        align-items:end;'>"""
+            max_val_px = max(estimate_pixel_width(re.sub(r'<[^>]+>', '', line.split(":", 1)[1])) for line in block)
+            html = f"""<div class='block' style='grid-template-columns: minmax({int(max_key_px*0.6)}px, max-content) minmax({int(max_val_px*0.5)}px, max-content); /* Makes the columns wrap if needed but only to two lines */'>"""
             for line in block:
                 key, val = line.split(":", 1)
                 # Highlight numbers with inline-block spans (optional)
-                val_html = make_space(val[1:], r"\s*[+-]?\d+[.,]\d{2}(?!(\d|[a-z]))", 2.9) # Numbers like 123.45 or -0.52
+                val_html = make_space(val, r"\s*[+-]?\d+[.,]\d{2}(?!(\d|[a-z]))", 2.9) # Numbers like 123.45 or -0.52
                 val_html = make_space(val_html, r"\s*[+-]?\d+[.,]\d{1}(?!(\d|[a-z]))", 2.3) # Numbers like 123.4 or -0.5
                 val_html = make_space(val_html, r"[A-Z][a-z]{2}", 1.8) # 3-letter month abbreviations
                 html += f"""
-                <div style='
-                    grid-column:1;
-                    text-align:left;
-                    white-space:normal;
-                    word-break:break-word;
-                '>{key.strip()}:</div>
-                <div style='
-                    grid-column:2;
-                    text-align:right;
-                    word-break:break-word;
-                '>{val_html}</div>
+                <div class='key'>{key.strip()}<b>:</b></div>
+                <div class='value'>{val_html}</div>
                 """
             html += "</div><br>"
             return html
         else:
             # Otherwise, flat text block
-            return "<div style='margin:0.3em 0;'>" + "<br>".join(block) + "</div><br>"
+            return "<div style='text-wrap: nowrap;'>" + "<br>".join(block) + "</div><br>"
 
     # Group lines
     for line in lines + [""]:
@@ -243,9 +231,30 @@ def format_terminal_output(text):
         else:
             block.append(line)
     html_lines[-1] = html_lines[-1].rstrip("<br>") # Remove very last <br>
-
+    
+    block_style = """<style>
+        .block {
+            display:grid;
+            line-height: 1.2;
+        }
+        .block .key { 
+            grid-column:1;
+            text-align:left;
+            text-wrap: balance;
+            align-self: start;
+        }
+        .block .value {
+            grid-column:2;
+            text-align:right;
+            align-self: end;
+        }
+        .block > div {
+            margin-bottom:0.6em;
+            white-space:normal;
+        }
+        </style>"""
     # Combine all
-    return ''.join(html_lines)
+    return block_style + ''.join(html_lines)
 
 def set_keyed_inputs(defaults_dict):
     for k, v in defaults_dict.items():
@@ -302,8 +311,9 @@ st.html("""
 st.html("<style> div.stHorizontalBlock:has(.slim-container) {gap: 0.3em} </style>")
 with st.sidebar:
     st.markdown("---")
+    st.html("<style> h2 {padding: 0 !important;} </style>")
     st.header("Forudindstillinger")
-    st.markdown("Nogle forudindstillinger for standard-eksperimenter.")
+    st.html("<i>Nogle forudindstillinger for simple eksperimenter.</i>")
     if btns.button("Standardtilstand", icon="🔄"):
         set_keyed_inputs(DEFAULT_PARAMS)
         set_keyed_inputs(DEFAULT_CONFIG)
@@ -332,10 +342,41 @@ with st.sidebar:
         st.session_state["k3"] = st.session_state["k3_runaway"]
 
 
-# --- Begin Streamlit app ---
-col_header1, col_header2, col_header3 = st.columns([4.5, 1, 1.3])
-col_header1.title("Energibalancemodel af Jordens klima")
-col_header2.html("<div style='height: 32px'></div>")
+# --- Header and download buttons ---
+st.html("""<style>
+            .stHorizontalBlock:has(.downloadButton) {/* The header with title and download buttons */
+            display: flex;
+            flex-wrap: wrap;         /* allow multiple lines */
+            justify-content: space-between;
+            align-items: flex-end;   /* align bottoms of wrapped lines */
+            gap: 0.5rem;             /* spacing between items */
+            }
+            h1 {
+            text-wrap: balance;
+            }
+            .stColumn:has(.downloadButton) {
+            flex: 0 1 256px;
+            }
+            .stColumn:has(.downloadButton) > div {/* The column containing the two buttons */
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: 1.5rem;
+            min-width: 100px;
+            flex-wrap: nowrap;
+            gap: 4px;
+            }
+            .stColumn:has(.downloadButton) .stElementContainer:has(button) {/* The two buttons */
+            min-width: 100px;
+            word-break: break-word;
+            }
+            .stElementContainer:has(.downloadButton) {/* The two empty divs having the class */
+            width: 0;
+            min-width: 0;
+            }
+        </style>""")
+col_header1, col_header2 = st.columns([1, 1])
+col_header1.title("Energibalance-model af Jordens klima")
+col_header2.html("<div class='downloadButton'></div>") # style='height: 32px'
 if col_header2.button("Lav datafiler til download", type="primary"):
     if "axes_funcs" not in st.session_state or "summaries" not in st.session_state:
         st.error("Kør først simuleringen før du kan lave filer til download.")
@@ -345,10 +386,13 @@ if col_header2.button("Lav datafiler til download", type="primary"):
         png_buf = make_png(fig)
         col_header2.download_button("Download figurer (.png)", png_buf, file_name="Klimamodel_figurer.png", on_click="ignore", mime="image/png")
         col_header2.download_button("Download opsummering (.txt)", clean_summary.encode('utf-8'), file_name="Klimamodel_opsummering.txt", on_click="ignore")
-col_header3.html("<div style='height: 32px'></div>")
-col_header3.download_button("Download modelbeskrivelse (.pdf)", open(os.path.join(os.path.dirname(__file__),"Energybalancemodel.pdf"), "rb").read(), file_name="Energybalancemodel.pdf", on_click="ignore", mime="application/pdf", type="primary")
+col_header2.html("<div class='downloadButton'></div>")
+col_header2.download_button("Download modelbeskrivelse (.pdf)", open(os.path.join(os.path.dirname(__file__),"Energybalancemodel.pdf"), "rb").read(), file_name="Energybalancemodel.pdf", on_click="ignore", mime="application/pdf", type="primary")
 
+# --- Toggle for showing advanced parameters ---
 st.toggle("Vis alle parametre", key="show_all_params", value=False, on_change=show_params_expander)
+
+st.html("<i class='no-gap'>Klik på knapperne nedenfor for at vælge forudindstillinger for forskellige eksperiment-tilstande.</i>")
 
 # Top buttons in one row
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
@@ -377,8 +421,8 @@ with col_btn4:
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=None)) # No forcing and sea depth is irrelevant
         set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation", "VariableSeaDepth"]))
 
-
 with st.form("input_form"):
+    st.html("<i class='no-gap'>Eller indstil parametre og opsætning manuelt nedenfor.</i>")
     col1, col2 = st.columns(2) # Spacing column in the middle
     with col1:
         with st.expander("🧮 Parametre", expanded=st.session_state.expand):
@@ -429,7 +473,7 @@ with col_out2:
     st.header("Sammenfatning af simulation")
     if st.session_state.summaries:
         st.html(make_summary(st.session_state.summaries))
-    
+
     # st.markdown("---")
     # st.header("Om denne app")
     # st.markdown("""
