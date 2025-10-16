@@ -109,7 +109,7 @@ def plot_in_tabs(axes_funcs, hash_code):
         style = """<style>.animation {width: 100%} .animation img {width: 100%; margin-top: -15px; margin-bottom: -20px}
                     .anim-controls > input {width: 100% !important} body {margin: 0}</style>"""
         html = call_animate_on_earth(fig, size, hash_code) # Call the function to get the animation
-        st.html("<style>.stElementContainer:has(iframe) {aspect-ratio: 1 / 1.25; height: auto;} .stVerticalBlock:has(iframe) {gap: 0;} div[aria-label='Vælg figur:'] {margin: 0;}</style>")
+        st.html("<style>.stElementContainer:has(iframe) {aspect-ratio: 1 / 1.25; height: auto; margin-top: -1em;} div[aria-label='Vælg figur:'] {margin: 0;}</style>")
         components.html(style+html)
     else:
         # fig.set_size_inches(size, size)
