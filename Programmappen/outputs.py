@@ -136,11 +136,13 @@ class DefaultOutput(OutPut):
         self.lat = np.degrees(np.arcsin(self.x))
 
     def step(self, model, i):
-        if i+1 == model.nsteps//2:
+        if i == model.ctrl_nsteps:
             self.diags["mid"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
 
     def finalize(self, model):
         self.diags["end"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
+        if "mid" not in self.diags: # No control run # Temporary solution
+            self.diags["mid"] = self.diags["end"]
         self.dt_global = self.diags["end"]["T_mean"] - self.diags["mid"]["T_mean"]
         self.polar_ampl = (self.diags["end"]["T_poles"][1] - self.diags["mid"]["T_poles"][1] - self.dt_global) / self.dt_global if self.dt_global != 0 else np.nan
         self.lat_ext = np.r_[-90, self.lat, 90]

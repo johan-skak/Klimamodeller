@@ -26,7 +26,7 @@ Alt kode skal kommenteres og funktioner skal dokumenteres (med """Beskrivelse"""
 
 
 
-**DefaultOuput Forced**
+**Oversæt resume og grafer**
 
-Sørg for at ctrl labels kun er synlige hvis der er forskel på ctrl og forced.
+Sørg også for at ctrl forsvinder fra resumeet hvis irrelevant
 
