@@ -30,7 +30,6 @@ def plot_on_earth(inLat=None,T=None, ax=None, title="Temperature map of the Eart
     if inLat is None or T is None:
         T = 5 + 25 * (np.cos(2*np.radians(lat)))          # arbitrary model
     else:
-        print(len(lat), len(inLat), len(T))
         T = np.interp(lat, inLat, T)                          # interpolate given profile
     T[~mask] = np.nan                                  # mask outside Earth
 
@@ -149,12 +148,23 @@ def draw_earth(ax, min, max, res):
         for x_c, y_c in split_on_nan(x_c, y_c):
             ax.plot(x_c, y_c, color='black', lw=0.5)
 
-    colors = [[0, 0.7, 1, 1], [1, 1, 1, 1], [1, 0.2, 0, 1]] # blue to white to red
-    zero_point = np.clip(-min / (max - min), 0, 1)
-    cmap = ListedColormap(np.vstack((np.linspace(colors[0], colors[1], int(256*zero_point)),
-                                    np.linspace(colors[1], colors[2], 256 - int(256*zero_point)))))
+    # colors = [[0, 0.7, 1, 1], [1, 1, 1, 1], [1, 0.2, 0, 1]] # blue to white to red
+    # zero_point = np.clip(-min / (max - min), 0, 1)
+    # cmap = ListedColormap(np.vstack((np.linspace(colors[0], colors[1], int(256*zero_point)),
+    #                                 np.linspace(colors[1], colors[2], 256 - int(256*zero_point)))))
+    min_temp, max_temp = -50, 50
+    dmi_colors_cold_rgb = [[0, 30, 150], [71, 96, 160],[0, 143, 233], [61, 171, 238], [109, 191, 242],
+                           [22, 225, 204], [125, 238, 226], [158, 242, 233], [255, 255, 255]]
+    dmi_colors_warm_rgb = [[255, 255, 255], [255, 236, 127], [255, 217, 0], [255, 178, 0],
+                            [255, 142, 82], [255, 181, 181], [255, 157, 157], [255, 124, 124],
+                            [255, 82, 82], [230, 57, 57], [204, 31, 31], [128, 0, 0], [92, 0, 51]]
+    dmi_colors_cold = np.array(dmi_colors_cold_rgb)/255.0
+    dmi_colors_warm = np.array(dmi_colors_warm_rgb)/255.0
+    cmap = ListedColormap(np.transpose([np.concatenate((np.interp(np.linspace(0, 1, 4*abs(min_temp)), np.linspace(0, 1, len(dmi_colors_cold)), dmi_colors_cold[:,i]),
+                                    np.interp(np.linspace(0, 1, 4*max_temp), np.linspace(0, 1, len(dmi_colors_warm)), dmi_colors_warm[:,i])[1:]))
+                                    for i in range(3)]))
     return ax.imshow(np.zeros((res,res)), extent=(-1, 1, -1, 1), origin='lower',
-                cmap=cmap, interpolation='bilinear', vmin=min, vmax=max)
+                cmap=cmap, interpolation='bilinear', vmin=min_temp, vmax=max_temp)
 
 def split_on_nan(x, y):
     """
