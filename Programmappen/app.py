@@ -33,61 +33,6 @@ class ButtonGroup:
         return self.clicked == label
 
 st.html("<style> .stElementContainer:has(.no-gap) {margin-top: -1em; margin-bottom: -1em;} </style>")
-tabs_html = """
-    <style>
-        /* Scrollable container */
-        div[aria-label="Vælg figur:"] {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        margin-bottom: 1rem;
-        }
-
-        /* Hide default radio dots */
-        div[aria-label="Vælg figur:"] label > div:first-child {
-            display: none !important;
-        }
-
-        /* Tabs */
-        div[aria-label="Vælg figur:"] label {
-            display: inline-block !important;
-            background-color: transparent !important;
-            border-bottom: 2px solid #31333f1A; /* Streamlit default border color with transparency */
-            margin-right: 0;
-            margin-bottom: .5rem;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: border-color 0.2s;
-        }
-
-        /* Tab text */
-        div[aria-label="Vælg figur:"] label div {
-            transition: color 0.2s;
-            font-size: 14px;
-            padding-left: 3.5px;
-            padding-right: 3.5px;
-        }
-
-        /* First tab text */
-        div[aria-label="Vælg figur:"] label:first-child div {
-            padding-left: 0 !important;
-        }
-
-        /* Hover effect */
-        div[aria-label="Vælg figur:"] label div:hover {
-            color: #ff4b4b; /* Streamlit red */
-        }
-
-        /* Active tab */
-        div[aria-label="Vælg figur:"] label:has(input:checked) {
-            border-bottom: 2px solid #ff4b4b !important;
-        }
-
-        /* Active tab text */
-        div[aria-label="Vælg figur:"] label:has(input:checked) div {
-            color: #ff4b4b !important; /* Streamlit red */
-        }
-    </style>
-"""
 
 @st.cache_data
 def run(params, config):
@@ -101,8 +46,7 @@ def plot_in_tabs(axes_funcs, hash_code):
     
     # Remember last choice if possible
     index = titles.index(st.session_state.get("choice", titles[0])) if st.session_state.get("choice") in titles else 0
-    st.html(tabs_html)
-    st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed", key="choice", index=index)
+    st.selectbox("Vælg figur:", titles, label_visibility="collapsed", key="choice", index=index)
     fig = figs[titles.index(st.session_state["choice"])]
     size = 6
     if not isinstance(fig, plt.Figure):
@@ -487,98 +431,3 @@ with col_out2:
     #     Appen er baseret på en simpel energibalance model, som simulerer Jordens klima over tid.
     #     Kildekoden til appen og modellen kan findes på [GitHub](https://github.com/JohanSkak/Klimamodeller).
     #     """)
-
-
-
-
-
-
-
-
-
-
-
-
-
-# import json
-
-# scroll_tabs = components.declare_component(name="scroll_tabs", path="./frontend")
-
-# def tab_component(titles, selected):
-#     # Escape data for JS
-#     titles_json = json.dumps(titles)
-#     selected_json = json.dumps(selected)
-
-#     html = f"""
-#         <html>
-#         <head>
-#         <style>
-#             body {{
-#                 font-family: sans-serif;
-#                 margin: 0;
-#             }}
-#             #tabs {{
-#                 overflow-x: auto;
-#                 white-space: nowrap;
-#                 padding: 4px;
-#                 border-bottom: 1px solid #ccc;
-#                 width: 500px;
-#             }}
-#             .tab {{
-#                 display: inline-block;
-#                 padding: 6px 12px;
-#                 margin: 0 2px;
-#                 border-radius: 6px;
-#                 cursor: pointer;
-#                 background: #eee;
-#                 color: #333;
-#                 user-select: none;
-#                 white-space: nowrap;
-#             }}
-#             .tab.selected {{
-#                 background: #0078ff;
-#                 color: white;
-#                 font-weight: 600;
-#             }}
-#         </style>
-#         </head>
-#         <body>
-#         <div id="tabs"></div>
-#         <script>
-#                 const titles = {titles_json};
-#                 const selected = {selected_json};
-#                 const container = document.getElementById("tabs");
-
-#                 titles.forEach(t => {{
-#                     const el = document.createElement("div");
-#                     el.className = "tab" + (t === selected ? " selected" : "");
-#                     el.textContent = t;
-#                     el.onclick = () => {{
-#                         window.parent.postMessage(
-#                         {{isStreamlitMessage: true, type: 'streamlit:setComponentValue', value: t}},
-#                         "*"
-#                         );
-#                     }};
-#                     container.appendChild(el);
-#                 }});
-
-#                 // Scroll to the selected one after rendering
-#                 const sel = container.querySelector(".selected");
-#                 if (sel) sel.scrollIntoView({{ behavior: "smooth", inline: "center" }});
-#         </script>
-#         </body>
-#         </html>
-#     """
-#     return scroll_tabs(html=html, height=60)
-
-# # Example Streamlit usage
-# titles = ["Global Mean Surface Temperature", "Equator", "Denmark (56°N)", "North pole", "South pole"]
-# selected = st.session_state.get("choice", titles[0])
-# selected
-
-# clicked = tab_component(titles, selected)
-
-# if clicked != selected:
-#     var = clicked
-
-# st.write("Selected:", var)
