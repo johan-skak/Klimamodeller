@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pickle
+import os, pickle
 from matplotlib.animation import FuncAnimation
 from matplotlib.colors import ListedColormap
 
@@ -75,7 +75,7 @@ def draw_earth(ax, res):
     ax.add_artist(circle)
 
     # add coastlines from file (computed by make_coastline_data)
-    with open('coastline_data.pkl', 'rb') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'coastline_data.pkl'), 'rb') as f:
         coastline_segments = pickle.load(f)
     for x_c, y_c in coastline_segments:
         ax.plot(x_c, y_c, color='black', lw=0.5)
