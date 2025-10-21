@@ -1,10 +1,10 @@
 
 === EBM Summary ===
 Years (control, forced): (500, 500)
-Grid points nx: 200, Δt (years): 1
+Grid points nx: 200, Δt (years): 1.0
 
-Control global mean T (°C): [0m15.1[0m
-Forced  global mean T (°C): [0m18.5[0m
+Control global mean T (°C): 15.1
+Forced  global mean T (°C): 18.5
 ΔT global (°C): 3.37
 
 North pole T control / forced (°C): -13.8 / -7.5
@@ -14,3 +14,4 @@ Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 246
 Planetary albedo control / forced: 0.298 / 0.291
 Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.687
 
+Figure saved: results\ebm_panels.png

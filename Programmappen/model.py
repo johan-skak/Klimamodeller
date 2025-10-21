@@ -16,7 +16,7 @@ class ClimateModel:
     def run(self):
         # Let modes modify config/params/T/funcs as needed
         for m in self.modes: m.initialize(self)
-        outputs.print_simulation_info(self.config, self.params)
+        self.sim_info = outputs.print_simulation_info(self.config, self.params) # Print simulation info and return as string for use in main.py
 
         # Define grid and initial state
         self.dx = 2.0 / self.config["nx"]
@@ -46,7 +46,8 @@ class ClimateModel:
 
     def update_temperature(self, T, x, params, funcs, i):
         # Explicit radiative terms
-        Q_x = funcs['Q_x'](x, params['S'], model=self, i=i) # The model and i arguments are ignored in default mode but necessary for other modes
+        S = params['S0'] if i < self.ctrl_nsteps else params['S1']
+        Q_x = funcs['Q_x'](x, S, model=self, i=i) # The model and i arguments are ignored in default mode but necessary for other modes
         alpha = funcs['albedo_from_T'](T, x, params['k1'], model=self, i=i)
         absorbed = Q_x * (1.0 - alpha)
         dTloc = funcs['deltaT_of_Ts'](T, params['k3'], model=self, i=i)
@@ -54,7 +55,7 @@ class ClimateModel:
         rad_term = absorbed - olr + params['F'] * (i >= self.ctrl_nsteps) # Only apply forcing after control period
 
         # Diffusivity depends on global mean temperature
-        D = funcs["diffusion_from_T"](T.mean(), params['D0'], params['k2'], model=self, i=i)
+        D = funcs["diffusion_from_T"](T, params['D0'], params['k2'], model=self, i=i)
 
         # Build L and do Crank–Nicolson step
         aL, bL, cL = funcs['build_diffusion_tridiag'](x, D)
