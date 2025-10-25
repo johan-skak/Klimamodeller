@@ -57,6 +57,7 @@ def plot_in_tabs(axes_funcs, hash_code):
         components.html(style+html)
     else:
         st.pyplot(figs[titles.index(st.session_state["choice"])])
+        plt.close(figs[titles.index(st.session_state["choice"])])
 
 @st.cache_data
 def call_animate_on_earth(_func, size, hash_code):
