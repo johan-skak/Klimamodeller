@@ -11,8 +11,8 @@ def remove_ansi(text):
     ansi_escape = re.compile(r'\x1B\[[0-9;]*m') # Matches ANSI escape sequences like \033[1;33m
     return ansi_escape.sub('', text) # Remove ANSI sequences from text
 
-def print_simulation_info(config, params):
-    print("Running simulation with the following configuration and parameters\n\033[1mNote\033[0m: some modes may have changed the values specified in the config and parameter files\n")
+def print_simulation_info(config, params, app_mode=False):
+    if not app_mode: print("Running simulation with the following configuration and parameters\n\033[1mNote\033[0m: some modes may have changed the values specified in the config and parameter files\n")
     descs = phys.PARAM_DESCS # descriptions for parameter keys
     max_ckey_len = max((len(k) for k in config), default=0) # find max config key length
     max_pkey_len = max((len(k) for k in params), default=0) # find max parameters key length
@@ -36,9 +36,9 @@ def print_simulation_info(config, params):
         desc = f"({desc})" # add parentheses to string
         info_str += f"{key:<{max_pkey_len}} {desc:<{max_pdesc_len+2}} : {value}\n"
     info_str += "=" * total_pwidth + "\n\n"
-    print(info_str, end="") # no newline at end
+    if not app_mode: print(info_str, end="") # no newline at end
 
-    print("\033[1mStarting\033[0m simulation...\n")
+    if not app_mode: print("\033[1mStarting\033[0m simulation...\n")
     return info_str
 
 def aspect_ratio(n, goal):
