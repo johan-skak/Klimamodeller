@@ -1,6 +1,6 @@
 === EBM Model Configuration ================
-years      : 275
-ctrl_years : 0
+years      : 475
+ctrl_years : 200
 dt_years   : 0.02
 nx         : 200
 modes      : ['VariableForcing']
@@ -19,21 +19,21 @@ S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 0
 ============================================
 
-Output generated on 2025-10-29 14:08:05
+Output generated on 2025-10-29 14:11:49
 
 === EBM Summary =====================================================
 
-Years (control, forced): (0, 275)
+Years (control, forced): (200, 275)
 Grid points nx: 200, Δt (years): 0.02
 
-Control global mean T (°C):  14.8
-Forced global mean T (°C):  17.3
-ΔT global (°C): 2.4
+Control global mean T (°C):  15.1
+Forced global mean T (°C):  15.1
+ΔT global (°C): 0.0
 
-North pole T control / forced (°C): -14.9 /  -9.7
-North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 1.114
+North pole T control / forced (°C): -13.8 / -13.8
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): nan
 
-Outgoing longwave radiation (OLR) control / forced (W m⁻²): 239 / 244
-Planetary albedo control / forced: 0.300 / 0.293
-Diffusivity control / forced (W m⁻² K⁻¹): 0.663 / 0.679
+Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 240
+Planetary albedo control / forced: 0.298 / 0.298
+Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.665
 
