@@ -210,6 +210,13 @@ def heat_capacity_profile(x, T, k1):
     
     return C
 
+def Forcing(model, i):
+    return model.params['F'] * (i >= model.ctrl_nsteps)  # Step function forcing after control period
+
+
+def VariableForcing(model, i):
+    return model.F_History[i] # Use time-varying forcing from forcing history data
+
 # ---------------- Diffusion operator L ≈ ∂x[D(1-x²) ∂x] ----------------
 def build_diffusion_tridiag(x, D):
     """Build tridiagonal representation of diffusion operator L with diffusivity D (W m⁻² K⁻¹) on borders with nx cell points at x = sin(lat).

@@ -52,7 +52,7 @@ class ClimateModel:
         absorbed = Q_x * (1.0 - alpha)
         dTloc = funcs['deltaT_of_Ts'](T, params['k3'], model=self, i=i)
         olr = phys.SIGMA * (T - dTloc)**4
-        rad_term = absorbed - olr + params['F'] * (i >= self.ctrl_nsteps) # Only apply forcing after control period
+        rad_term = absorbed - olr + funcs['Forcing'](model=self, i=i) # calls the forcing function from physics.py
 
         # Diffusivity depends on global mean temperature
         D = funcs["diffusion_from_T"](T, params['D0'], params['k2'], model=self, i=i)
