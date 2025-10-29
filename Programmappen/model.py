@@ -10,7 +10,12 @@ class ClimateModel:
         self.modes = modes
         self.outputs = outputs
         self.funcs = {name: func for name, func in vars(phys).items() if callable(func)} # Physics functions
+
         self.C = phys.C_M * params['SD'] # Heat capacity may be changed
+        self.dt = self.config["dt_years"] * phys.SECONDS_PER_YEAR # time step in seconds
+        self.nsteps = int(np.ceil(self.config["years"] / self.config["dt_years"])) # Run for at least config["years"]
+        self.ctrl_nsteps = int(round(self.config["ctrl_years"] / self.config["dt_years"]))
+        
         for m in self.modes: m.check_compatibility(self.modes)
 
     def run(self):
@@ -22,10 +27,6 @@ class ClimateModel:
         self.dx = 2.0 / self.config["nx"]
         self.x = np.linspace(-1.0 + self.dx/2, 1.0 - self.dx/2, self.config["nx"])
         self.T = phys.T_init(self.x, self.params["T0"])  # Initial temperature profile (K)
-
-        self.dt = self.config["dt_years"] * phys.SECONDS_PER_YEAR # time step in seconds
-        self.nsteps = int(np.ceil(self.config["years"] / self.config["dt_years"])) # Run for at least config["years"]
-        self.ctrl_nsteps = int(round(self.config["ctrl_years"] / self.config["dt_years"]))
 
         # Let outputs collect initial data
         for o in self.outputs: o.initialize(self)
