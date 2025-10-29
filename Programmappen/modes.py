@@ -75,9 +75,13 @@ class VariableForcing(Mode):
            header = next(reader)  # Skip header row if present
            ForcingHistory = np.array([row for row in reader]) # Reads CSV data
         year = ForcingHistory[:,0].astype(float)
-        model.config["years"] = len(year) + model.config["ctrl_years"]
         forcing = ForcingHistory[:,19].astype(float)
-        forcing = np.interp(np.linspace(0, 1, model.nsteps), np.linspace(0, 1, len(forcing)), forcing) # Interpolation
+
+        model.config["years"] = len(year) + model.config["ctrl_years"]
+        model.nsteps = int(np.ceil(model.config["years"] / model.config["dt_years"])) # Run for at least config["years"]
+        model.ctrl_nsteps = int(round(model.config["ctrl_years"] / model.config["dt_years"]))
+
+        forcing = np.interp(np.linspace(0, 1, model.nsteps - model.ctrl_nsteps), np.linspace(0, 1, len(forcing)), forcing) # Interpolation
         model.F_History = np.concatenate( (np.zeros(model.ctrl_nsteps), forcing) ) #Start with 0's under the control period
 
 
