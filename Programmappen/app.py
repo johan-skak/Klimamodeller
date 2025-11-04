@@ -56,8 +56,8 @@ def plot_in_tabs(axes_funcs, hash_code):
         st.html("<style>.stElementContainer:has(iframe) {aspect-ratio: 1 / 1.25; height: auto; margin-top: -1em;} div[aria-label='Vælg figur:'] {margin: 0;}</style>")
         components.html(style+html)
     else:
-        # fig.set_size_inches(size, size)
         st.pyplot(figs[titles.index(st.session_state["choice"])])
+        plt.close(figs[titles.index(st.session_state["choice"])])
 
 @st.cache_data
 def call_animate_on_earth(_func, size, hash_code):

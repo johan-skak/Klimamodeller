@@ -4,19 +4,22 @@ import physics as phys
 import outputs
 
 class ClimateModel:
-    def __init__(self, config, params, modes, outputs):
+    def __init__(self, config, params, modes, outputs, app_mode=False):
         self.config = config
         self.params = params
         self.modes = modes
         self.outputs = outputs
+        self.app_mode = app_mode
         self.funcs = {name: func for name, func in vars(phys).items() if callable(func)} # Physics functions
         self.C = phys.C_M * params['SD'] # Heat capacity may be changed
 
-        # Let modes modify config/params/T/funcs as needed
-        for m in self.modes: m.initialize(self)
         for m in self.modes: m.check_compatibility(self.modes)
 
     def run(self):
+        # Let modes modify config/params/T/funcs as needed
+        for m in self.modes: m.initialize(self)
+        self.sim_info = outputs.print_simulation_info(self.config, self.params, self.app_mode) # Print simulation info and return as string for use in main.py
+
         # Define grid and initial state
         self.dx = 2.0 / self.config["nx"]
         self.x = np.linspace(-1.0 + self.dx/2, 1.0 - self.dx/2, self.config["nx"])
@@ -28,7 +31,6 @@ class ClimateModel:
 
         # Let outputs collect initial data
         for o in self.outputs: o.initialize(self)
-        self.sim_info = outputs.print_simulation_info(self.config, self.params) # Print simulation info and return as string for use in main.py
         
         for i in range(self.nsteps):
             # Evolve model one step

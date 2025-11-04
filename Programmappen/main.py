@@ -28,7 +28,7 @@ def main(config, params, app_mode=False):
         if app_mode: outputs_list.append(outputs.TemperatureOnEarthOutput()) # Add Earth surface output in app mode
     
     # Create and run model
-    climate_model = model.ClimateModel(config, params, modes_list, outputs_list)
+    climate_model = model.ClimateModel(config, params, modes_list, outputs_list, app_mode)
     start_time = time.perf_counter()
     climate_model.run()
     end_time = time.perf_counter()
