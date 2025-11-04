@@ -396,7 +396,6 @@ with st.form("input_form"):
 
     with col2:
         with st.expander("⚙️ Opsætning"):
-            print("VariableForcing" in st.session_state.modes)
             st.header("Opsætning")
             # Overwrite config dict with user input when form is submitted
             if not "VariableForcing" in st.session_state.modes:
