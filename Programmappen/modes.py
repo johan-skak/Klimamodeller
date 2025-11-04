@@ -58,7 +58,6 @@ class VariableSeaDepth(Mode):
     def step(self, model, i):
         model.C = phys.heat_capacity_profile(model.x, model.T, model.params["k1"])
 
-
 class VariableForcing(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
@@ -71,7 +70,7 @@ class VariableForcing(Mode):
         del model.params["F"] #Remove unused key from output. This also (paradoxically) makes the outputs aware that forcing is on
 
        #Lav forceringshistorik her #open() returnerer nok en fejl hvis stien ikke findes og det er godt
-        with open(os.path.join(os.path.dirname(__file__), 'ForcingHistory.csv')) as f:
+        with open(os.path.join(os.path.dirname(__file__), 'Datafiler/ForcingHistory.csv')) as f:
            reader = csv.reader(f)
            header = next(reader)  # Skip header row if present
            ForcingHistory = np.array([row for row in reader]) # Reads CSV data
