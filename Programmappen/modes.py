@@ -61,8 +61,12 @@ class VariableSeaDepth(Mode):
 class VariableForcing(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        if len(modes) == 1:
-            self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
+        self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
+        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
+    
+    def check_compatibility(self, modes):
+        if any(isinstance(m, SeasonalVariation) for m in modes):
+            raise ValueError("VariableForcing mode is not compatible with SeasonalVariation mode.")
 
     def initialize(self, model):
         model.funcs["Forcing"] = phys.VariableForcing

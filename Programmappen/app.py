@@ -438,7 +438,7 @@ with col_btn5:
     if btns.button("Forceringsdata", icon="📈"):
         # Set the relevant keyed input widgets to their default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))  # Sea depth is irrelevant in this mode
-        set_keyed_inputs(DEFAULT_CONFIG | dict(ctrl_years=50, modes=["VariableForcing"]))
+        set_keyed_inputs(DEFAULT_CONFIG | dict(ctrl_years=100, modes=["VariableForcing"]))
 
 with st.form("input_form"):
     st.html("<i class='no-gap'>Eller indstil parametre og opsætning manuelt nedenfor.</i>")
@@ -485,6 +485,11 @@ with st.form("input_form"):
                     st.session_state.config[key] = value
 
     submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og opsætning", width="stretch")
+
+            
+if "VariableForcing" in modes and "SeasonalVariation" in modes:
+    st.error("'VariableForcing' og 'SeasonalVariation' kan ikke bruges sammen. Vælg kun én af dem.")
+    st.stop()
 
 if "VariableForcing" in st.session_state.modes:
     upload_file_menu()
