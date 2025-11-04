@@ -67,7 +67,8 @@ class VariableForcing(Mode):
 
     def initialize(self, model):
         model.funcs["Forcing"] = phys.VariableForcing
-        model.config["output_dir"] += "VarForc"
+        model.config["output_dir"] += "_VarForc"
+        del model.params["F"] #Remove unused key from output
 
        #Lav forceringshistorik her #open() returnerer nok en fejl hvis stien ikke findes og det er godt
         with open(os.path.join(os.path.dirname(__file__), 'ForcingHistory.csv')) as f:
