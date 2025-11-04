@@ -298,7 +298,7 @@ def set_run_away(Bool):
 # Create ButtonGroup instance
 btns = ButtonGroup("run_away", set_run_away)
 
-
+# ---- Begin Streamlit app ----
 DEFAULT_PARAMS = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288, SD=250, S0=1365, S1=None, F=4.0)
 DEFAULT_CONFIG = dict(years=1000, ctrl_years=None, dt_years=1.0, nx=200, modes=[], forcing_file='ForcingHistory.csv')
 
@@ -407,6 +407,7 @@ st.toggle("Vis alle parametre", key="show_all_params", value=False, on_change=sh
 
 st.html("<i class='no-gap'>Klik på knapperne nedenfor for at vælge forudindstillinger for forskellige eksperiment-tilstande.</i>")
 
+st.html("<style> button p {text-wrap: balance;} </style>")
 # Top buttons in one row
 col_btn1, col_btn2, col_btn3, col_btn4, col_btn5 = st.columns(5)
 with col_btn1:
