@@ -19,11 +19,7 @@ S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 ============================================
 
-<<<<<<< HEAD
-Output generated on 2025-11-04 11:19:43
-=======
-Output generated on 2025-11-04 13:56:00
->>>>>>> 8610087ffd47c00fd69e08e8634a6c63c176ad4b
+Output generated on 2025-11-04 18:22:31
 
 === EBM Summary =====================================================
 

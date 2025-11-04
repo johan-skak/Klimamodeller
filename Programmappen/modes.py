@@ -61,9 +61,9 @@ class VariableSeaDepth(Mode):
 class VariableForcing(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
+        #self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
         if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
-        #self.outputs.extend([outputs.VariableForcingOutput(), outputs.DefaultOutput()])
+        self.outputs.extend([outputs.VariableForcingOutput(), outputs.DefaultOutput()])
         
     def check_compatibility(self, modes):
         if any(isinstance(m, SeasonalVariation) for m in modes):
@@ -92,6 +92,7 @@ class VariableForcing(Mode):
 
         forcing = np.interp(np.linspace(0, 1, model.nsteps - model.ctrl_nsteps), np.linspace(0, 1, len(forcing)), forcing) # Interpolation
         model.F_History = np.concatenate( (np.zeros(model.ctrl_nsteps), forcing) ) #Start with 0's under the control period
+        model.start_year = year[0]
 
 
 def warn(msg):

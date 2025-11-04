@@ -286,7 +286,7 @@ class TimeSeriesOutput(OutPut):
         """Plot global mean temperature time series."""
         ax.plot(np.arange(len(self.Tg_series)) * self.dt, self.Tg_series, label='Global Mean Temperature')
         ax.set_title("Global Mean Surface Temperature")
-        ax.set_xlabel("Time (years)"); ax.set_xlim(0, len(self.Tg_series) * self.dt); ax.set_ylabel("°C"); ax.grid(True)
+        ax.set_xlabel("Time [years]"); ax.set_xlim(0, len(self.Tg_series) * self.dt); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
         if self.Forcing_on:
             ax.axvline(self.ctrl_years, color='k', linestyle='--', label='Forcing On')
             ax.legend()
@@ -499,14 +499,19 @@ class VariableForcingOutput(TimeSeriesOutput):
         self.lat = np.degrees(np.arcsin(self.x))
         self.x_ext = np.r_[-1, self.x, 1] # Extended grid including poles
         self.lat_ext = np.r_[-90, self.lat, 90]
-        self.F_history = model.F_history
+        self.F_history = model.F_History
+        self.start_year = model.start_year - model.config["ctrl_years"]
 
     def panel(self, ax):
         ax2 = ax.twinx()
-        super().panel(ax)  # Plot time series of global mean temperature
-        ax2.plot(np.arange(len(self.F_history)) * self.dt, self.F_history, label='Variable Forcing', color='orange')
-        ax2.set_ylabel("W/m²")
-        plt.show()
+        ax.plot(np.arange(len(self.Tg_series)) * self.dt + self.start_year, self.Tg_series, label='Global Mean Temperature')
+        ax.set_xlim(self.start_year, self.start_year + len(self.Tg_series) * self.dt)
+        ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True); ax2.set_ylabel(" Forcing [W/m²] ")
+        ax.axvline(self.ctrl_years + self.start_year, color='k', linestyle='--', label='Forcing On')
+        ax2.plot(np.arange(len(self.F_history)) * self.dt + self.start_year, self.F_history, label='Total Radiative Forcing', color='orange')
+        handles,labels = ax.get_legend_handles_labels(); handles2, labels2 = ax2.get_legend_handles_labels()
+        ax.set_title("Global Mean Surface Temperature and Total Radiative Forcing")
+        ax.legend(handles + handles2, labels + labels2, loc='lower right')
 
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"
