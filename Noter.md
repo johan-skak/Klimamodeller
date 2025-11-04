@@ -30,3 +30,5 @@ Alt kode skal kommenteres og funktioner skal dokumenteres (med """Beskrivelse"""
 
 Sørg også for at ctrl forsvinder fra resumeet hvis irrelevant
 
+Angiv maks og min temperatur
+

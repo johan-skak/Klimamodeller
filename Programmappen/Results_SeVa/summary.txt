@@ -19,19 +19,19 @@ S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 0
 ============================================
 
-Output generated on 2025-10-12 09:00:26
+Output generated on 2025-10-21 20:22:03
 
-=== EBM Summary ============================================================================
+=== EBM Summary ===========================================================================
 
 === Seasonal Diagnostics (last year) ===
 Modes: ['SeasonalVariation']
 Years run: 50, grid points: 200, Δt (years): 1 / 48
 
-Global mean temperature:  13.94°C (min  13.8 on Jan 04 (0.79y), max  14.0 on Apr 05 (0.04y))
-Equator temperature:      27.87°C (min  27.4 on Jul 28 (0.35y), max  28.3 on Apr 28 (0.10y))
-Denmark (56°N):           -1.15°C (min  -8.6 on Mar 13 (0.98y), max   7.1 on Sep 04 (0.46y))
-North pole:              -16.48°C (min -23.4 on Apr 05 (0.04y), max  -9.6 on Sep 04 (0.46y))
-South pole:              -16.20°C (min -23.4 on Oct 05 (0.54y), max  -9.6 on Mar 06 (0.96y))
+Global mean temperature: 13.94°C (min  13.8 on Jan 04 (0.79y), max  14.0 on Apr 05 (0.04y))
+Equator temperature:     27.87°C (min  27.4 on Jul 28 (0.35y), max  28.3 on Apr 28 (0.10y))
+Denmark (56°N):          -1.15°C (min  -8.6 on Mar 13 (0.98y), max   7.1 on Sep 04 (0.46y))
+North pole:             -16.48°C (min -23.4 on Apr 05 (0.04y), max  -9.6 on Sep 04 (0.46y))
+South pole:             -16.20°C (min -23.4 on Oct 05 (0.54y), max  -9.6 on Mar 06 (0.96y))
 
 Last-year mean OLR:    237.7 W/m²
 Last-year mean albedo: 0.324

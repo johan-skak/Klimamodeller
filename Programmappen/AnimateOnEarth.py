@@ -1,70 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import cartopy.io.shapereader as shpreader
+import os, pickle
 from matplotlib.animation import FuncAnimation
 from matplotlib.colors import ListedColormap
-
-def plot_on_earth(inLat=None,T=None, ax=None, title="Temperature map of the Earth", cbar_label="Temperature [°C]"):
-    """
-    Plot a simple temperature map of the Earth as seen from space,
-    centered on Africa, with coastlines.
-    """
-    # --- parameters ---
-    res = 400  # resolution (pixels per axis)
-    R = 1.0    # Earth radius in arbitrary units
-
-    # --- create normalized grid ---
-    x = np.linspace(-R, R, res)
-    y = np.linspace(-R, R, res)
-    X, Y = np.meshgrid(x, y)
-
-    # mask outside the disk
-    mask = X**2 + Y**2 <= R**2
-
-    # --- map (x,y) to spherical coords ---
-    # observer above (lat=0, lon=0)
-    lat = np.degrees(np.arcsin(Y / R)) * np.sign(Y)       # latitude
-    # lon = np.degrees(np.arcsin(X / np.sqrt(R**2-Y**2)))                  # longitude
-
-    # --- temperature field (depends only on latitude) ---
-    if inLat is None or T is None:
-        T = 5 + 25 * (np.cos(2*np.radians(lat)))          # arbitrary model
-    else:
-        T = np.interp(lat, inLat, T)                          # interpolate given profile
-    T[~mask] = np.nan                                  # mask outside Earth
-
-    # --- plot ---
-    if ax is None:
-        _, ax = plt.subplots(figsize=(6, 6))
-    im = ax.imshow(T, extent=(-R, R, -R, R), origin='lower',
-                cmap='coolwarm', interpolation='bilinear')
-
-    # draw circular outline
-    circle = plt.Circle((0, 0), R, color='k', lw=1.2, fill=False)
-    ax.add_artist(circle)
-
-    # --- add coastlines (using cartopy's Natural Earth data) ---
-    # We can extract coastlines manually as (lon,lat) and project
-    reader = shpreader.natural_earth(resolution='110m',
-                                    category='physical',
-                                    name='coastline')
-    for i, record in enumerate(shpreader.Reader(reader).records()):
-        coords = np.array(record.geometry.coords)
-        # project onto the visible hemisphere (simple orthographic)
-        lon_c, lat_c = np.radians(coords[:,0]), np.radians(coords[:,1])
-        behind = np.cos(lon_c) < 0
-        lon_c[behind] = np.nan
-        y_c = np.sin(lat_c)
-        x_c = np.cos(lat_c) * np.sin(lon_c)
-        for x_c, y_c in split_on_nan(x_c, y_c):
-            ax.plot(x_c, y_c, color='black', lw=0.5)
-
-    # --- finalize look ---
-    ax.set_aspect('equal')
-    ax.axis('off')
-    plt.colorbar(im, fraction=0.046, pad=0.04, label=cbar_label)
-    plt.title(title)
-    plt.show()
 
 def animate_on_earth(inLat, T_series, dt_years, interval=80, ax=None, title="Surface Temperature on Earth", cbar_label="°C"):
     """
@@ -109,7 +47,7 @@ def animate_on_earth(inLat, T_series, dt_years, interval=80, ax=None, title="Sur
         # --- plot setup ---
         _, ax = plt.subplots(figsize=(size, size))
 
-        im = draw_earth(ax, np.min(T_series), np.max(T_series), res)
+        im = draw_earth(ax, res)
 
         def update(frame):
             T_t = T_series[frame]
@@ -131,22 +69,16 @@ def animate_on_earth(inLat, T_series, dt_years, interval=80, ax=None, title="Sur
     
     return wrapper # Lazy evaluation to avoid creating figure when not needed
 
-def draw_earth(ax, min, max, res):
+def draw_earth(ax, res):
     # draw circular outline
     circle = plt.Circle((0, 0), 1, color='k', lw=1.2, fill=False)
     ax.add_artist(circle)
 
-    # add coastlines
-    reader = shpreader.natural_earth(resolution='110m', category='physical', name='coastline')
-    for record in shpreader.Reader(reader).records():
-        coords = np.array(record.geometry.coords)
-        lon_c, lat_c = np.radians(coords[:,0]), np.radians(coords[:,1])
-        behind = np.cos(lon_c) < 0
-        lon_c[behind] = np.nan
-        y_c = np.sin(lat_c)
-        x_c = np.cos(lat_c) * np.sin(lon_c)
-        for x_c, y_c in split_on_nan(x_c, y_c):
-            ax.plot(x_c, y_c, color='black', lw=0.5)
+    # add coastlines from file (computed by make_coastline_data)
+    with open(os.path.join(os.path.dirname(__file__), 'Datafiler/coastline_data.pkl'), 'rb') as f:
+        coastline_segments = pickle.load(f)
+    for x_c, y_c in coastline_segments:
+        ax.plot(x_c, y_c, color='black', lw=0.5)
 
     # colors = [[0, 0.7, 1, 1], [1, 1, 1, 1], [1, 0.2, 0, 1]] # blue to white to red
     # zero_point = np.clip(-min / (max - min), 0, 1)
@@ -195,3 +127,27 @@ def split_on_nan(x, y):
         if valid[start]: # Only add segments that are valid
             segments.append((x[start:end], y[start:end]))
     return segments
+
+def make_coastline_data():
+    """
+    Create and save coastline data from Natural Earth shapefiles. Depends on cartopy which can be difficult to install.
+    The data is saved in 'coastline_data.pkl' for later use in plotting.
+    """
+    import cartopy.io.shapereader as shpreader
+
+    reader = shpreader.natural_earth(resolution='110m', category='physical', name='coastline') 
+    segments = []
+    for record in shpreader.Reader(reader).records():
+        coords = np.array(record.geometry.coords)
+        lon_coords, lat_coords = np.radians(coords[:,0]), np.radians(coords[:,1])
+        behind = np.cos(lon_coords) < 0
+        lon_coords[behind] = np.nan
+        y_coords = np.sin(lat_coords)
+        x_coords = np.cos(lat_coords) * np.sin(lon_coords)
+        for x_coords_segment, y_coords_segment in split_on_nan(x_coords, y_coords):
+            segments.append((x_coords_segment, y_coords_segment))
+    
+    with open('Datafiler/coastline_data.pkl', 'wb') as f:
+        pickle.dump(segments, f)
+
+    print(f"Saved {len(segments)} coastline segments to 'Datafiler/coastline_data.pkl'")

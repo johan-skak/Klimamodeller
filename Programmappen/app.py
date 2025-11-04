@@ -33,61 +33,6 @@ class ButtonGroup:
         return self.clicked == label
 
 st.html("<style> .stElementContainer:has(.no-gap) {margin-top: -1em; margin-bottom: -1em;} </style>")
-tabs_html = """
-    <style>
-        /* Scrollable container */
-        div[aria-label="Vælg figur:"] {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        margin-bottom: 1rem;
-        }
-
-        /* Hide default radio dots */
-        div[aria-label="Vælg figur:"] label > div:first-child {
-            display: none !important;
-        }
-
-        /* Tabs */
-        div[aria-label="Vælg figur:"] label {
-            display: inline-block !important;
-            background-color: transparent !important;
-            border-bottom: 2px solid #31333f1A; /* Streamlit default border color with transparency */
-            margin-right: 0;
-            margin-bottom: .5rem;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: border-color 0.2s;
-        }
-
-        /* Tab text */
-        div[aria-label="Vælg figur:"] label div {
-            transition: color 0.2s;
-            font-size: 14px;
-            padding-left: 3.5px;
-            padding-right: 3.5px;
-        }
-
-        /* First tab text */
-        div[aria-label="Vælg figur:"] label:first-child div {
-            padding-left: 0 !important;
-        }
-
-        /* Hover effect */
-        div[aria-label="Vælg figur:"] label div:hover {
-            color: #ff4b4b; /* Streamlit red */
-        }
-
-        /* Active tab */
-        div[aria-label="Vælg figur:"] label:has(input:checked) {
-            border-bottom: 2px solid #ff4b4b !important;
-        }
-
-        /* Active tab text */
-        div[aria-label="Vælg figur:"] label:has(input:checked) div {
-            color: #ff4b4b !important; /* Streamlit red */
-        }
-    </style>
-"""
 
 @st.cache_data
 def run(params, config):
@@ -101,8 +46,7 @@ def plot_in_tabs(axes_funcs, hash_code):
     
     # Remember last choice if possible
     index = titles.index(st.session_state.get("choice", titles[0])) if st.session_state.get("choice") in titles else 0
-    st.html(tabs_html)
-    st.radio("Vælg figur:", titles, horizontal=True, label_visibility="collapsed", key="choice", index=index)
+    st.selectbox("Vælg figur:", titles, label_visibility="collapsed", key="choice", index=index)
     fig = figs[titles.index(st.session_state["choice"])]
     size = 6
     if not isinstance(fig, plt.Figure):
@@ -112,8 +56,8 @@ def plot_in_tabs(axes_funcs, hash_code):
         st.html("<style>.stElementContainer:has(iframe) {aspect-ratio: 1 / 1.25; height: auto; margin-top: -1em;} div[aria-label='Vælg figur:'] {margin: 0;}</style>")
         components.html(style+html)
     else:
-        # fig.set_size_inches(size, size)
         st.pyplot(figs[titles.index(st.session_state["choice"])])
+        plt.close(figs[titles.index(st.session_state["choice"])])
 
 @st.cache_data
 def call_animate_on_earth(_func, size, hash_code):
@@ -397,7 +341,7 @@ st.toggle("Vis alle parametre", key="show_all_params", value=False, on_change=sh
 st.html("<i class='no-gap'>Klik på knapperne nedenfor for at vælge forudindstillinger for forskellige eksperiment-tilstande.</i>")
 
 # Top buttons in one row
-col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
+col_btn1, col_btn2, col_btn3, col_btn4, col_btn5 = st.columns(5)
 with col_btn1:
     # --- Default button ---
     if btns.button("Standardtilstand", icon="🔄"):
@@ -422,6 +366,12 @@ with col_btn4:
         # Set the relevant keyed input widgets to their default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=None)) # No forcing and sea depth is irrelevant
         set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation", "VariableSeaDepth"]))
+with col_btn5:
+    # --- Variable Forcing button ---
+    if btns.button("Forceringsdata", icon="📈"):
+        # Set the relevant keyed input widgets to their default values
+        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))  # Sea depth is irrelevant in this mode
+        set_keyed_inputs(DEFAULT_CONFIG | dict(ctrl_years=50, modes=["VariableForcing"]))
 
 with st.form("input_form"):
     st.html("<i class='no-gap'>Eller indstil parametre og opsætning manuelt nedenfor.</i>")
@@ -446,9 +396,11 @@ with st.form("input_form"):
 
     with col2:
         with st.expander("⚙️ Opsætning"):
+            print("VariableForcing" in st.session_state.modes)
             st.header("Opsætning")
             # Overwrite config dict with user input when form is submitted
-            st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
+            if not "VariableForcing" in st.session_state.modes:
+                st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
             st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
             st.number_input("Tidsskridt (år)", value=DEFAULT_CONFIG["dt_years"], key="dt_years", step=0.01, min_value=0.01, max_value=10.0)
             st.number_input("Antal gitterpunkter", value=DEFAULT_CONFIG["nx"], key="nx", step=100, min_value=10, max_value=1000)
@@ -458,7 +410,7 @@ with st.form("input_form"):
                         background-color: #80b080 !important;
                     }
                 </style>""")
-            modes       = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth"], default=DEFAULT_CONFIG["modes"], key="modes")
+            modes = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth", "VariableForcing"], default=DEFAULT_CONFIG["modes"], key="modes")
             for key in DEFAULT_CONFIG.keys():
                 value = st.session_state.get(key)
                 if value is not None:
@@ -487,98 +439,3 @@ with col_out2:
     #     Appen er baseret på en simpel energibalance model, som simulerer Jordens klima over tid.
     #     Kildekoden til appen og modellen kan findes på [GitHub](https://github.com/JohanSkak/Klimamodeller).
     #     """)
-
-
-
-
-
-
-
-
-
-
-
-
-
-# import json
-
-# scroll_tabs = components.declare_component(name="scroll_tabs", path="./frontend")
-
-# def tab_component(titles, selected):
-#     # Escape data for JS
-#     titles_json = json.dumps(titles)
-#     selected_json = json.dumps(selected)
-
-#     html = f"""
-#         <html>
-#         <head>
-#         <style>
-#             body {{
-#                 font-family: sans-serif;
-#                 margin: 0;
-#             }}
-#             #tabs {{
-#                 overflow-x: auto;
-#                 white-space: nowrap;
-#                 padding: 4px;
-#                 border-bottom: 1px solid #ccc;
-#                 width: 500px;
-#             }}
-#             .tab {{
-#                 display: inline-block;
-#                 padding: 6px 12px;
-#                 margin: 0 2px;
-#                 border-radius: 6px;
-#                 cursor: pointer;
-#                 background: #eee;
-#                 color: #333;
-#                 user-select: none;
-#                 white-space: nowrap;
-#             }}
-#             .tab.selected {{
-#                 background: #0078ff;
-#                 color: white;
-#                 font-weight: 600;
-#             }}
-#         </style>
-#         </head>
-#         <body>
-#         <div id="tabs"></div>
-#         <script>
-#                 const titles = {titles_json};
-#                 const selected = {selected_json};
-#                 const container = document.getElementById("tabs");
-
-#                 titles.forEach(t => {{
-#                     const el = document.createElement("div");
-#                     el.className = "tab" + (t === selected ? " selected" : "");
-#                     el.textContent = t;
-#                     el.onclick = () => {{
-#                         window.parent.postMessage(
-#                         {{isStreamlitMessage: true, type: 'streamlit:setComponentValue', value: t}},
-#                         "*"
-#                         );
-#                     }};
-#                     container.appendChild(el);
-#                 }});
-
-#                 // Scroll to the selected one after rendering
-#                 const sel = container.querySelector(".selected");
-#                 if (sel) sel.scrollIntoView({{ behavior: "smooth", inline: "center" }});
-#         </script>
-#         </body>
-#         </html>
-#     """
-#     return scroll_tabs(html=html, height=60)
-
-# # Example Streamlit usage
-# titles = ["Global Mean Surface Temperature", "Equator", "Denmark (56°N)", "North pole", "South pole"]
-# selected = st.session_state.get("choice", titles[0])
-# selected
-
-# clicked = tab_component(titles, selected)
-
-# if clicked != selected:
-#     var = clicked
-
-# st.write("Selected:", var)

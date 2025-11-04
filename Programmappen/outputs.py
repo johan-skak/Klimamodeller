@@ -11,8 +11,8 @@ def remove_ansi(text):
     ansi_escape = re.compile(r'\x1B\[[0-9;]*m') # Matches ANSI escape sequences like \033[1;33m
     return ansi_escape.sub('', text) # Remove ANSI sequences from text
 
-def print_simulation_info(config, params):
-    print("Running simulation with the following configuration and parameters\n\033[1mNote\033[0m: some modes may have changed the values specified in the config and parameter files\n")
+def print_simulation_info(config, params, app_mode=False):
+    if not app_mode: print("Running simulation with the following configuration and parameters\n\033[1mNote\033[0m: some modes may have changed the values specified in the config and parameter files\n")
     descs = phys.PARAM_DESCS # descriptions for parameter keys
     max_ckey_len = max((len(k) for k in config), default=0) # find max config key length
     max_pkey_len = max((len(k) for k in params), default=0) # find max parameters key length
@@ -36,9 +36,9 @@ def print_simulation_info(config, params):
         desc = f"({desc})" # add parentheses to string
         info_str += f"{key:<{max_pkey_len}} {desc:<{max_pdesc_len+2}} : {value}\n"
     info_str += "=" * total_pwidth + "\n\n"
-    print(info_str, end="") # no newline at end
+    if not app_mode: print(info_str, end="") # no newline at end
 
-    print("\033[1mStarting\033[0m simulation...\n")
+    if not app_mode: print("\033[1mStarting\033[0m simulation...\n")
     return info_str
 
 def aspect_ratio(n, goal):
@@ -134,6 +134,7 @@ class DefaultOutput(OutPut):
         self.diags["init"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
         self.x = model.x
         self.lat = np.degrees(np.arcsin(self.x))
+        self.Forcing_on = model.config["ctrl_years"] > 0 and (model.params.get('F') != 0 or model.params['S1'] != model.params['S0'])
 
     def step(self, model, i):
         if i == model.ctrl_nsteps:
@@ -147,14 +148,14 @@ class DefaultOutput(OutPut):
         self.polar_ampl = (self.diags["end"]["T_poles"][1] - self.diags["mid"]["T_poles"][1] - self.dt_global) / self.dt_global if self.dt_global != 0 else np.nan
         self.lat_ext = np.r_[-90, self.lat, 90]
         # Set cases and labels depending on whether there was a (significant) control run
-        self.cases = ["init", "mid", "end"] if model.config["ctrl_years"] > 0 and (model.params['F'] != 0 or model.params['S1'] != model.params['S0']) else ["init", "end"]
-        self.labels = ["Initial", "Control", "Forced"] if len(self.cases) == 3 else ["Initial", "Final"]
-        self.colors = ["C2", "C0", "C1"] if len(self.cases) == 3 else ["C2", "C1"]
+        self.cases = ["init", "mid", "end"] if self.Forcing_on else ["init", "end"]
+        self.labels = ["Initial", "Control", "Forced"] if self.Forcing_on else ["Initial", "Final"]
+        self.colors = ["C2", "C0", "C1"] if self.Forcing_on else ["C2", "C1"]
         for case in self.cases:
             self.diags[case]["T_ext"] = np.r_[self.diags[case]["T_poles"][0], self.diags[case]["T"], self.diags[case]["T_poles"][1]]
         # Finally set up axes_funcs and summaries
         self.axes_funcs = [self.panel1, self.panel2, self.panel3, self.panel4, self.panel5]
-        self.axes_funcs.append(self.panel6) if len(self.cases) == 3 else None # Only add panel6 if there was a control run
+        if self.Forcing_on: self.axes_funcs.append(self.panel6) # Only add panel6 if there was a control run
         self.summaries = [self.summarize(model, self.diags)]
     
     def summarize(self, model, diags):
@@ -272,7 +273,7 @@ class TimeSeriesOutput(OutPut):
         self.dt = model.config["dt_years"]
         self.Tg_series.append(model.T.mean() - 273.15)
          # Whether to draw vertical line at forcing time
-        self.vline = model.config["ctrl_years"] > 0 and (model.params['F'] != 0 or model.params['S1'] != model.params['S0'] or model.funcs["Forcing"] != phys.Forcing)
+        self.Forcing_on = model.config["ctrl_years"] > 0 and (model.params.get('F') != 0 or model.params['S1'] != model.params['S0'])
         self.ctrl_years = model.config["ctrl_years"]
 
     def step(self, model, i):
@@ -286,7 +287,7 @@ class TimeSeriesOutput(OutPut):
         ax.plot(np.arange(len(self.Tg_series)) * self.dt, self.Tg_series, label='Global Mean Temperature')
         ax.set_title("Global Mean Surface Temperature")
         ax.set_xlabel("Time (years)"); ax.set_xlim(0, len(self.Tg_series) * self.dt); ax.set_ylabel("°C"); ax.grid(True)
-        if self.vline:
+        if self.Forcing_on:
             ax.axvline(self.ctrl_years, color='k', linestyle='--', label='Forcing On')
             ax.legend()
 
