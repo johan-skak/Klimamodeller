@@ -1,7 +1,9 @@
 # modes.py
+import csv
 import numpy as np
 import outputs
 import physics as phys
+import os
 
 def Ignore_modes(func):
     return lambda self, modes=None, app_mode=False: func(self, app_mode=app_mode)
@@ -55,6 +57,34 @@ class VariableSeaDepth(Mode):
 
     def step(self, model, i):
         model.C = phys.heat_capacity_profile(model.x, model.T, model.params["k1"])
+
+
+class VariableForcing(Mode):
+    def __init__(self, modes, app_mode=False):
+        super().__init__(app_mode=app_mode)
+        if len(modes) == 1:
+            self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
+
+    def initialize(self, model):
+        model.funcs["Forcing"] = phys.VariableForcing
+        model.config["output_dir"] += "_VarForc"
+        del model.params["F"] #Remove unused key from output
+
+       #Lav forceringshistorik her #open() returnerer nok en fejl hvis stien ikke findes og det er godt
+        with open(os.path.join(os.path.dirname(__file__), 'ForcingHistory.csv')) as f:
+           reader = csv.reader(f)
+           header = next(reader)  # Skip header row if present
+           ForcingHistory = np.array([row for row in reader]) # Reads CSV data
+        year = ForcingHistory[:,0].astype(float)
+        forcing = ForcingHistory[:,19].astype(float)
+
+        model.config["years"] = len(year) + model.config["ctrl_years"]
+        model.nsteps = int(np.ceil(model.config["years"] / model.config["dt_years"])) # Run for at least config["years"]
+        model.ctrl_nsteps = int(round(model.config["ctrl_years"] / model.config["dt_years"]))
+
+        forcing = np.interp(np.linspace(0, 1, model.nsteps - model.ctrl_nsteps), np.linspace(0, 1, len(forcing)), forcing) # Interpolation
+        model.F_History = np.concatenate( (np.zeros(model.ctrl_nsteps), forcing) ) #Start with 0's under the control period
+
 
 def warn(msg):
     """

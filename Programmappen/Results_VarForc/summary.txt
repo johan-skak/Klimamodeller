@@ -1,0 +1,39 @@
+=== EBM Model Configuration ================
+years      : 375
+ctrl_years : 100
+dt_years   : 0.02
+nx         : 200
+modes      : ['VariableForcing']
+output_dir : Results_VarForc
+============================================
+
+=== EBM Model Parameters ===================
+k1 (ice temperature sensitivity)    : 0.06
+k2 (diffusivity sensitivity)        : 0.01
+k3 (longwave radiation sensitivity) : 0.5
+D0 (background diffusivity)         : 0.66
+T0 (initial temperature)            : 288.0
+SD (mixed layer sea depth)          : 20
+S0 (solar forcing initial)          : 1365.0
+S1 (solar forcing changed)          : 1365.0
+F  (additional forcing)             : 1
+============================================
+
+Output generated on 2025-11-04 10:09:12
+
+=== EBM Summary =====================================================
+
+Years (control, forced): (100, 275)
+Grid points nx: 200, Δt (years): 0.02
+
+Control global mean T (°C):  15.1
+Forced global mean T (°C):  17.8
+ΔT global (°C): 2.7
+
+North pole T control / forced (°C): -13.8 /  -8.6
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.876
+
+Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 245
+Planetary albedo control / forced: 0.298 / 0.292
+Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.683
+

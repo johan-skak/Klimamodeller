@@ -1,5 +1,5 @@
 years: 50 # Number of years to simulate
 dt_years: 0.02 # Time step in years
 nx: 200 # Number of grid points in x-direction (x = sin(latitude))
-modes: [SeasonalVariation] # List of model modes to use. Possible modes are: SeasonalVariation, VariableSeaDepth. Leave empty for default mode.
-ctrl_years: 0 # Number of years to run control without forcing. Leave empty to have half the simulation as control.
+modes: [VariableForcing] # List of model modes to use. Possible modes are: SeasonalVariation, VariableSeaDepth, VariableForcing. Leave empty for default mode.
+ctrl_years: 100 # Number of years to run control without forcing. Leave empty to have half the simulation as control.

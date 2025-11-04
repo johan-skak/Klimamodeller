@@ -272,7 +272,8 @@ class TimeSeriesOutput(OutPut):
         self.dt = model.config["dt_years"]
         self.Tg_series.append(model.T.mean() - 273.15)
          # Whether to draw vertical line at forcing time
-        self.vline = model.config["ctrl_years"] > 0 and (model.params['F'] != 0 or model.params['S1'] != model.params['S0'])
+        self.vline = model.config["ctrl_years"] > 0 and (model.params['F'] != 0 or model.params['S1'] != model.params['S0'] or model.funcs["Forcing"] != phys.Forcing)
+        self.ctrl_years = model.config["ctrl_years"]
 
     def step(self, model, i):
         self.Tg_series.append(model.T.mean() - 273.15)
@@ -286,7 +287,7 @@ class TimeSeriesOutput(OutPut):
         ax.set_title("Global Mean Surface Temperature")
         ax.set_xlabel("Time (years)"); ax.set_xlim(0, len(self.Tg_series) * self.dt); ax.set_ylabel("°C"); ax.grid(True)
         if self.vline:
-            ax.axvline(len(self.Tg_series)*self.dt/2, color='k', linestyle='--', label='Forcing On')
+            ax.axvline(self.ctrl_years, color='k', linestyle='--', label='Forcing On')
             ax.legend()
 
 class SeasonalOutput(OutPut):
