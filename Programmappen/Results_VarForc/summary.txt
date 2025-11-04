@@ -1,10 +1,11 @@
 === EBM Model Configuration ================
-years      : 375
-ctrl_years : 100
-dt_years   : 0.02
-nx         : 200
-modes      : ['VariableForcing']
-output_dir : Results_VarForc
+years        : 375
+ctrl_years   : 100
+dt_years     : 1
+nx           : 200
+modes        : ['VariableForcing']
+output_dir   : Results_VarForc
+forcing_file : ForcingHistory.csv
 ============================================
 
 === EBM Model Parameters ===================
@@ -18,21 +19,25 @@ S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 ============================================
 
+<<<<<<< HEAD
 Output generated on 2025-11-04 11:19:43
+=======
+Output generated on 2025-11-04 13:56:00
+>>>>>>> 8610087ffd47c00fd69e08e8634a6c63c176ad4b
 
 === EBM Summary =====================================================
 
 Years (control, forced): (100, 275)
-Grid points nx: 200, Δt (years): 0.02
+Grid points nx: 200, Δt (years): 1
 
-Control global mean T (°C):  15.1
-Forced global mean T (°C):  17.8
+Control global mean T (°C):  15.2
+Forced global mean T (°C):  17.9
 ΔT global (°C): 2.7
 
-North pole T control / forced (°C): -13.8 /  -8.6
-North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.876
+North pole T control / forced (°C): -13.7 /  -8.6
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.900
 
 Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 245
-Planetary albedo control / forced: 0.298 / 0.292
-Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.683
+Planetary albedo control / forced: 0.297 / 0.292
+Diffusivity control / forced (W m⁻² K⁻¹): 0.666 / 0.683
 

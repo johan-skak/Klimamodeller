@@ -39,7 +39,8 @@ def main(config, params, app_mode=False):
 
 def configure_program():
     # Default config
-    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [], "output_dir": "Results"}
+    config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [],
+              "output_dir": "Results", "forcing_file": 'ForcingHistory.csv'}
 
     # Default parameters
     params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0, SD=250,

@@ -61,7 +61,13 @@ class VariableSeaDepth(Mode):
 class VariableForcing(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        self.outputs.extend([outputs.VariableForcingOutput(), outputs.DefaultOutput()])
+        self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
+        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
+        #self.outputs.extend([outputs.VariableForcingOutput(), outputs.DefaultOutput()])
+        
+    def check_compatibility(self, modes):
+        if any(isinstance(m, SeasonalVariation) for m in modes):
+            raise ValueError("VariableForcing mode is not compatible with SeasonalVariation mode.")
 
     def initialize(self, model):
         model.funcs["Forcing"] = phys.VariableForcing
@@ -69,10 +75,14 @@ class VariableForcing(Mode):
         del model.params["F"] #Remove unused key from output. This also (paradoxically) makes the outputs aware that forcing is on
 
        #Lav forceringshistorik her #open() returnerer nok en fejl hvis stien ikke findes og det er godt
-        with open(os.path.join(os.path.dirname(__file__), 'Datafiler/ForcingHistory.csv')) as f:
-           reader = csv.reader(f)
-           header = next(reader)  # Skip header row if present
-           ForcingHistory = np.array([row for row in reader]) # Reads CSV data
+        if model.config.get("forcing_data") is not None:
+           ForcingHistory = np.array(model.config["forcing_data"])
+        else:
+            print("Loading forcing data from file:", model.config["forcing_file"])
+            with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["forcing_file"])) as f:
+                reader = csv.reader(f)
+                header = next(reader)  # Skip header row if present
+                ForcingHistory = np.array([row for row in reader]) # Reads CSV data
         year = ForcingHistory[:,0].astype(float)
         forcing = ForcingHistory[:,-1].astype(float)
 
