@@ -62,8 +62,7 @@ class VariableSeaDepth(Mode):
 class VariableForcing(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        if len(modes) == 1:
-            self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
+        self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
 
     def initialize(self, model):
         model.funcs["Forcing"] = phys.VariableForcing
@@ -76,7 +75,7 @@ class VariableForcing(Mode):
            header = next(reader)  # Skip header row if present
            ForcingHistory = np.array([row for row in reader]) # Reads CSV data
         year = ForcingHistory[:,0].astype(float)
-        forcing = ForcingHistory[:,19].astype(float)
+        forcing = ForcingHistory[:,-1].astype(float)
 
         model.config["years"] = len(year) + model.config["ctrl_years"]
         model.nsteps = int(np.ceil(model.config["years"] / model.config["dt_years"])) # Run for at least config["years"]
