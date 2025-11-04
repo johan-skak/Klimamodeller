@@ -16,10 +16,9 @@ T0 (initial temperature)            : 288.0
 SD (mixed layer sea depth)          : 20
 S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
-F  (additional forcing)             : 1
 ============================================
 
-Output generated on 2025-11-04 10:09:12
+Output generated on 2025-11-04 10:46:07
 
 === EBM Summary =====================================================
 
