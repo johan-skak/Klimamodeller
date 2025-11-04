@@ -341,7 +341,7 @@ st.toggle("Vis alle parametre", key="show_all_params", value=False, on_change=sh
 st.html("<i class='no-gap'>Klik på knapperne nedenfor for at vælge forudindstillinger for forskellige eksperiment-tilstande.</i>")
 
 # Top buttons in one row
-col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
+col_btn1, col_btn2, col_btn3, col_btn4, col_btn5 = st.columns(5)
 with col_btn1:
     # --- Default button ---
     if btns.button("Standardtilstand", icon="🔄"):
@@ -366,6 +366,12 @@ with col_btn4:
         # Set the relevant keyed input widgets to their default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=None)) # No forcing and sea depth is irrelevant
         set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation", "VariableSeaDepth"]))
+with col_btn5:
+    # --- Variable Forcing button ---
+    if btns.button("Forceringsdata", icon="📈"):
+        # Set the relevant keyed input widgets to their default values
+        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))  # Sea depth is irrelevant in this mode
+        set_keyed_inputs(DEFAULT_CONFIG | dict(ctrl_years=50, modes=["VariableForcing"]))
 
 with st.form("input_form"):
     st.html("<i class='no-gap'>Eller indstil parametre og opsætning manuelt nedenfor.</i>")
@@ -390,9 +396,11 @@ with st.form("input_form"):
 
     with col2:
         with st.expander("⚙️ Opsætning"):
+            print("VariableForcing" in st.session_state.modes)
             st.header("Opsætning")
             # Overwrite config dict with user input when form is submitted
-            st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
+            if not "VariableForcing" in st.session_state.modes:
+                st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
             st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
             st.number_input("Tidsskridt (år)", value=DEFAULT_CONFIG["dt_years"], key="dt_years", step=0.01, min_value=0.01, max_value=10.0)
             st.number_input("Antal gitterpunkter", value=DEFAULT_CONFIG["nx"], key="nx", step=100, min_value=10, max_value=1000)
@@ -402,7 +410,7 @@ with st.form("input_form"):
                         background-color: #80b080 !important;
                     }
                 </style>""")
-            modes       = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth"], default=DEFAULT_CONFIG["modes"], key="modes")
+            modes = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth", "VariableForcing"], default=DEFAULT_CONFIG["modes"], key="modes")
             for key in DEFAULT_CONFIG.keys():
                 value = st.session_state.get(key)
                 if value is not None:

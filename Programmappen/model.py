@@ -10,6 +10,7 @@ class ClimateModel:
         self.modes = modes
         self.outputs = outputs
         self.app_mode = app_mode
+        
         self.funcs = {name: func for name, func in vars(phys).items() if callable(func)} # Physics functions
         self.C = phys.C_M * params['SD'] # Heat capacity may be changed
 
