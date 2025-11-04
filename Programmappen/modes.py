@@ -61,7 +61,7 @@ class VariableSeaDepth(Mode):
 class VariableForcing(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
+        self.outputs.extend([outputs.VariableForcingOutput(), outputs.DefaultOutput()])
 
     def initialize(self, model):
         model.funcs["Forcing"] = phys.VariableForcing

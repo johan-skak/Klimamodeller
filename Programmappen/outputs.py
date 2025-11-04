@@ -489,6 +489,25 @@ class TemperatureOnEarthOutput(OutPut):
         """Plot temperature on Earth surface (latitude vs time)."""
         return Earth.animate_on_earth(self.lat_ext, self.T_ext_series, self.dt, ax=ax, title="Animation of surface temperature", cbar_label="°C")
 
+class VariableForcingOutput(TimeSeriesOutput):
+    def __init__(self):
+        super().__init__()
+
+    def initialize(self, model):
+        super().initialize(model)
+        self.x = model.x
+        self.lat = np.degrees(np.arcsin(self.x))
+        self.x_ext = np.r_[-1, self.x, 1] # Extended grid including poles
+        self.lat_ext = np.r_[-90, self.lat, 90]
+        self.F_history = model.F_history
+
+    def panel(self, ax):
+        ax2 = ax.twinx()
+        super().panel(ax)  # Plot time series of global mean temperature
+        ax2.plot(np.arange(len(self.F_history)) * self.dt, self.F_history, label='Variable Forcing', color='orange')
+        ax2.set_ylabel("W/m²")
+        plt.show()
+
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"
     if n > 40: start_fmt = "\033[31m"
