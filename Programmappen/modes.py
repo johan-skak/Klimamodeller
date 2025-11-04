@@ -70,12 +70,16 @@ class VariableForcing(Mode):
         del model.params["F"] #Remove unused key from output. This also (paradoxically) makes the outputs aware that forcing is on
 
        #Lav forceringshistorik her #open() returnerer nok en fejl hvis stien ikke findes og det er godt
-        with open(os.path.join(os.path.dirname(__file__), 'Datafiler/ForcingHistory.csv')) as f:
-           reader = csv.reader(f)
-           header = next(reader)  # Skip header row if present
-           ForcingHistory = np.array([row for row in reader]) # Reads CSV data
+        if model.config.get("forcing_data") is not None:
+           ForcingHistory = np.array(model.config["forcing_data"])
+        else:
+            print("Loading forcing data from file:", model.config["forcing_file"])
+            with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["forcing_file"])) as f:
+                reader = csv.reader(f)
+                header = next(reader)  # Skip header row if present
+                ForcingHistory = np.array([row for row in reader]) # Reads CSV data
         year = ForcingHistory[:,0].astype(float)
-        forcing = ForcingHistory[:,19].astype(float)
+        forcing = ForcingHistory[:,-1].astype(float)
 
         model.config["years"] = len(year) + model.config["ctrl_years"]
         model.nsteps = int(np.ceil(model.config["years"] / model.config["dt_years"])) # Run for at least config["years"]

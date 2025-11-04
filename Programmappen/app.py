@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
-import re, io, os
+import re, io, os, csv
 from main import main
 from outputs import generate_outputs_data, print_simulation_info
 
@@ -210,6 +210,73 @@ def make_png(fig):
     buf.seek(0)
     return buf
 
+def upload_file_menu():
+    def check_file_format(data):
+        """Check that the uploaded file has the correct format: two columns, numeric data."""
+        try:
+            for row in data:
+                if len(row) != 2:
+                    return False
+                float(row[0])  # Check if first column is numeric
+                float(row[1])  # Check if second column is numeric
+            return True
+        except ValueError:
+            return False
+
+    # Initialize session storage
+    if "forcing_data" not in st.session_state:
+        st.session_state.forcing_data = None
+    if "forcing_filename" not in st.session_state:
+        st.session_state.forcing_filename = None
+
+    # Toggle switch
+    use_custom_forcing = st.toggle("Brug egen forceringsdata", value=False)
+
+    if use_custom_forcing:
+        uploaded_file = st.file_uploader(
+            "Upload din egen CSV-fil med forceringsdata",
+            help = "Filen skal være en CSV med to kolonner: år og forcering i W/m². Første række kan være en header.",
+            type=["csv"], 
+            key="forcing_uploader"
+        )
+
+        if uploaded_file is None:
+            # Display last loaded file if no new one uploaded
+            if st.session_state.forcing_data is not None:
+                st.info(f"Bruger tidligere indlæste fil: {st.session_state.forcing_filename}")
+            else:
+                st.info("Ingen fil indlæst endnu.")
+            return
+        
+        # Simple malware prevention: limit size and enforce CSV reading
+        MAX_SIZE_KB = 100
+        if uploaded_file.size > MAX_SIZE_KB * 1024:
+            st.error(f"Filen er for stor (> {MAX_SIZE_KB} KB).")
+            return
+
+        try:
+            # Read as CSV safely
+            reader = csv.reader(io.StringIO(uploaded_file.getvalue().decode("utf-8")))
+            # Skip header if non-numeric
+            first_row = next(reader)
+            if check_file_format([first_row]): st.session_state.forcing_data = [first_row] + [row for row in reader]
+            else: st.session_state.forcing_data = [row for row in reader]
+            st.session_state.forcing_filename = uploaded_file.name
+            # Validate format
+            if not check_file_format(st.session_state.forcing_data):
+                st.session_state.forcing_data = None
+                st.session_state.forcing_filename = None
+                st.error("Ugyldigt filformat. Sørg for at filen har to kolonner med numeriske data.")
+            else:
+                st.success(f"Fil indlæst: {uploaded_file.name}")
+        except Exception as e:
+            st.error(f"Kunne ikke læse CSV: {e}")
+
+    else:
+        # Reset if toggled off
+        st.session_state.forcing_data = None
+        st.session_state.forcing_filename = None
+
 # Initialize expand state to false
 if "expand" not in st.session_state:
     st.session_state.expand = False
@@ -233,7 +300,7 @@ btns = ButtonGroup("run_away", set_run_away)
 
 
 DEFAULT_PARAMS = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288, SD=250, S0=1365, S1=None, F=4.0)
-DEFAULT_CONFIG = dict(years=1000, ctrl_years=None, dt_years=1.0, nx=200, modes=[])
+DEFAULT_CONFIG = dict(years=1000, ctrl_years=None, dt_years=1.0, nx=200, modes=[], forcing_file='ForcingHistory.csv')
 
 # Initialize with default values
 st.session_state.params = DEFAULT_PARAMS.copy()
@@ -395,6 +462,8 @@ with st.form("input_form"):
                 if value is not None: st.session_state.params[key] = value
 
     with col2:
+        if not "modes" in st.session_state:
+            st.session_state.modes = []
         with st.expander("⚙️ Opsætning"):
             st.header("Opsætning")
             # Overwrite config dict with user input when form is submitted
@@ -416,6 +485,11 @@ with st.form("input_form"):
                     st.session_state.config[key] = value
 
     submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og opsætning", width="stretch")
+
+if "VariableForcing" in st.session_state.modes:
+    upload_file_menu()
+    if st.session_state.forcing_data is not None:
+        st.session_state.config["forcing_data"] = st.session_state.forcing_data
 
 # Run simulation and show outputs
 st.session_state.axes_funcs, st.session_state.summaries = run(st.session_state.params, st.session_state.config)
