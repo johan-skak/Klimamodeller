@@ -116,9 +116,10 @@ class Historical(VariableForcing):
             reader = csv.reader(f)
             header = next(reader)  # Skip header row if present
             CurrentZonalMeanTemperature = np.array([row for row in reader]) # Reads CSV data
-        model.T_zonal = CurrentZonalMeanTemperature[:,-1].astype(float)
-
-
+        Tx  = CurrentZonalMeanTemperature[:,1].astype(float)
+        CurrentZonalMeanTemperature = CurrentZonalMeanTemperature[:,-1].astype(float)
+        CurrentZonalMeanTemperature = np.interp(model.x, Tx, CurrentZonalMeanTemperature) # Interpolation
+        model.T_zonal = CurrentZonalMeanTemperature
 
 
 def warn(msg):
