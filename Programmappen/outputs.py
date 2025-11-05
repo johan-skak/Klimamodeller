@@ -499,16 +499,19 @@ class VariableForcingOutput(TimeSeriesOutput):
         self.lat = np.degrees(np.arcsin(self.x))
         self.x_ext = np.r_[-1, self.x, 1] # Extended grid including poles
         self.lat_ext = np.r_[-90, self.lat, 90]
-        self.F_history = model.F_History
-        self.start_year = model.start_year - model.config["ctrl_years"]
+        self.F_history = np.array(model.F_History[int(self.ctrl_years/model.config["dt_years"]):]) if model.config["ctrl_years"] > 0 else model.F_History
+        self.start_year = model.start_year
+        self.ctrl_years = model.config["ctrl_years"]
 
     def panel(self, ax):
         ax2 = ax.twinx()
-        ax.plot(np.arange(len(self.Tg_series)) * self.dt + self.start_year, self.Tg_series, label='Global Mean Temperature')
-        ax.set_xlim(self.start_year, self.start_year + len(self.Tg_series) * self.dt)
-        ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True); ax2.set_ylabel(" Forcing [W/m²] ")
-        ax.axvline(self.ctrl_years + self.start_year, color='k', linestyle='--', label='Forcing On')
-        ax2.plot(np.arange(len(self.F_history)) * self.dt + self.start_year, self.F_history, label='Total Radiative Forcing', color='orange')
+        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt):]) if self.ctrl_years > 0 else np.array(self.Tg_series)
+        ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Global Mean Temperature')
+        ax.set_xlim(self.start_year, self.start_year + len(T_series) * self.dt)
+        ax.set_ylim(np.max(np.abs(T_series-T_series[0])) * -1.1 + T_series[0], np.max(np.abs(T_series-T_series[0]))* 1.1 + T_series[0])
+        ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
+        ax2.set_ylabel(" Forcing [W/m²] "); ax2.set_ylim(np.max(np.abs(self.F_history)) * -1.1, np.max(np.abs(self.F_history)) * 1.1)
+        ax2.plot(np.arange(len(self.F_history)) * self.dt + self.start_year, self.F_history, label='Total Radiative Forcing', color='orange',linestyle='--')
         handles,labels = ax.get_legend_handles_labels(); handles2, labels2 = ax2.get_legend_handles_labels()
         ax.set_title("Global Mean Surface Temperature and Total Radiative Forcing")
         ax.legend(handles + handles2, labels + labels2, loc='lower right')
