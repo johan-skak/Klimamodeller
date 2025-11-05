@@ -94,6 +94,32 @@ class VariableForcing(Mode):
         model.F_History = np.concatenate( (np.zeros(model.ctrl_nsteps), forcing) ) #Start with 0's under the control period
         model.start_year = year[0]
 
+class Historical(VariableForcing):
+    def __init__(self, modes, app_mode=False):
+        super().__init__(modes, app_mode=app_mode)
+    
+    def check_compatibility(self, modes):
+        super().check_compatibility(modes)
+    
+    def initialize(self, model):
+        super().initialize(model)
+  
+        #print("Loading temperature history data from file:", model.config["temperature_history"])
+        #with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["temperature_history"])) as f:
+            #reader = csv.reader(f)
+           # header = next(reader)  # Skip header row if present
+            #TemperatureHistory = np.array([row for row in reader]) # Reads CSV data
+        #model.T_history = TemperatureHistory[:,-1].astype(float)
+
+        print("Loading zonal temperature data from file:", model.config["zonal_temp_file"])
+        with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["zonal_temp_file"])) as f:
+            reader = csv.reader(f)
+            header = next(reader)  # Skip header row if present
+            CurrentZonalMeanTemperature = np.array([row for row in reader]) # Reads CSV data
+        model.T_zonal = CurrentZonalMeanTemperature[:,-1].astype(float)
+
+
+
 
 def warn(msg):
     """

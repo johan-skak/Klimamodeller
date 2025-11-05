@@ -135,7 +135,11 @@ class DefaultOutput(OutPut):
         self.x = model.x
         self.lat = np.degrees(np.arcsin(self.x))
         self.Forcing_on = model.config["ctrl_years"] > 0 and (model.params.get('F') != 0 or model.params['S1'] != model.params['S0'])
-
+        if model.config["modes"] == "Historical":
+            self.historical = True
+        else:
+            self.historical = False
+            
     def step(self, model, i):
         if i == model.ctrl_nsteps:
             self.diags["mid"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
@@ -189,7 +193,12 @@ class DefaultOutput(OutPut):
     def panel1(self, ax):
         """Plot initial, control and final temperature profiles."""
         for case, label, color in zip(self.cases, self.labels, self.colors):
+            if case == "init": continue
             ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label, color=color)
+
+        #if self.historical:
+           # ax.plot("x og y akse fra zonal temperature data")
+
         ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # 0 °C line
         ax.set_title("Temperature Profile")
         ax.set_ylabel("°C")
@@ -502,10 +511,17 @@ class VariableForcingOutput(TimeSeriesOutput):
         self.F_history = np.array(model.F_History[int(self.ctrl_years/model.config["dt_years"]):]) if model.config["ctrl_years"] > 0 else model.F_History
         self.start_year = model.start_year
         self.ctrl_years = model.config["ctrl_years"]
+        #if model.config["modes"] == "Historical":
+            #self.historical = True
+            #self.T_history = model.T_history
+            #self.T_zonal = model.T_zonal
+        #else:
+            #self.historical = False
 
     def panel(self, ax):
         ax2 = ax.twinx()
         T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt):]) if self.ctrl_years > 0 else np.array(self.Tg_series)
+        ax2.axhline(0, color='black', linestyle='--', label='Zero Forcing')
         ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Global Mean Temperature')
         ax.set_xlim(self.start_year, self.start_year + len(T_series) * self.dt)
         ax.set_ylim(np.max(np.abs(T_series-T_series[0])) * -1.1 + T_series[0], np.max(np.abs(T_series-T_series[0]))* 1.1 + T_series[0])
@@ -514,6 +530,10 @@ class VariableForcingOutput(TimeSeriesOutput):
         ax2.plot(np.arange(len(self.F_history)) * self.dt + self.start_year, self.F_history, label='Total Radiative Forcing', color='orange',linestyle='--')
         handles,labels = ax.get_legend_handles_labels(); handles2, labels2 = ax2.get_legend_handles_labels()
         ax.set_title("Global Mean Surface Temperature and Total Radiative Forcing")
+         # Historical data
+        #if self.historical:
+            #ax.plot(np.arange(len(self.T_history)) * self.dt + self.start_year, self.T_history, label='Historical Global Mean Temperature', color='green', linestyle=':')
+           # handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles + handles2, labels + labels2, loc='lower right')
 
 def temp_fmt(n, p=1):
