@@ -135,11 +135,13 @@ class DefaultOutput(OutPut):
         self.x = model.x
         self.lat = np.degrees(np.arcsin(self.x))
         self.Forcing_on = model.config["ctrl_years"] > 0 and (model.params.get('F') != 0 or model.params['S1'] != model.params['S0'])
-        if model.Historical:
-            self.historical = True
-            self.T_zonal = model.T_zonal
-        else:
-            self.historical = False
+        for m in model.modes:
+            if m .__class__.__name__ == "Historical":
+                self.historical = True
+                self.T_zonal = model.T_zonal
+            else:
+               self.historical = False
+            
             
     def step(self, model, i):
         if i == model.ctrl_nsteps:
@@ -521,7 +523,7 @@ class VariableForcingOutput(TimeSeriesOutput):
 
     def panel(self, ax):
         ax2 = ax.twinx()
-        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt):]) if self.ctrl_years > 0 else np.array(self.Tg_series)
+        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt+1):]) if self.ctrl_years > 0 else np.array(self.Tg_series)
         ax2.axhline(0, color='black', linestyle='--', label='Zero Forcing')
         ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Global Mean Temperature')
         ax.set_xlim(self.start_year, self.start_year + len(T_series) * self.dt)
@@ -536,6 +538,7 @@ class VariableForcingOutput(TimeSeriesOutput):
             #ax.plot(np.arange(len(self.T_history)) * self.dt + self.start_year, self.T_history, label='Historical Global Mean Temperature', color='green', linestyle=':')
            # handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles + handles2, labels + labels2, loc='lower right')
+        print(len(self.F_history), len(T_series))
 
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"

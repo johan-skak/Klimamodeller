@@ -4,7 +4,7 @@ ctrl_years      : 100
 dt_years        : 1
 nx              : 200
 modes           : ['Historical']
-output_dir      : Results_VarForc_Hist
+output_dir      : Results_Hist
 forcing_file    : ForcingHistory.csv
 zonal_temp_file : current_zonal_mean_temperature.csv
 ============================================
@@ -20,7 +20,7 @@ S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 ============================================
 
-Output generated on 2025-11-10 15:11:24
+Output generated on 2025-11-10 22:04:00
 
 === EBM Summary =====================================================
 
