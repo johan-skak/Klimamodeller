@@ -135,8 +135,9 @@ class DefaultOutput(OutPut):
         self.x = model.x
         self.lat = np.degrees(np.arcsin(self.x))
         self.Forcing_on = model.config["ctrl_years"] > 0 and (model.params.get('F') != 0 or model.params['S1'] != model.params['S0'])
-        if model.config["modes"] == "Historical":
+        if model.Historical:
             self.historical = True
+            self.T_zonal = model.T_zonal
         else:
             self.historical = False
             
@@ -196,8 +197,8 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label, color=color)
 
-        #if self.historical:
-           # ax.plot("x og y akse fra zonal temperature data")
+        if self.historical:
+            ax.plot(self.lat, self.T_zonal - 273.15, label='Data', linestyle='--', color="green")
 
         ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # 0 °C line
         ax.set_title("Temperature Profile")

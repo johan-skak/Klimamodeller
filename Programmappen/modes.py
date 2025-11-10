@@ -103,6 +103,10 @@ class Historical(VariableForcing):
     
     def initialize(self, model):
         super().initialize(model)
+        model.Historical = True
+        model.config["output_dir"] += "_Hist"
+        self.dx = 2.0 / model.config["nx"]
+        self.x = np.linspace(-1.0 + self.dx/2, 1.0 - self.dx/2, model.config["nx"])
   
         #print("Loading temperature history data from file:", model.config["temperature_history"])
         #with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["temperature_history"])) as f:
@@ -118,8 +122,9 @@ class Historical(VariableForcing):
             CurrentZonalMeanTemperature = np.array([row for row in reader]) # Reads CSV data
         Tx  = CurrentZonalMeanTemperature[:,1].astype(float)
         CurrentZonalMeanTemperature = CurrentZonalMeanTemperature[:,-1].astype(float)
-        CurrentZonalMeanTemperature = np.interp(model.x, Tx, CurrentZonalMeanTemperature) # Interpolation
+        CurrentZonalMeanTemperature = np.interp(self.x, Tx, CurrentZonalMeanTemperature) # Interpolation
         model.T_zonal = CurrentZonalMeanTemperature
+        
 
 
 def warn(msg):
