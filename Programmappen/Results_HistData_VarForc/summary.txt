@@ -1,12 +1,13 @@
 === EBM Model Configuration ================
-years           : 375
-ctrl_years      : 100
-dt_years        : 1
-nx              : 200
-modes           : ['HistoricalData', 'VariableForcing']
-output_dir      : Results_HistData_VarForc
-forcing_file    : ForcingHistory.csv
-zonal_temp_file : current_zonal_mean_temperature.csv
+years               : 375
+ctrl_years          : 100
+dt_years            : 1
+nx                  : 200
+modes               : ['HistoricalData', 'VariableForcing']
+output_dir          : Results_HistData_VarForc
+forcing_file        : ForcingHistory.csv
+zonal_temp_file     : current_zonal_mean_temperature.csv
+temperature_history : temperature_history.nc
 ============================================
 
 === EBM Model Parameters ===================
@@ -20,7 +21,7 @@ S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 ============================================
 
-Output generated on 2025-11-11 14:46:42
+Output generated on 2025-11-11 15:32:03
 
 === EBM Summary =====================================================
 

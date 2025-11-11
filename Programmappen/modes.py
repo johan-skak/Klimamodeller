@@ -80,8 +80,8 @@ class VariableForcing(Mode):
            ForcingHistory = np.array(model.config["forcing_data"])
         else:
             print("Loading forcing data from file:", model.config["forcing_file"])
-            year = tools.csvreader(model.config["forcing_file"])[:,0].astype(float)
-            forcing = tools.csvreader(model.config["forcing_file"])[:,-1].astype(float)
+            year = tools.csv_reader(model.config["forcing_file"])[:,0].astype(float)
+            forcing = tools.csv_reader(model.config["forcing_file"])[:,-1].astype(float)
 
         model.config["years"] = len(year) + model.config["ctrl_years"]
         model.nsteps = int(np.ceil(model.config["years"] / model.config["dt_years"])) # Run for at least config["years"]
@@ -103,13 +103,9 @@ class HistoricalData(Mode):
         self.x = np.linspace(-1.0 + self.dx/2, 1.0 - self.dx/2, model.config["nx"])
 
         print("Loading zonal temperature data from file:", model.config["zonal_temp_file"])
-        T_x  = tools.csvreader(model.config["zonal_temp_file"])[:,1].astype(float)
-        CurrentZonalMeanTemperature = tools.csvreader(model.config["zonal_temp_file"])[:,-1].astype(float)
+        T_x  = tools.csv_reader(model.config["zonal_temp_file"])[:,1].astype(float)
+        CurrentZonalMeanTemperature = tools.csv_reader(model.config["zonal_temp_file"])[:,-1].astype(float)
         model.T_zonal = np.interp(self.x, T_x, CurrentZonalMeanTemperature) # Interpolation
+
+        #tools.netcdf_reader(model.config["temperature_history"])
         
-          #print("Loading temperature history data from file:", model.config["temperature_history"])
-        #with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["temperature_history"])) as f:
-            #reader = csv.reader(f)
-            #header = next(reader)  # Skip header row if present
-            #TemperatureHistory = np.array([row for row in reader]) # Reads CSV data
-        #model.T_history = TemperatureHistory[:,-1].astype(float)
