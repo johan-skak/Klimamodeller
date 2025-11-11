@@ -3,8 +3,8 @@ years           : 375
 ctrl_years      : 100
 dt_years        : 1
 nx              : 200
-modes           : ['Historical']
-output_dir      : Results_Hist
+modes           : ['HistoricalData', 'VariableForcing']
+output_dir      : Results_HistData_VarForc
 forcing_file    : ForcingHistory.csv
 zonal_temp_file : current_zonal_mean_temperature.csv
 ============================================
@@ -20,9 +20,24 @@ S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 ============================================
 
-Output generated on 2025-11-10 22:04:00
+Output generated on 2025-11-11 14:46:42
 
 === EBM Summary =====================================================
+
+Years (control, forced): (100, 275)
+Grid points nx: 200, Δt (years): 1
+
+Control global mean T (°C):  15.1
+Forced global mean T (°C):  16.7
+ΔT global (°C): 1.7
+
+North pole T control / forced (°C): -13.9 / -10.9
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.774
+
+Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 243
+Planetary albedo control / forced: 0.298 / 0.294
+Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.676
+
 
 Years (control, forced): (100, 275)
 Grid points nx: 200, Δt (years): 1

@@ -4,6 +4,7 @@ import numpy as np
 import outputs
 import physics as phys
 import os
+import tools
 
 def Ignore_modes(func):
     return lambda self, modes=None, app_mode=False: func(self, app_mode=app_mode)
@@ -68,8 +69,6 @@ class VariableForcing(Mode):
     def check_compatibility(self, modes):
         if any(isinstance(m, SeasonalVariation) for m in modes):
             raise ValueError("VariableForcing mode is not compatible with SeasonalVariation mode.")
-        if any(isinstance(m, Historical) for m in modes):
-            raise ValueError("VariableForcing mode is not compatible with Historical mode.")
 
     def initialize(self, model):
         model.funcs["Forcing"] = phys.VariableForcing
@@ -81,12 +80,8 @@ class VariableForcing(Mode):
            ForcingHistory = np.array(model.config["forcing_data"])
         else:
             print("Loading forcing data from file:", model.config["forcing_file"])
-            with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["forcing_file"])) as f:
-                reader = csv.reader(f)
-                header = next(reader)  # Skip header row if present
-                ForcingHistory = np.array([row for row in reader]) # Reads CSV data
-        year = ForcingHistory[:,0].astype(float)
-        forcing = ForcingHistory[:,-1].astype(float)
+            year = tools.csvreader(model.config["forcing_file"])[:,0].astype(float)
+            forcing = tools.csvreader(model.config["forcing_file"])[:,-1].astype(float)
 
         model.config["years"] = len(year) + model.config["ctrl_years"]
         model.nsteps = int(np.ceil(model.config["years"] / model.config["dt_years"])) # Run for at least config["years"]
@@ -96,68 +91,25 @@ class VariableForcing(Mode):
         model.F_History = np.concatenate( (np.zeros(model.ctrl_nsteps), forcing) ) #Start with 0's under the control period
         model.start_year = year[0]
 
-class Historical(Mode):
+class HistoricalData(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(modes, app_mode=app_mode)
         if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
-        self.outputs.extend([outputs.VariableForcingOutput(), outputs.DefaultOutput()])
-    
-    def check_compatibility(self, modes):
-        if any(isinstance(m, SeasonalVariation) for m in modes):
-            raise ValueError("Historical mode is not compatible with SeasonalVariation mode.")
-    
-    def initialize(self, model):
-        model.funcs["Forcing"] = phys.VariableForcing
-        model.config["output_dir"] += "_Hist"
-        del model.params["F"] #Remove unused key from output. This also (paradoxically) makes the outputs aware that forcing is on
+        self.outputs.extend([outputs.ModifyOutput()])
 
+    def initialize(self, model):
+        model.config["output_dir"] += "_HistData"
         self.dx = 2.0 / model.config["nx"]
         self.x = np.linspace(-1.0 + self.dx/2, 1.0 - self.dx/2, model.config["nx"])
 
-        #Lav forceringshistorik her #open() returnerer nok en fejl hvis stien ikke findes og det er godt
-        if model.config.get("forcing_data") is not None:
-           ForcingHistory = np.array(model.config["forcing_data"])
-        else:
-            print("Loading forcing data from file:", model.config["forcing_file"])
-            with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["forcing_file"])) as f:
-                reader = csv.reader(f)
-                header = next(reader)  # Skip header row if present
-                ForcingHistory = np.array([row for row in reader]) # Reads CSV data
-        year = ForcingHistory[:,0].astype(float)
-        forcing = ForcingHistory[:,-1].astype(float)
-
-        model.config["years"] = len(year) + model.config["ctrl_years"]
-        model.nsteps = int(np.ceil(model.config["years"] / model.config["dt_years"])) # Run for at least config["years"]
-        model.ctrl_nsteps = int(round(model.config["ctrl_years"] / model.config["dt_years"]))
-
-        forcing = np.interp(np.linspace(0, 1, model.nsteps - model.ctrl_nsteps), np.linspace(0, 1, len(forcing)), forcing) # Interpolation
-        model.F_History = np.concatenate( (np.zeros(model.ctrl_nsteps), forcing) ) #Start with 0's under the control period
-        model.start_year = year[0]
-  
-        #print("Loading temperature history data from file:", model.config["temperature_history"])
+        print("Loading zonal temperature data from file:", model.config["zonal_temp_file"])
+        T_x  = tools.csvreader(model.config["zonal_temp_file"])[:,1].astype(float)
+        CurrentZonalMeanTemperature = tools.csvreader(model.config["zonal_temp_file"])[:,-1].astype(float)
+        model.T_zonal = np.interp(self.x, T_x, CurrentZonalMeanTemperature) # Interpolation
+        
+          #print("Loading temperature history data from file:", model.config["temperature_history"])
         #with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["temperature_history"])) as f:
             #reader = csv.reader(f)
             #header = next(reader)  # Skip header row if present
             #TemperatureHistory = np.array([row for row in reader]) # Reads CSV data
         #model.T_history = TemperatureHistory[:,-1].astype(float)
-
-        print("Loading zonal temperature data from file:", model.config["zonal_temp_file"])
-        with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["zonal_temp_file"])) as f:
-            reader = csv.reader(f)
-            header = next(reader)  # Skip header row if present
-            CurrentZonalMeanTemperature = np.array([row for row in reader]) # Reads CSV data
-        Tx  = CurrentZonalMeanTemperature[:,1].astype(float)
-        CurrentZonalMeanTemperature = CurrentZonalMeanTemperature[:,-1].astype(float)
-        CurrentZonalMeanTemperature = np.interp(self.x, Tx, CurrentZonalMeanTemperature) # Interpolation
-        model.T_zonal = CurrentZonalMeanTemperature
-        
-
-
-def warn(msg):
-    """
-    Print a formatted warning message in bold yellow with a ⚠️ symbol.
-    Works in most Unix shells and modern PowerShell.
-    """
-    YELLOW_BOLD = "\033[1;33m"
-    RESET = "\033[0m"
-    print(f"{YELLOW_BOLD}⚠️  Warning:{RESET} {msg}")

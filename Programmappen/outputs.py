@@ -135,13 +135,6 @@ class DefaultOutput(OutPut):
         self.x = model.x
         self.lat = np.degrees(np.arcsin(self.x))
         self.Forcing_on = model.config["ctrl_years"] > 0 and (model.params.get('F') != 0 or model.params['S1'] != model.params['S0'])
-        for m in model.modes:
-            if m .__class__.__name__ == "Historical":
-                self.historical = True
-                self.T_zonal = model.T_zonal
-            else:
-               self.historical = False
-            
             
     def step(self, model, i):
         if i == model.ctrl_nsteps:
@@ -198,10 +191,6 @@ class DefaultOutput(OutPut):
         for case, label, color in zip(self.cases, self.labels, self.colors):
             if case == "init": continue
             ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label, color=color)
-
-        if self.historical:
-            ax.plot(self.lat, self.T_zonal - 273.15, label='Data', linestyle='--', color="green")
-
         ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # 0 °C line
         ax.set_title("Temperature Profile")
         ax.set_ylabel("°C")
@@ -275,6 +264,18 @@ class DefaultOutput(OutPut):
         T_poles = funcs['poles_temperature'](T, model=model, i=i)
         Q_x = funcs['Q_x'](x, params['S0'], model=model, i=i)
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
+    
+class ModifyOutput(DefaultOutput):
+    def __init__(self):
+        super().__init__()
+
+    def initialize(self, model):
+        super().initialize(model)
+        self.T_zonal = model.T_zonal
+    
+    def panel1(self, ax):
+        super().panel1(ax)
+        ax.plot(self.lat, self.T_zonal - 273.15, label='Data', linestyle='--', color="green")
 
 class TimeSeriesOutput(OutPut):
     def __init__(self):
@@ -538,7 +539,7 @@ class VariableForcingOutput(TimeSeriesOutput):
             #ax.plot(np.arange(len(self.T_history)) * self.dt + self.start_year, self.T_history, label='Historical Global Mean Temperature', color='green', linestyle=':')
            # handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles + handles2, labels + labels2, loc='lower right')
-        print(len(self.F_history), len(T_series))
+       
 
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"
