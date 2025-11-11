@@ -276,6 +276,7 @@ class ModifyOutput(DefaultOutput):
     def panel1(self, ax):
         super().panel1(ax)
         ax.plot(self.lat, self.T_zonal - 273.15, label='Data', linestyle='--', color="green")
+        ax.legend()
 
 class TimeSeriesOutput(OutPut):
     def __init__(self):

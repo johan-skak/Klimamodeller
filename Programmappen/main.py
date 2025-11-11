@@ -1,6 +1,6 @@
 # main.py
 import os, yaml, time
-import model, modes, outputs
+import model, modes, outputs, tools
 
 PARAMETERS_FILE = 'parameters.yaml'
 CONFIG_FILE = 'config.yaml'
@@ -53,11 +53,11 @@ def configure_program():
 
         for key, value in f_dict.items():
             if key not in config:
-                modes.warn(f"Unknown config key: {key}. This key will be ignored.")
+                tools.warn(f"Unknown config key: {key}. This key will be ignored.")
             if value is not None:
                 config[key] = value
     else:
-        modes.warn(f"No config file found ({CONFIG_FILE}) in current directory. Using default configs.")
+        tools.warn(f"No config file found ({CONFIG_FILE}) in current directory. Using default configs.")
 
     # Read parameters from file if it exists and update defaults
     if os.path.exists(PARAMETERS_FILE):
@@ -66,11 +66,11 @@ def configure_program():
         
         for key, value in f_dict.items():
             if key not in params:
-                modes.warn(f"Unknown parameter: {key}. This parameter will be ignored.")
+                tools.warn(f"Unknown parameter: {key}. This parameter will be ignored.")
             if value is not None:
                 params[key] = value
     else:
-        modes.warn(f"No parameters file found ({PARAMETERS_FILE}) in current directory. Using default parameters.")
+        tools.warn(f"No parameters file found ({PARAMETERS_FILE}) in current directory. Using default parameters.")
 
     return config, params
 
