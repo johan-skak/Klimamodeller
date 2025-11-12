@@ -290,6 +290,11 @@ class ModifyOutput(DefaultOutput):
         Solar_x, Solar = tools.csv_reader(model.config["solar_file"], 1)
         self.Solar_zonal = np.interp(model.x, Solar_x, Solar)
 
+        print("Loading temperature history from file:", model.config["temperature_history"])
+        ds_giss = tools.netcdf_reader(model.config["temperature_history"])
+        self.giss_time = ds_giss['time'].values
+        self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values)
+
     def panel1(self, ax):
         super().panel1(ax)
         ax.plot(self.lat, self.T_zonal - 273.15, label='Observed', linestyle='--', color="green")

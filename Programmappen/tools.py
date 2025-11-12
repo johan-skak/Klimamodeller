@@ -15,8 +15,8 @@ def csv_reader(file_name, coord_index=0, value_index=-1, skip_header=True):
     return data[:,coord_index].astype(float), data[:,value_index].astype(float)
 
 def netcdf_reader(file_name):
-    with open(os.path.join(os.path.dirname(__file__), 'Datafiler', file_name)) as f:
-       data = xr.open_dataset(f,engine= "scipy")
+    file_path = os.path.join(os.path.dirname(__file__), 'Datafiler', file_name)
+    data = xr.open_dataset(file_path,engine= "scipy")
     return data
 
 def warn(msg):
