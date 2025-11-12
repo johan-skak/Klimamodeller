@@ -62,9 +62,10 @@ class VariableSeaDepth(Mode):
 class VariableForcing(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        #self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
-        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
-        self.outputs.extend([outputs.VariableForcingOutput(), outputs.DefaultOutput()])
+        self.outputs.extend([outputs.VariableForcingOutput()])
+        if len(modes) == 1:
+            self.outputs.extend([outputs.DefaultOutput()])
+            if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
         
     def check_compatibility(self, modes):
         if any(isinstance(m, SeasonalVariation) for m in modes):
@@ -80,8 +81,7 @@ class VariableForcing(Mode):
            ForcingHistory = np.array(model.config["forcing_data"])
         else:
             print("Loading forcing data from file:", model.config["forcing_file"])
-            year = tools.csv_reader(model.config["forcing_file"])[:,0].astype(float)
-            forcing = tools.csv_reader(model.config["forcing_file"])[:,-1].astype(float)
+            year,forcing = tools.csv_reader(model.config["forcing_file"])
 
         model.config["years"] = len(year) + model.config["ctrl_years"]
         model.nsteps = int(np.ceil(model.config["years"] / model.config["dt_years"])) # Run for at least config["years"]
@@ -94,18 +94,8 @@ class VariableForcing(Mode):
 class HistoricalData(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(modes, app_mode=app_mode)
-        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
         self.outputs.extend([outputs.ModifyOutput()])
+        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
 
     def initialize(self, model):
         model.config["output_dir"] += "_HistData"
-        self.dx = 2.0 / model.config["nx"]
-        self.x = np.linspace(-1.0 + self.dx/2, 1.0 - self.dx/2, model.config["nx"])
-
-        print("Loading zonal temperature data from file:", model.config["zonal_temp_file"])
-        T_x  = tools.csv_reader(model.config["zonal_temp_file"])[:,1].astype(float)
-        CurrentZonalMeanTemperature = tools.csv_reader(model.config["zonal_temp_file"])[:,-1].astype(float)
-        model.T_zonal = np.interp(self.x, T_x, CurrentZonalMeanTemperature) # Interpolation
-
-        #tools.netcdf_reader(model.config["temperature_history"])
-        

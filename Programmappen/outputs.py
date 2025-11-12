@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import textwrap # For dedenting summary text
 import os, datetime, re
 from matplotlib.ticker import FixedLocator # For custom minor ticks
+#from asyncio import tools
+import tools
 import physics as phys
 import AnimateOnEarth as Earth
 
@@ -191,7 +193,7 @@ class DefaultOutput(OutPut):
         for case, label, color in zip(self.cases, self.labels, self.colors):
             if case == "init": continue
             ax.plot(self.lat_ext, self.diags[case]["T_ext"] - 273.15, label=label, color=color)
-        ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # 0 °C line
+        ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7,label = "0 °C") # 0 °C line
         ax.set_title("Temperature Profile")
         ax.set_ylabel("°C")
         self.Stylize(ax)
@@ -271,11 +273,36 @@ class ModifyOutput(DefaultOutput):
 
     def initialize(self, model):
         super().initialize(model)
-        self.T_zonal = model.T_zonal
-    
+
+        print("Loading zonal temperature data from file:", model.config["zonal_temp_file"])
+        T_x,CurrentZonalMeanTemperature  = tools.csv_reader(model.config["zonal_temp_file"],1)
+        self.T_zonal = np.interp(model.x, T_x, CurrentZonalMeanTemperature)
+
+        print("Loading zonal OLR data from file:", model.config["zonal_olr_file"])
+        OLR_x,OLR = tools.csv_reader(model.config["zonal_olr_file"],1)
+        self.OLR_zonal = np.interp(model.x, OLR_x, OLR)
+
+        print("Loading zonal albedo data from file:", model.config["albedo_file"])
+        Albedo_x, Albedo = tools.csv_reader(model.config["albedo_file"], 1)
+        self.Albedo_zonal = np.interp(model.x, Albedo_x, Albedo)
+
+        print("Loading zonal solar data from file:", model.config["solar_file"])
+        Solar_x, Solar = tools.csv_reader(model.config["solar_file"], 1)
+        self.Solar_zonal = np.interp(model.x, Solar_x, Solar)
+
     def panel1(self, ax):
         super().panel1(ax)
-        ax.plot(self.lat, self.T_zonal - 273.15, label='Data', linestyle='--', color="green")
+        ax.plot(self.lat, self.T_zonal - 273.15, label='Observed', linestyle='--', color="green")
+        ax.legend()
+    
+    def panel2(self, ax):
+        super().panel2(ax)
+        ax.plot(self.lat, self.OLR_zonal, label='Observed', linestyle='--', color="green")
+        ax.legend()
+
+    def panel3(self, ax):
+        super().panel3(ax)
+        ax.plot(self.lat, self.Albedo_zonal/self.Solar_zonal, label='Observed', linestyle='--', color="green")
         ax.legend()
 
 class TimeSeriesOutput(OutPut):

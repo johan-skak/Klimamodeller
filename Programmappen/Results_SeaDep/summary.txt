@@ -1,12 +1,15 @@
 === EBM Model Configuration ================
-years           : 200
-ctrl_years      : 100
-dt_years        : 1
-nx              : 200
-modes           : ['VariableSeaDepth']
-output_dir      : Results_SeaDep
-forcing_file    : ForcingHistory.csv
-zonal_temp_file : current_zonal_mean_temperature.csv
+years               : 200
+ctrl_years          : 100
+dt_years            : 1
+nx                  : 200
+modes               : ['VariableSeaDepth']
+output_dir          : Results_SeaDep
+forcing_file        : ForcingHistory.csv
+zonal_temp_file     : current_zonal_mean_temperature.csv
+temperature_history : temperature_history.nc
+zonal_olr_file      : zonal_mean_longwave_out.csv
+albedo_file         : zonal_mean_shortwave_out.csv
 ============================================
 
 === EBM Model Parameters ===================
@@ -20,7 +23,7 @@ S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 4
 ============================================
 
-Output generated on 2025-11-10 21:36:16
+Output generated on 2025-11-12 09:53:10
 
 === EBM Summary =====================================================
 
