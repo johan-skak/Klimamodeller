@@ -240,7 +240,7 @@ st.session_state.params = DEFAULT_PARAMS.copy()
 st.session_state.config = DEFAULT_CONFIG.copy()
 
 # Set page config
-st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍",)
+st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍")
 st.html("""
     <style>            
         /* Change the max width of the main content area */
@@ -420,14 +420,16 @@ with col_out2:
     if st.session_state.summaries:
         st.html(make_summary(st.session_state.summaries))
 
-    # st.markdown("---")
-    # st.header("Om denne app")
-    # st.markdown("""
-    #     Denne app er lavet af [Johan Skak](https://github.com/JohanSkak) 
-    #     i samarbejde med Egil Kaas, professor i klimafysik ved Niels Bohr Institutet, Københavns Universitet,
-    #     og Ludvig Pio, studentermedhjælper ved samme institut.
-    #     Formålet med appen er at give en simpel introduktion til, hvordan Jordens klima fungerer,
-    #     og hvordan forskellige faktorer påvirker klimaet.
-    #     Appen er baseret på en simpel energibalance model, som simulerer Jordens klima over tid.
-    #     Kildekoden til appen og modellen kan findes på [GitHub](https://github.com/JohanSkak/Klimamodeller).
-    #     """)
+st.html("<i class='no-gap'>Version 1.0</i>")
+
+# st.markdown("---")
+# st.header("Om denne app")
+# st.markdown("""
+#     Denne app er lavet af [Johan Skak](https://github.com/JohanSkak) 
+#     i samarbejde med Egil Kaas, professor i klimafysik ved Niels Bohr Institutet, Københavns Universitet,
+#     og Ludvig Pio, studentermedhjælper ved samme institut.
+#     Formålet med appen er at give en simpel introduktion til, hvordan Jordens klima fungerer,
+#     og hvordan forskellige faktorer påvirker klimaet.
+#     Appen er baseret på en simpel energibalance model, som simulerer Jordens klima over tid.
+#     Kildekoden til appen og modellen kan findes på [GitHub](https://github.com/JohanSkak/Klimamodeller).
+#     """)
