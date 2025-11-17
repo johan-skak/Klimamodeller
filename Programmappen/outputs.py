@@ -8,6 +8,7 @@ from matplotlib.ticker import FixedLocator # For custom minor ticks
 import tools
 import physics as phys
 import AnimateOnEarth as Earth
+import pandas as pd
 
 def remove_ansi(text):
     ansi_escape = re.compile(r'\x1B\[[0-9;]*m') # Matches ANSI escape sequences like \033[1;33m
@@ -290,10 +291,10 @@ class ModifyOutput(DefaultOutput):
         Solar_x, Solar = tools.csv_reader(model.config["solar_file"], 1)
         self.Solar_zonal = np.interp(model.x, Solar_x, Solar)
 
-        print("Loading temperature history from file:", model.config["temperature_history"])
-        ds_giss = tools.netcdf_reader(model.config["temperature_history"])
-        self.giss_time = ds_giss['time'].values
-        self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values)
+        #print("Loading temperature history from file:", model.config["temperature_history"])
+        #ds_giss = tools.netcdf_reader(model.config["temperature_history"])
+        #self.giss_time = pd.to_datetime(ds_giss['time'].values)
+        #self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values)
 
     def panel1(self, ax):
         super().panel1(ax)
@@ -309,6 +310,18 @@ class ModifyOutput(DefaultOutput):
         super().panel3(ax)
         ax.plot(self.lat, self.Albedo_zonal/self.Solar_zonal, label='Observed', linestyle='--', color="green")
         ax.legend()
+
+    #def panel7(self, ax):
+        #ax.plot(self.giss_time, self.giss_temp, color='black', label='GISS Temperaturanomalier', linewidth=1.0)
+        #ax.set_xlabel("Years")
+        #ax.set_ylabel("Temperature anomalies [°C] ")
+        #ax.set_title("Observed temperatures 1880-2024")
+        #ax.legend()
+
+    #def finalize(self, model):
+        #super().finalize(model)
+        #self.axes_funcs.append(self.panel7)
+
 
 class TimeSeriesOutput(OutPut):
     def __init__(self):
@@ -548,12 +561,6 @@ class VariableForcingOutput(TimeSeriesOutput):
         self.F_history = np.array(model.F_History[int(self.ctrl_years/model.config["dt_years"]):]) if model.config["ctrl_years"] > 0 else model.F_History
         self.start_year = model.start_year
         self.ctrl_years = model.config["ctrl_years"]
-        #if model.config["modes"] == "Historical":
-            #self.historical = True
-            #self.T_history = model.T_history
-            #self.T_zonal = model.T_zonal
-        #else:
-            #self.historical = False
 
     def panel(self, ax):
         ax2 = ax.twinx()
@@ -567,11 +574,31 @@ class VariableForcingOutput(TimeSeriesOutput):
         ax2.plot(np.arange(len(self.F_history)) * self.dt + self.start_year, self.F_history, label='Total Radiative Forcing', color='orange',linestyle='--')
         handles,labels = ax.get_legend_handles_labels(); handles2, labels2 = ax2.get_legend_handles_labels()
         ax.set_title("Global Mean Surface Temperature and Total Radiative Forcing")
-         # Historical data
-        #if self.historical:
-            #ax.plot(np.arange(len(self.T_history)) * self.dt + self.start_year, self.T_history, label='Historical Global Mean Temperature', color='green', linestyle=':')
-           # handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles + handles2, labels + labels2, loc='lower right')
+
+class HistoricalOutput(TimeSeriesOutput):
+    def __init__(self):
+        super().__init__()
+
+    def initialize(self, model):
+        super().initialize(model)
+        self.start_year = 1750
+        print("Loading temperature history from file:", model.config["temperature_history"])
+        ds_giss = tools.netcdf_reader(model.config["temperature_history"])
+        self.giss_time = pd.to_datetime(ds_giss['time'].values)
+        self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values)
+        self.temperature_anomaly = np.interp(np.linspace(1880, 2025, int((2025-1880)/self.dt)), np.linspace(1880, 2025, len(self.giss_time)), self.giss_temp)
+    
+    def panel(self, ax):
+        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt+1):]) if self.ctrl_years > 0 else np.array(self.Tg_series)
+        ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Simulation Temperature')
+        ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
+        ax.set_xlim(1880,2024)
+        ax.set_ylim(14.5,17)
+        ax.plot(np.linspace(1880, 2025, int((2025-1880)/self.dt)), self.temperature_anomaly + self.Tg_series[int(self.ctrl_years/self.dt)], color='black', label='GISS Observed Temperature', linewidth=1.0)
+        ax.set_title("Global Mean Temperatures")
+        ax.legend()
+
        
 
 def temp_fmt(n, p=1):

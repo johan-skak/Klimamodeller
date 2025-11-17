@@ -94,7 +94,7 @@ class VariableForcing(Mode):
 class HistoricalData(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(modes, app_mode=app_mode)
-        self.outputs.extend([outputs.ModifyOutput()])
+        self.outputs.extend([outputs.ModifyOutput(),outputs.HistoricalOutput()])
         if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
 
     def initialize(self, model):
