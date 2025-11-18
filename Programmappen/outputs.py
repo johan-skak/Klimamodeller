@@ -291,11 +291,6 @@ class ModifyOutput(DefaultOutput):
         Solar_x, Solar = tools.csv_reader(model.config["solar_file"], 1)
         self.Solar_zonal = np.interp(model.x, Solar_x, Solar)
 
-        #print("Loading temperature history from file:", model.config["temperature_history"])
-        #ds_giss = tools.netcdf_reader(model.config["temperature_history"])
-        #self.giss_time = pd.to_datetime(ds_giss['time'].values)
-        #self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values)
-
     def panel1(self, ax):
         super().panel1(ax)
         ax.plot(self.lat, self.T_zonal - 273.15, label='Observed', linestyle='--', color="green")
@@ -310,18 +305,6 @@ class ModifyOutput(DefaultOutput):
         super().panel3(ax)
         ax.plot(self.lat, self.Albedo_zonal/self.Solar_zonal, label='Observed', linestyle='--', color="green")
         ax.legend()
-
-    #def panel7(self, ax):
-        #ax.plot(self.giss_time, self.giss_temp, color='black', label='GISS Temperaturanomalier', linewidth=1.0)
-        #ax.set_xlabel("Years")
-        #ax.set_ylabel("Temperature anomalies [°C] ")
-        #ax.set_title("Observed temperatures 1880-2024")
-        #ax.legend()
-
-    #def finalize(self, model):
-        #super().finalize(model)
-        #self.axes_funcs.append(self.panel7)
-
 
 class TimeSeriesOutput(OutPut):
     def __init__(self):
@@ -554,13 +537,8 @@ class VariableForcingOutput(TimeSeriesOutput):
 
     def initialize(self, model):
         super().initialize(model)
-        self.x = model.x
-        self.lat = np.degrees(np.arcsin(self.x))
-        self.x_ext = np.r_[-1, self.x, 1] # Extended grid including poles
-        self.lat_ext = np.r_[-90, self.lat, 90]
         self.F_history = np.array(model.F_History[int(self.ctrl_years/model.config["dt_years"]):]) if model.config["ctrl_years"] > 0 else model.F_History
         self.start_year = model.start_year
-        self.ctrl_years = model.config["ctrl_years"]
 
     def panel(self, ax):
         ax2 = ax.twinx()
