@@ -564,7 +564,10 @@ class HistoricalOutput(TimeSeriesOutput):
         ds_giss = tools.netcdf_reader(model.config["temperature_history"])
         self.giss_time = pd.to_datetime(ds_giss['time'].values)
         self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values)
-        self.temperature_anomaly = np.interp(np.linspace(self.giss_time.year[0], self.giss_time.year[-1], int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)), np.linspace(self.giss_time.year[0], self.giss_time.year[-1], len(self.giss_time)), self.giss_temp)
+        
+        self.temperature_anomaly = np.interp(np.linspace(self.giss_time.year[0], self.giss_time.year[-1],
+        int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)), np.linspace(self.giss_time.year[0], self.giss_time.year[-1], len(self.giss_time)), self.giss_temp)
+
         self.start_year = self.giss_time.year[0]
         if "VariableForcing" in model.config["modes"]:
            self.start_year = model.start_year
@@ -574,8 +577,13 @@ class HistoricalOutput(TimeSeriesOutput):
         ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Simulation Temperature')
         ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
         ax.set_xlim(self.giss_time.year[0],self.giss_time.year[-1])
-        ax.set_ylim( - np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.min(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)], np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.max(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)])
-        ax.plot(np.linspace(self.giss_time.year[0], self.giss_time.year[-1], int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)), self.temperature_anomaly + self.Tg_series[int(self.ctrl_years/self.dt)], color='black', label='GISS Observed Temperature', linewidth=1.0)
+
+        ax.set_ylim( - np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.min(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)],
+        np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.max(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)])
+
+        ax.plot(np.linspace(self.giss_time.year[0], self.giss_time.year[-1], int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)),
+        self.temperature_anomaly + self.Tg_series[int(self.ctrl_years/self.dt)], color='black', label='GISS Observed Temperature', linewidth=1.0)
+
         ax.set_title("Global Mean Temperatures")
         ax.legend()
 
