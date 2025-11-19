@@ -274,7 +274,7 @@ with st.sidebar:
         set_keyed_inputs(DEFAULT_CONFIG)
         st.session_state.choice = "Global Mean Surface Temperature"
     if btns.button("Snebold-Jorden", icon="❄️"):
-        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, T0=245))  # No forcing and no sea depth
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, T0=230))  # No forcing and no sea depth
         set_keyed_inputs(DEFAULT_CONFIG)
         st.session_state.choice = "Temperature Profile"
     if btns.button("Løbsk drivhuseffekt", special="run_away", icon="🔥"):
