@@ -41,8 +41,6 @@ class ButtonGroup:
 
         return st.button(label, **kwargs)
 
-st.html("<style> .stElementContainer:has(.no-gap) {margin-top: -1em; margin-bottom: -1em;} </style>")
-
 @st.cache_data
 def run(params, config):
     """
@@ -382,8 +380,9 @@ def upload_file_menu():
 # Function to set run_away
 def set_run_away(Bool):
     st.session_state.run_away = Bool
-# Create ButtonGroup instance
+# Create ButtonGroup instance where most buttons set run_away to False except the runaway button
 btns = ButtonGroup("run_away", set_run_away)
+
 
 # ---- Begin Streamlit app ----
 DEFAULT_PARAMS = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288, SD=250, S0=1365, S1=None, F=4.0)
@@ -393,23 +392,26 @@ DEFAULT_CONFIG = dict(years=1000, ctrl_years=None, dt_years=1.0, nx=200, modes=[
 st.session_state.params = DEFAULT_PARAMS.copy()
 st.session_state.config = DEFAULT_CONFIG.copy()
 
-# Set page config
+# Configer page layout
 st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍",)
 st.html("""
     <style>            
-        /* Change the max width of the main content area */
+        /* Change the width and max width of the main content area */
         .block-container {
             max-width: 90%;
             width: 1500px;
         }
+        .stElementContainer:has(.no-gap) {  /* Remove top and bottom margin for elements with class no-gap */
+            margin-top: -1em;
+            margin-bottom: -1em;
+        }
     </style>
 """)
 
-# Sidebar for more presets and info
-st.html("<style> div.stHorizontalBlock:has(.slim-container) {gap: 0.3em} </style>")
+# Sidebar for preset experiments
 with st.sidebar:
-    st.markdown("---")
-    st.html("<style> h2 {padding: 0 !important;} </style>")
+    st.markdown("---") # Horizontal line
+    st.html("<style> h2 {padding: 0 !important;} </style>") # No padding in title
     st.header("Forudindstillinger")
     st.html("<i>Nogle forudindstillinger for simple eksperimenter.</i>")
     if btns.button("Standardtilstand", icon="🔄"):
@@ -418,24 +420,25 @@ with st.sidebar:
     if btns.button("Nul-diffusion", icon=":material/mode_fan_off:"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(D0 = 0.0, F=0.0))  # No forcing in seasonal variation mode
         set_keyed_inputs(DEFAULT_CONFIG)
-        st.session_state.choice = "Temperature Profile"
+        st.session_state.choice = "Temperature Profile" # Set default figure to show
     if btns.button("Havdybde 2000 m", icon="🌊"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=2000))
         set_keyed_inputs(DEFAULT_CONFIG)
-        st.session_state.choice = "Global Mean Surface Temperature"
+        st.session_state.choice = "Global Mean Surface Temperature" # Set default figure to show
     if btns.button("Havdybde 20 m", icon="🪨"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))
         set_keyed_inputs(DEFAULT_CONFIG)
-        st.session_state.choice = "Global Mean Surface Temperature"
+        st.session_state.choice = "Global Mean Surface Temperature" # Set default figure to show
     if btns.button("Snebold-Jorden", icon="❄️"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, T0=245))  # No forcing and no sea depth
         set_keyed_inputs(DEFAULT_CONFIG)
-        st.session_state.choice = "Temperature Profile"
+        st.session_state.choice = "Temperature Profile" # Set default figure to show
     if btns.button("Løbsk drivhuseffekt", name="run_away", icon="🔥"):
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=20, k3=1.1))  # Strong forcing and strong feedback
         set_keyed_inputs(DEFAULT_CONFIG)
-        st.session_state.choice = "Temperature Profile"
+        st.session_state.choice = "Temperature Profile" # Set default figure to show
     if st.session_state.get("run_away", False): # Show input field if the last button click was runaway
+        st.html("<style> div.stHorizontalBlock:has(.slim-container) {gap: 0.3em} </style>") # Reduce gap
         col_run_away1, col_run_away2 = st.columns([1, 2])
         col_run_away1.html("<div class='slim-container'>Indstil k3:</div>")
         col_run_away2.number_input("Label", label_visibility="collapsed", value=1.1, key="k3_runaway", step=0.1)
@@ -446,56 +449,49 @@ with st.sidebar:
 st.html("""<style>
             .stHorizontalBlock:has(.downloadButton) {/* The header with title and download buttons */
             display: flex;
-            flex-wrap: wrap;         /* allow multiple lines */
+            flex-wrap: wrap;            /* allow multiple lines */
             justify-content: space-between;
-            align-items: flex-end;   /* align bottoms of wrapped lines */
-            gap: 0.5rem;             /* spacing between items */
+            align-items: flex-end;      /* align bottoms of wrapped lines */
+            gap: 0.5rem;                /* spacing between items */
             }
             h1 {
             text-wrap: balance;
             }
             .stColumn:has(.downloadButton) {
-            flex: 0 1 256px;
+            flex: 0 1 256px;            /* Allow column with download buttons to shrink but not grow too large */
             }
             .stColumn:has(.downloadButton) > div {/* The column containing the two buttons */
-            flex-direction: column;
-            align-items: flex-end;
+            flex-direction: column;     /* Stack buttons vertically */
+            align-items: flex-end;      /* Align buttons to the right */
             font-size: 1.5rem;
             min-width: 100px;
-            flex-wrap: nowrap;
             gap: 4px;
-            }
-            .stColumn:has(.downloadButton) .stElementContainer:has(button) {/* The two buttons */
-            min-width: 100px;
-            word-break: break-word;
             }
             .stElementContainer:has(.downloadButton) {/* The two empty divs having the class */
             width: 0;
             min-width: 0;
             }
         </style>""")
-col_header1, col_header2 = st.columns([1, 1])
+col_header1, col_header2 = st.columns([1, 1]) # Two columns: one for title, one for download buttons
 col_header1.title("Energibalance-model af Jordens klima")
-col_header2.html("<div class='downloadButton'></div>") # style='height: 32px'
+col_header2.html("<div class='downloadButton'></div>") # Empty container solely for styling purposes (via its class tag)
 if col_header2.button("Lav datafiler til download", type="primary"):
-    if "axes_funcs" not in st.session_state or "summaries" not in st.session_state:
-        st.error("Kør først simuleringen før du kan lave filer til download.")
-    else:
-        sim_info = print_simulation_info(st.session_state["config"], st.session_state["params"])
-        fig, _, clean_summary = generate_outputs_data(st.session_state["axes_funcs"], st.session_state["summaries"], sim_info=sim_info)
-        png_buf = make_png(fig)
-        col_header2.download_button("Download figurer (.png)", png_buf, file_name="Klimamodel_figurer.png", on_click="ignore", mime="image/png")
-        col_header2.download_button("Download opsummering (.txt)", clean_summary.encode('utf-8'), file_name="Klimamodel_opsummering.txt", on_click="ignore")
-col_header2.html("<div class='downloadButton'></div>")
+    sim_info = print_simulation_info(st.session_state["config"], st.session_state["params"])
+    fig, _, clean_summary = generate_outputs_data(st.session_state["axes_funcs"], st.session_state["summaries"], sim_info=sim_info)
+    png_buf = make_png(fig)
+    col_header2.download_button("Download figurer (.png)", png_buf, file_name="Klimamodel_figurer.png", on_click="ignore", mime="image/png")
+    col_header2.download_button("Download opsummering (.txt)", clean_summary.encode('utf-8'), file_name="Klimamodel_opsummering.txt", on_click="ignore")
+col_header2.html("<div class='downloadButton'></div>") # Another empty container for spacing
 col_header2.download_button("Download modelbeskrivelse (.pdf)", open(os.path.join(os.path.dirname(__file__),"Energybalancemodel.pdf"), "rb").read(), file_name="Energybalancemodel.pdf", on_click="ignore", mime="application/pdf", type="primary")
 
 # --- Toggle for showing advanced parameters ---
 st.toggle("Vis alle parametre", key="show_all_params", value=False)
 
-st.html("<i class='no-gap'>Klik på knapperne nedenfor for at vælge forudindstillinger for forskellige eksperiment-tilstande.</i>")
+st.html("<i class='no-gap'>Klik på knapperne nedenfor for at vælge forudindstillinger for forskellige simuleringstilstande.</i>")
 
+# --- Preset buttons ---
+# CSS to balance text wrapping in button paragraphs
 st.html("<style> button p {text-wrap: balance;} </style>")
-# Top buttons in one row
 col_btn1, col_btn2, col_btn3, col_btn4, col_btn5 = st.columns(5)
 with col_btn1:
     # --- Default button ---
@@ -506,56 +502,56 @@ with col_btn1:
 with col_btn2:
     # --- Seasonal Variation button ---
     if btns.button("Sæsonvariation", icon="🌱"):
-        # Set the relevant keyed input widgets to their default values
+        # Set the keyed input widgets to mode-specific default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=20))  # No forcing in seasonal variation mode
         set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation"]))
 with col_btn3:
     # --- Variable Sea Depth button ---
     if btns.button("Variabel havdybde", icon="🌊"):
-        # Set the relevant keyed input widgets to their default values
+        # Set the keyed input widgets to mode-specific default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(SD=None))  # Sea depth is irrelevant in this mode
         set_keyed_inputs(DEFAULT_CONFIG | dict(modes=["VariableSeaDepth"]))
 with col_btn4:
     # --- Seasonal Variation + Variable Sea Depth button ---
     if btns.button("🌱🌊 Sæsonvariation + Variabel havdybde"):
-        # Set the relevant keyed input widgets to their default values
+        # Set the keyed input widgets to mode-specific default values
         set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=None)) # No forcing and sea depth is irrelevant
         set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation", "VariableSeaDepth"]))
 with col_btn5:
     # --- Variable Forcing button ---
     if btns.button("Forceringsdata", icon="📈"):
-        # Set the relevant keyed input widgets to their default values
-        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))  # Sea depth is irrelevant in this mode
+        # Set the keyed input widgets to mode-specific default values
+        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))  # Sea depth value to fit ERA5 data
         set_keyed_inputs(DEFAULT_CONFIG | dict(ctrl_years=100, modes=["VariableForcing"]))
 
-with st.form("input_form"):
+# --- Input form for parameters and config ---
+with st.form("input_form"): # Note: A form does not auto-submit when inputs change
     st.html("<i class='no-gap'>Eller indstil parametre og opsætning manuelt nedenfor.</i>")
-    col1, col2 = st.columns(2) # Spacing column in the middle
+    col1, col2 = st.columns(2)
+    # Parameter inputs
     with col1:
         with st.expander("🧮 Parametre", expanded=st.session_state.get("show_all_params", False)):
-            st.header("Parametre")
             # Overwrite params dict with user input when form is submitted
+            st.header("Parametre")
             st.number_input(r"F: Ekstra strålingspåvirkning (W/m²)", value=DEFAULT_PARAMS["F"], key="F", step=1.0)
             st.number_input("SD: Varmekapacitet i meter havdybde (m)", value=DEFAULT_PARAMS["SD"], key="SD", step=10)
             st.number_input("D0: Diffusionskoefficient (m²/s)", value=DEFAULT_PARAMS["D0"], key="D0", step=0.1)
             st.number_input("T0: Initial temperatur (K)", value=DEFAULT_PARAMS["T0"], key="T0", step=10)
-            if st.session_state.show_all_params:
+            if st.session_state.show_all_params: # Show more parameters
                 st.number_input("S0: Solindstråling under kontrolperiode (W/m²)", value=DEFAULT_PARAMS["S0"], key="S0", step=50)
                 st.number_input("S1: Solindstråling efter kontrolperiode (W/m²) (lad stå tom for ingen ændring)", value=DEFAULT_PARAMS["S1"], key="S1", step=50)
                 st.number_input("k1: Temperatursensitivitet for isdannelse (K⁻¹)", value=DEFAULT_PARAMS["k1"], key="k1", step=0.01)
                 st.number_input("k2: Temperatursensitivitet for diffusivitet (K⁻¹)", value=DEFAULT_PARAMS["k2"], key="k2", step=0.005)
                 st.number_input("k3: Feedbackstyrke af drivhuseffekten", value=DEFAULT_PARAMS["k3"], key="k3", step=0.1)
-            for key in DEFAULT_PARAMS.keys():
-                value = st.session_state.get(key)
+            for key in DEFAULT_PARAMS.keys(): # Update params dict in session state with non-None input values
+                value = st.session_state.get(key) # Retrieve the input value; returns None if the key does not exist yet
                 if value is not None: st.session_state.params[key] = value
-
+    # Config inputs
     with col2:
-        if not "modes" in st.session_state:
-            st.session_state.modes = []
         with st.expander("⚙️ Opsætning"):
-            st.header("Opsætning")
             # Overwrite config dict with user input when form is submitted
-            if not "VariableForcing" in st.session_state.modes:
+            st.header("Opsætning")
+            if not "VariableForcing" in st.session_state.get("modes", []):
                 st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
             st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
             st.number_input("Tidsskridt (år)", value=DEFAULT_CONFIG["dt_years"], key="dt_years", step=0.01, min_value=0.01, max_value=10.0)
@@ -567,29 +563,31 @@ with st.form("input_form"):
                     }
                 </style>""")
             modes = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth", "VariableForcing"], default=DEFAULT_CONFIG["modes"], key="modes")
-            for key in DEFAULT_CONFIG.keys():
+            for key in DEFAULT_CONFIG.keys(): # Update config dict in session state with non-None input values
                 value = st.session_state.get(key)
                 if value is not None:
                     st.session_state.config[key] = value
 
     submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og opsætning", width="stretch")
 
-            
+# --- Validate modes compatibility ---
 if "VariableForcing" in modes and "SeasonalVariation" in modes:
     st.error("'VariableForcing' og 'SeasonalVariation' kan ikke bruges sammen. Vælg kun én af dem.")
     st.stop()
 
-if "VariableForcing" in st.session_state.modes:
-    upload_file_menu()
+# --- File upload for custom forcing data if VariableForcing mode is selected ---
+if "VariableForcing" in st.session_state.get("modes", []):
+    upload_file_menu() # Create the upload menu
+    # If custom forcing data is uploaded, pass it to the config
     if st.session_state.forcing_data is not None:
         st.session_state.config["forcing_data"] = st.session_state.forcing_data
 
 # Run simulation and show outputs
 st.session_state.axes_funcs, st.session_state.summaries = run(st.session_state.params, st.session_state.config)
 col_out1, col_out2 = st.columns(2, border=True)
-with col_out1:
+with col_out1: # Plotting area
     plot_in_tabs(st.session_state.axes_funcs, (st.session_state.params, st.session_state.config))
-with col_out2:
+with col_out2: # Summary area
     st.subheader("Sammenfatning af experiment")
     if st.session_state.summaries:
         st.html(make_summary(st.session_state.summaries))
