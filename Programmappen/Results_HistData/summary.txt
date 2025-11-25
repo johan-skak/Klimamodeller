@@ -10,6 +10,7 @@ zonal_temp_file     : current_zonal_mean_temperature.csv
 temperature_history : temperature_history.nc
 zonal_olr_file      : zonal_mean_longwave_out.csv
 albedo_file         : zonal_mean_shortwave_out.csv
+solar_file          : zonal_mean_solar_in.csv
 ============================================
 
 === EBM Model Parameters ===================
@@ -21,24 +22,24 @@ T0 (initial temperature)            : 288.0
 SD (mixed layer sea depth)          : 250
 S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
-F  (additional forcing)             : 4
+F  (additional forcing)             : 2
 ============================================
 
-Output generated on 2025-11-12 09:54:25
+Output generated on 2025-11-18 14:49:16
 
 === EBM Summary =====================================================
 
 Years (control, forced): (100, 100)
 Grid points nx: 200, Δt (years): 1
 
-Control global mean T (°C):  15.2
-Forced global mean T (°C):  18.4
-ΔT global (°C): 3.2
+Control global mean T (°C):  15.1
+Forced global mean T (°C):  16.9
+ΔT global (°C): 1.8
 
-North pole T control / forced (°C): -13.7 /  -7.6
-North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.892
+North pole T control / forced (°C): -13.8 / -10.3
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.951
 
-Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 246
-Planetary albedo control / forced: 0.297 / 0.291
-Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.687
+Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 243
+Planetary albedo control / forced: 0.298 / 0.293
+Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.677
 

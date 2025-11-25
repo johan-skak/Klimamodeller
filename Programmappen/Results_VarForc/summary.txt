@@ -10,6 +10,7 @@ zonal_temp_file     : current_zonal_mean_temperature.csv
 temperature_history : temperature_history.nc
 zonal_olr_file      : zonal_mean_longwave_out.csv
 albedo_file         : zonal_mean_shortwave_out.csv
+solar_file          : zonal_mean_solar_in.csv
 ============================================
 
 === EBM Model Parameters ===================
@@ -23,7 +24,7 @@ S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 ============================================
 
-Output generated on 2025-11-12 09:59:33
+Output generated on 2025-11-24 12:06:30
 
 === EBM Summary =====================================================
 

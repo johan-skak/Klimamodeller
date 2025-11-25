@@ -266,7 +266,7 @@ class DefaultOutput(OutPut):
         T_mean = T.mean()
         T_poles = funcs['poles_temperature'](T, model=model, i=i)
         Q_x = funcs['Q_x'](x, params['S0'], model=model, i=i)
-        return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles, Q_x=Q_x)
+        return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles,Q_x=Q_x)
     
 class ModifyOutput(DefaultOutput):
     def __init__(self):
@@ -315,7 +315,7 @@ class TimeSeriesOutput(OutPut):
         self.dt = model.config["dt_years"]
         self.Tg_series.append(model.T.mean() - 273.15)
          # Whether to draw vertical line at forcing time
-        self.Forcing_on = model.config["ctrl_years"] > 0 and (model.params.get('F') != 0 or model.params['S1'] != model.params['S0'])
+        self.Forcing_on = model.config["ctrl_years"] > 0 and (model.params.get('F', 1) != 0 or model.params['S1'] != model.params['S0'])
         self.ctrl_years = model.config["ctrl_years"]
 
     def step(self, model, i):
@@ -548,6 +548,7 @@ class VariableForcingOutput(TimeSeriesOutput):
         ax.set_xlim(self.start_year, self.start_year + len(T_series) * self.dt)
         ax.set_ylim(np.max(np.abs(T_series-T_series[0])) * -1.1 + T_series[0], np.max(np.abs(T_series-T_series[0]))* 1.1 + T_series[0])
         ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
+
         ax2.set_ylabel(" Forcing [W/m²] "); ax2.set_ylim(np.max(np.abs(self.F_history)) * -1.1, np.max(np.abs(self.F_history)) * 1.1)
         ax2.plot(np.arange(len(self.F_history)) * self.dt + self.start_year, self.F_history, label='Total Radiative Forcing', color='orange',linestyle='--')
         handles,labels = ax.get_legend_handles_labels(); handles2, labels2 = ax2.get_legend_handles_labels()
@@ -566,7 +567,7 @@ class HistoricalOutput(TimeSeriesOutput):
         self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values)
         
         self.temperature_anomaly = np.interp(np.linspace(self.giss_time.year[0], self.giss_time.year[-1],
-        int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)), np.linspace(self.giss_time.year[0], self.giss_time.year[-1], len(self.giss_time)), self.giss_temp)
+            int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)), np.linspace(self.giss_time.year[0], self.giss_time.year[-1], len(self.giss_time)), self.giss_temp)
 
         self.start_year = self.giss_time.year[0]
         if "VariableForcing" in model.config["modes"]:

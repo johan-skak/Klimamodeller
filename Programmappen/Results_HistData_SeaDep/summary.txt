@@ -1,10 +1,10 @@
 === EBM Model Configuration ================
-years               : 375
+years               : 200
 ctrl_years          : 100
 dt_years            : 1
 nx                  : 200
-modes               : ['HistoricalData', 'VariableForcing']
-output_dir          : Results_HistData_VarForc
+modes               : ['HistoricalData', 'VariableSeaDepth']
+output_dir          : Results_HistData_SeaDep
 forcing_file        : ForcingHistory.csv
 zonal_temp_file     : current_zonal_mean_temperature.csv
 temperature_history : temperature_history.nc
@@ -19,26 +19,26 @@ k2 (diffusivity sensitivity)        : 0.01
 k3 (longwave radiation sensitivity) : 0.5
 D0 (background diffusivity)         : 0.66
 T0 (initial temperature)            : 288.0
-SD (mixed layer sea depth)          : 250
 S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
+F  (additional forcing)             : 2
 ============================================
 
-Output generated on 2025-11-24 12:12:51
+Output generated on 2025-11-24 12:13:25
 
 === EBM Summary =====================================================
 
-Years (control, forced): (100, 275)
+Years (control, forced): (100, 100)
 Grid points nx: 200, Δt (years): 1
 
-Control global mean T (°C):  15.1
-Forced global mean T (°C):  16.7
-ΔT global (°C): 1.7
+Control global mean T (°C):  15.4
+Forced global mean T (°C):  16.9
+ΔT global (°C): 1.6
 
-North pole T control / forced (°C): -13.9 / -10.9
-North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.774
+North pole T control / forced (°C): -13.3 / -10.2
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.928
 
 Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 243
-Planetary albedo control / forced: 0.298 / 0.294
-Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.676
+Planetary albedo control / forced: 0.297 / 0.293
+Diffusivity control / forced (W m⁻² K⁻¹): 0.667 / 0.677
 

@@ -70,6 +70,8 @@ class VariableForcing(Mode):
     def check_compatibility(self, modes):
         if any(isinstance(m, SeasonalVariation) for m in modes):
             raise ValueError("VariableForcing mode is not compatible with SeasonalVariation mode.")
+        # if any(isinstance(m, VariableSeaDepth) for m in modes):
+        #     raise ValueError("VariableForcing mode is not compatible with VariableSeaDepth mode.")
 
     def initialize(self, model):
         model.funcs["Forcing"] = phys.VariableForcing
@@ -96,6 +98,10 @@ class HistoricalData(Mode):
         super().__init__(modes, app_mode=app_mode)
         self.outputs.extend([outputs.ModifyOutput(),outputs.HistoricalOutput()])
         if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
+
+    def check_compatibility(self, modes):
+        if any(isinstance(m, SeasonalVariation) for m in modes):
+            raise ValueError("HistoricalData mode is not compatible with SeasonalVariation mode.")
 
     def initialize(self, model):
         model.config["output_dir"] += "_HistData"
