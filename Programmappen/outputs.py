@@ -583,7 +583,7 @@ class HistoricalOutput(TimeSeriesOutput):
         np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.max(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)])
 
         ax.plot(np.linspace(self.giss_time.year[0], self.giss_time.year[-1], int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)),
-        self.temperature_anomaly + self.Tg_series[int(self.ctrl_years/self.dt)], color='black', label='GISS Observed Temperature', linewidth=1.0)
+            self.temperature_anomaly + self.Tg_series[int(self.ctrl_years/self.dt)], color='black', label='GISS Observed Temperature', linewidth=1.0)
 
         ax.set_title("Global Mean Temperatures")
         ax.legend()
