@@ -23,8 +23,9 @@ class Mode:
 class SeasonalVariation(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        self.outputs.extend([outputs.TimeSeriesOutput(), outputs.SeasonalOutput()])
-        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput(last_year_only=True))
+        self.outputs.append(outputs.SeasonalOutput())
+        if app_mode:
+            self.outputs.append(outputs.SeasonalTempOnEarthOutput())
 
     def initialize(self, model):
         years = model.config["years"]
@@ -46,9 +47,6 @@ class SeasonalVariation(Mode):
 class VariableSeaDepth(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        if len(modes) == 1:
-            self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
-            if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
         self.outputs.append(outputs.SeaDepthOutput())
 
     def initialize(self, model):
@@ -58,12 +56,7 @@ class VariableSeaDepth(Mode):
     def step(self, model, i):
         model.C = phys.heat_capacity_profile(model.x, model.T, model.params["k1"])
 
-class VariableForcing(Mode):
-    def __init__(self, modes, app_mode=False):
-        super().__init__(app_mode=app_mode)
-        self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
-        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
-    
+class VariableForcing(Mode):   
     def check_compatibility(self, modes):
         if any(isinstance(m, SeasonalVariation) for m in modes):
             raise ValueError("VariableForcing mode is not compatible with SeasonalVariation mode.")
@@ -77,6 +70,7 @@ class VariableForcing(Mode):
         if model.config.get("forcing_data") is not None:
            ForcingHistory = np.array(model.config["forcing_data"])
         else:
+            if "forcing_file" not in model.config: model.config["forcing_file"] = 'ForcingHistory.csv'
             print("Loading forcing data from file:", model.config["forcing_file"])
             with open(os.path.join(os.path.dirname(__file__), 'Datafiler', model.config["forcing_file"])) as f:
                 reader = csv.reader(f)
@@ -91,7 +85,6 @@ class VariableForcing(Mode):
 
         forcing = np.interp(np.linspace(0, 1, model.nsteps - model.ctrl_nsteps), np.linspace(0, 1, len(forcing)), forcing) # Interpolation
         model.F_History = np.concatenate( (np.zeros(model.ctrl_nsteps), forcing) ) #Start with 0's under the control period
-
 
 def warn(msg):
     """

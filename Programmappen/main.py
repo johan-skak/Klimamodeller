@@ -22,10 +22,11 @@ def main(config, params, app_mode=False):
             raise ValueError(f"Unknown mode: {mode_name}")
 
     # Gather outputs from modes
-    outputs_list = [o for m in modes_list for o in m.outputs]
-    if not outputs_list:
-        outputs_list = [outputs.TimeSeriesOutput(), outputs.DefaultOutput()] # Default outputs with forcing line
-        if app_mode: outputs_list.append(outputs.TemperatureOnEarthOutput()) # Add Earth surface output in app mode
+    # outputs_list = [o for m in modes_list for o in m.outputs]
+    # if not outputs_list:
+    #     outputs_list = [outputs.TimeSeriesOutput(), outputs.DefaultOutput()] # Default outputs with forcing line
+    #     if app_mode: outputs_list.append(outputs.TemperatureOnEarthOutput()) # Add Earth surface output in app mode
+    outputs_list = outputs.collect_outputs(modes_list, app_mode)
     
     # Create and run model
     climate_model = model.ClimateModel(config, params, modes_list, outputs_list, app_mode)
@@ -40,7 +41,7 @@ def main(config, params, app_mode=False):
 def configure_program():
     # Default config
     config = {"years": 1000, "ctrl_years": -1, "dt_years": 1, "nx": 200, "modes": [],
-              "output_dir": "Results", "forcing_file": 'ForcingHistory.csv'}
+              "output_dir": "Results"}
 
     # Default parameters
     params = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288.0, SD=250,

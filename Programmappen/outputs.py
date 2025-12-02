@@ -489,6 +489,63 @@ class TemperatureOnEarthOutput(OutPut):
         """Plot temperature on Earth surface (latitude vs time)."""
         return Earth.animate_on_earth(self.lat_ext, self.T_ext_series, self.dt, ax=ax, title="Animation of surface temperature", cbar_label="°C")
 
+class SeasonalTempOnEarthOutput(TemperatureOnEarthOutput):
+    def __init__(self):
+        super().__init__(last_year_only=True)
+
+output_registry = {
+    DefaultOutput:              ("Default", 0),
+    TimeSeriesOutput:           ("Time Series", 0),
+    SeasonalOutput:             ("Default", 1), # SeasonalOutput has higher priority than DefaultOutput
+    TemperatureOnEarthOutput:   ("Temperature on Earth", 0),
+    SeasonalTempOnEarthOutput:  ("Temperature on Earth", 1),
+    SeaDepthOutput:             ("Sea Depth", 0)
+}
+
+def collect_outputs(modes_list, app_mode):
+    """
+    Collect all the outputs from the modes and remove duplicates with lower priority
+
+    Parameters
+    ----------
+    modes_list : list
+        A list of modes (instances of Mode)
+    app_mode : bool
+        A boolean whether the program is in app mode
+    
+    Returns
+    -------
+    A list of outputs (instances of OutPut)
+    """
+    output_list = [o for m in modes_list for o in m.outputs]
+
+    # add fixed defaults
+    output_list.append(DefaultOutput())
+    output_list.append(TimeSeriesOutput())
+    if app_mode:
+        output_list.append(TemperatureOnEarthOutput())
+
+    best = {}
+    for obj in output_list:
+        cls = type(obj)
+        try:
+            type_name, priority = output_registry[cls]
+        except KeyError:
+            raise ValueError(f"Unknown output class: {cls.__name__}") from None
+
+        if type_name not in best:
+            best[type_name] = obj
+        else:
+            current_best = best.get(type_name)
+            _, best_priority = output_registry[type(current_best)]
+            if priority == best_priority:
+                raise ValueError(f"Duplicate output type {type_name} with equal priority: {cls.__name__} and {type(current_best).__name__}")
+            if priority > best_priority:
+                best[type_name] = obj
+
+    # instantiate classes
+    return list(best.values())
+
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"
     if n > 40: start_fmt = "\033[31m"
