@@ -22,10 +22,6 @@ def main(config, params, app_mode=False):
             raise ValueError(f"Unknown mode: {mode_name}")
 
     # Gather outputs from modes
-    # outputs_list = [o for m in modes_list for o in m.outputs]
-    # if not outputs_list:
-    #     outputs_list = [outputs.TimeSeriesOutput(), outputs.DefaultOutput()] # Default outputs with forcing line
-    #     if app_mode: outputs_list.append(outputs.TemperatureOnEarthOutput()) # Add Earth surface output in app mode
     outputs_list = outputs.collect_outputs(modes_list, app_mode)
     
     # Create and run model
