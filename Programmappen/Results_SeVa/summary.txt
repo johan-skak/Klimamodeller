@@ -25,7 +25,11 @@ S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 2
 ============================================
 
+<<<<<<< HEAD
 Output generated on 2025-11-24 12:05:35
+=======
+Output generated on 2025-12-02 09:47:55
+>>>>>>> origin/Johan-dev
 
 === EBM Summary ===========================================================================
 

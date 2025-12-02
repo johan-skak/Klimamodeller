@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 years: 200 # Number of years to simulate
+=======
+years: 500 # Number of years to simulate
+>>>>>>> origin/Johan-dev
 dt_years: 1 # Time step in years
 nx: 200 # Number of grid points in x-direction (x = sin(latitude))
 modes: ["VariableSeaDepth","VariableForcing"] # List of model modes to use. Possible modes are: SeasonalVariation, VariableSeaDepth, VariableForcing, HistoricalData. Leave empty for default mode.

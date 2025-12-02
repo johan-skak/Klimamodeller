@@ -24,8 +24,9 @@ class Mode:
 class SeasonalVariation(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        self.outputs.extend([outputs.TimeSeriesOutput(), outputs.SeasonalOutput()])
-        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput(last_year_only=True))
+        self.outputs.append(outputs.SeasonalOutput())
+        if app_mode:
+            self.outputs.append(outputs.SeasonalTempOnEarthOutput())
 
     def initialize(self, model):
         years = model.config["years"]
@@ -47,9 +48,6 @@ class SeasonalVariation(Mode):
 class VariableSeaDepth(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
-        if len(modes) == 1:
-            self.outputs.extend([outputs.TimeSeriesOutput(), outputs.DefaultOutput()])
-            if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
         self.outputs.append(outputs.SeaDepthOutput())
 
     def initialize(self, model):
@@ -82,6 +80,7 @@ class VariableForcing(Mode):
         if model.config.get("forcing_data") is not None:
            ForcingHistory = np.array(model.config["forcing_data"])
         else:
+            if "forcing_file" not in model.config: model.config["forcing_file"] = 'ForcingHistory.csv'
             print("Loading forcing data from file:", model.config["forcing_file"])
             year,forcing = tools.csv_reader(model.config["forcing_file"])
 
