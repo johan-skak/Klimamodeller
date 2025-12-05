@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-years: 200 # Number of years to simulate
-=======
-years: 500 # Number of years to simulate
->>>>>>> origin/Johan-dev
+years: 200 # Number of years to simulate # Number of years to simulate
 dt_years: 1 # Time step in years
 nx: 200 # Number of grid points in x-direction (x = sin(latitude))
-modes: ["VariableSeaDepth","VariableForcing"] # List of model modes to use. Possible modes are: SeasonalVariation, VariableSeaDepth, VariableForcing, HistoricalData. Leave empty for default mode.
+modes: ["HistoricalData","VariableForcing"] # List of model modes to use. Possible modes are: SeasonalVariation, VariableSeaDepth, VariableForcing, HistoricalData. Leave empty for default mode.
 ctrl_years: 100 # Number of years to run control without forcing. Leave empty to have half the simulation as control.

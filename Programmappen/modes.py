@@ -61,9 +61,6 @@ class VariableForcing(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(app_mode=app_mode)
         self.outputs.extend([outputs.VariableForcingOutput()])
-        if len(modes) == 1:
-            self.outputs.extend([outputs.DefaultOutput()])
-            if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
         
     def check_compatibility(self, modes):
         if any(isinstance(m, SeasonalVariation) for m in modes):
@@ -77,6 +74,7 @@ class VariableForcing(Mode):
         del model.params["F"] #Remove unused key from output. This also (paradoxically) makes the outputs aware that forcing is on
 
        #Lav forceringshistorik her #open() returnerer nok en fejl hvis stien ikke findes og det er godt
+        # de næste 2 linjer bruges kun i app mode 
         if model.config.get("forcing_data") is not None:
            ForcingHistory = np.array(model.config["forcing_data"])
         else:
@@ -96,7 +94,6 @@ class HistoricalData(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(modes, app_mode=app_mode)
         self.outputs.extend([outputs.ModifyOutput(),outputs.HistoricalOutput()])
-        if self.app_mode: self.outputs.append(outputs.TemperatureOnEarthOutput())
 
     def check_compatibility(self, modes):
         if any(isinstance(m, SeasonalVariation) for m in modes):

@@ -535,60 +535,6 @@ class SeasonalTempOnEarthOutput(TemperatureOnEarthOutput):
     def __init__(self):
         super().__init__(last_year_only=True)
 
-output_registry = { # Maps output classes to (type_name, priority)
-    DefaultOutput:              ("Default", 0),
-    TimeSeriesOutput:           ("Time Series", 0),
-    SeasonalOutput:             ("Default", 1), # SeasonalOutput has higher priority than DefaultOutput
-    TemperatureOnEarthOutput:   ("Temperature on Earth", 0),
-    SeasonalTempOnEarthOutput:  ("Temperature on Earth", 1),
-    SeaDepthOutput:             ("Sea Depth", 0)
-}
-
-def collect_outputs(modes_list, app_mode):
-    """
-    Collect all the outputs from the modes and remove duplicates with lower priority
-
-    Parameters
-    ----------
-    modes_list : list
-        A list of modes (instances of Mode)
-    app_mode : bool
-        A boolean whether the program is in app mode
-    
-    Returns
-    -------
-    A list of outputs (instances of OutPut)
-    """
-    output_list = [o for m in modes_list for o in m.outputs]
-
-    # add fixed defaults
-    output_list = [DefaultOutput()] + output_list
-    output_list.append(TimeSeriesOutput())
-    if app_mode:
-        output_list.append(TemperatureOnEarthOutput())
-
-    best_outputs = {} # type_name -> best output object
-    for obj in output_list:
-        cls = type(obj) # Get the class of the output object
-        try:
-            type_name, priority = output_registry[cls]
-        except KeyError:
-            raise ValueError(f"Unknown output class: {cls.__name__}") from None
-
-        if type_name not in best_outputs:
-            best_outputs[type_name] = obj # Add new output to best_outputs, since it's the first of its type
-        else:
-            current_best = best_outputs[type_name]
-            current_cls = type(current_best)
-            _, best_priority = output_registry[current_cls]
-            if priority == best_priority and cls != current_cls:
-                raise ValueError(f"Duplicate output type {type_name} with equal priority in output_registry: {cls.__name__} and {current_cls.__name__}")
-            if priority > best_priority:
-                best_outputs[type_name] = obj
-
-    # instantiate classes
-    return list(best_outputs.values())
-
 class VariableForcingOutput(TimeSeriesOutput):
     def __init__(self):
         super().__init__()
@@ -646,7 +592,59 @@ class HistoricalOutput(TimeSeriesOutput):
         ax.set_title("Global Mean Temperatures")
         ax.legend()
 
-       
+output_registry = { # Maps output classes to (type_name, priority)
+    DefaultOutput:              ("Default", 0),
+    TimeSeriesOutput:           ("Time Series", 0),
+    SeasonalOutput:             ("Default", 1), # SeasonalOutput has higher priority than DefaultOutput
+    TemperatureOnEarthOutput:   ("Temperature on Earth", 0),
+    SeasonalTempOnEarthOutput:  ("Temperature on Earth", 1),
+    SeaDepthOutput:             ("Sea Depth", 0)
+}
+
+def collect_outputs(modes_list, app_mode):
+    """
+    Collect all the outputs from the modes and remove duplicates with lower priority
+
+    Parameters
+    ----------
+    modes_list : list
+        A list of modes (instances of Mode)
+    app_mode : bool
+        A boolean whether the program is in app mode
+    
+    Returns
+    -------
+    A list of outputs (instances of OutPut)
+    """
+    output_list = [o for m in modes_list for o in m.outputs]
+
+    # add fixed defaults
+    output_list = [DefaultOutput()] + output_list
+    output_list.append(TimeSeriesOutput())
+    if app_mode:
+        output_list.append(TemperatureOnEarthOutput())
+
+    best_outputs = {} # type_name -> best output object
+    for obj in output_list:
+        cls = type(obj) # Get the class of the output object
+        try:
+            type_name, priority = output_registry[cls]
+        except KeyError:
+            raise ValueError(f"Unknown output class: {cls.__name__}") from None
+
+        if type_name not in best_outputs:
+            best_outputs[type_name] = obj # Add new output to best_outputs, since it's the first of its type
+        else:
+            current_best = best_outputs[type_name]
+            current_cls = type(current_best)
+            _, best_priority = output_registry[current_cls]
+            if priority == best_priority and cls != current_cls:
+                raise ValueError(f"Duplicate output type {type_name} with equal priority in output_registry: {cls.__name__} and {current_cls.__name__}")
+            if priority > best_priority:
+                best_outputs[type_name] = obj
+
+    # instantiate classes
+    return list(best_outputs.values())    
 
 def temp_fmt(n, p=1):
     start_fmt = end_fmt = "\033[0m"
