@@ -267,7 +267,8 @@ class DefaultOutput(OutPut):
         T_poles = funcs['poles_temperature'](T, model=model, i=i)
         Q_x = funcs['Q_x'](x, params['S0'], model=model, i=i)
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles,Q_x=Q_x)
-    
+
+"This output class loads observed datasets except observed time-series and plots them on the default output panels for comparison with model results."
 class ObservedOutput(DefaultOutput):
     def __init__(self):
         super().__init__()
@@ -275,13 +276,13 @@ class ObservedOutput(DefaultOutput):
     def initialize(self, model):
         super().initialize(model)
 
-        print("Loading zonal temperature data from file:", model.config["zonal_temp_file"])
-        T_x,CurrentZonalMeanTemperature  = tools.csv_reader(model.config["zonal_temp_file"],1)
-        self.T_zonal = np.interp(model.x, T_x, CurrentZonalMeanTemperature)
+        print("Loading zonal temperature data from file:", model.config["zonal_temp_file"]) #print which file is being loaded
+        T_x,CurrentZonalMeanTemperature  = tools.csv_reader(model.config["zonal_temp_file"],1) #read data from csv
+        self.T_zonal = np.interp(model.x, T_x, CurrentZonalMeanTemperature) #interpolate from data grid to model grid
 
-        print("Loading zonal OLR data from file:", model.config["zonal_olr_file"])
-        OLR_x,OLR = tools.csv_reader(model.config["zonal_olr_file"],1)
-        self.OLR_zonal = np.interp(model.x, OLR_x, OLR)
+        print("Loading zonal OLR data from file:", model.config["zonal_olr_file"]) #print which file is being loaded
+        OLR_x,OLR = tools.csv_reader(model.config["zonal_olr_file"],1) #read data from csv
+        self.OLR_zonal = np.interp(model.x, OLR_x, OLR) #interpolate from data grid to model grid
 
         print("Loading zonal albedo data from file:", model.config["albedo_file"])
         Albedo_x, Albedo = tools.csv_reader(model.config["albedo_file"], 1)
@@ -293,17 +294,17 @@ class ObservedOutput(DefaultOutput):
 
     def panel1(self, ax):
         super().panel1(ax)
-        ax.plot(self.lat, self.T_zonal - 273.15, label='Observed', linestyle='--', color="green")
+        ax.plot(self.lat, self.T_zonal - 273.15, label='Observed', linestyle='--', color="green") #plot temperature in celsius
         ax.legend()
     
     def panel2(self, ax):
         super().panel2(ax)
-        ax.plot(self.lat, self.OLR_zonal, label='Observed', linestyle='--', color="green")
+        ax.plot(self.lat, self.OLR_zonal, label='Observed', linestyle='--', color="green") #plot observed OLR data
         ax.legend()
 
     def panel3(self, ax):
         super().panel3(ax)
-        ax.plot(self.lat, self.Albedo_zonal/self.Solar_zonal, label='Observed', linestyle='--', color="green")
+        ax.plot(self.lat, self.Albedo_zonal/self.Solar_zonal, label='Observed', linestyle='--', color="green") #plot observed albedo data
         ax.legend()
 
 class TimeSeriesOutput(OutPut):
@@ -541,8 +542,9 @@ class VariableForcingOutput(TimeSeriesOutput):
 
     def initialize(self, model):
         super().initialize(model)
+        # Load forcing history after control period
         self.F_history = np.array(model.F_History[int(self.ctrl_years/model.config["dt_years"]):]) if model.config["ctrl_years"] > 0 else model.F_History
-        self.start_year = model.start_year
+        self.start_year = model.start_year #load start year from forcing data
 
     def panel(self, ax):
         ax2 = ax.twinx()
@@ -559,33 +561,38 @@ class VariableForcingOutput(TimeSeriesOutput):
         ax.set_title("Global Mean Surface Temperature and Total Radiative Forcing")
         ax.legend(handles + handles2, labels + labels2, loc='lower right')
 
+"This output class loads historical temperature data and plots it alongside the model temperature time series."
 class HistoricalOutput(TimeSeriesOutput):
     def __init__(self):
         super().__init__()
 
     def initialize(self, model):
         super().initialize(model)
-        print("Loading temperature history from file:", model.config["temperature_history"])
-        ds_giss = tools.netcdf_reader(model.config["temperature_history"])
-        self.giss_time = pd.to_datetime(ds_giss['time'].values)
-        self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values)
+        print("Loading temperature history from file:", model.config["temperature_history"]) #print which file is being loaded
+        ds_giss = tools.netcdf_reader(model.config["temperature_history"]) # Load GISS temperature anomaly data from NetCDF file
+        self.giss_time = pd.to_datetime(ds_giss['time'].values) # Convert to pandas datetime
+        self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values) # Assume variable name is 'tempanomaly' and remove singleton dimensions
         
+        #interpolate GISS data to model time steps
         self.temperature_anomaly = np.interp(np.linspace(self.giss_time.year[0], self.giss_time.year[-1],
             int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)), np.linspace(self.giss_time.year[0], self.giss_time.year[-1], len(self.giss_time)), self.giss_temp)
 
-        self.start_year = self.giss_time.year[0]
+        self.start_year = self.giss_time.year[0] #load start year from GISS data
+         # If VariableForcing mode is also active, use forcing data start year instead
         if "VariableForcing" in model.config["modes"]:
            self.start_year = model.start_year
 
     def panel(self, ax):
-        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt+1):]) if self.ctrl_years > 0 else np.array(self.Tg_series)
-        ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Simulation Temperature')
+        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt+1):]) if self.ctrl_years > 0 else np.array(self.Tg_series) #only plot temperature when forcing is on
+        ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Simulation Temperature') #plot model temperature time series
         ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
         ax.set_xlim(self.giss_time.year[0],self.giss_time.year[-1])
 
+        # Set y-limits based on temperature anomaly range plus control temperature offset
         ax.set_ylim( - np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.min(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)],
         np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.max(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)])
-
+        
+        #plot the observed temperature anomaly data from GISS
         ax.plot(np.linspace(self.giss_time.year[0], self.giss_time.year[-1], int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)),
             self.temperature_anomaly + self.Tg_series[int(self.ctrl_years/self.dt)], color='black', label='GISS Observed Temperature', linewidth=1.0)
 
