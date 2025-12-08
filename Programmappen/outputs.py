@@ -268,7 +268,7 @@ class DefaultOutput(OutPut):
         Q_x = funcs['Q_x'](x, params['S0'], model=model, i=i)
         return dict(T=T, alpha=alpha, olr=olr, conv=conv, MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean, T_poles=T_poles,Q_x=Q_x)
     
-class ModifyOutput(DefaultOutput):
+class ObservedOutput(DefaultOutput):
     def __init__(self):
         super().__init__()
 
@@ -595,11 +595,14 @@ class HistoricalOutput(TimeSeriesOutput):
 output_registry = { # Maps output classes to (type_name, priority)
     DefaultOutput:              ("Default", 0),
     TimeSeriesOutput:           ("Time Series", 0),
-    SeasonalOutput:             ("Default", 1), # SeasonalOutput has higher priority than DefaultOutput
+    SeasonalOutput:             ("Default", 2), # SeasonalOutput has highest priority for Default type
     TemperatureOnEarthOutput:   ("Temperature on Earth", 0),
     SeasonalTempOnEarthOutput:  ("Temperature on Earth", 1),
-    SeaDepthOutput:             ("Sea Depth", 0)
-}
+    SeaDepthOutput:             ("Sea Depth", 0),
+    HistoricalOutput:           ("Historical", 0), # HistoricalOutput adds the observed temperature time series
+    VariableForcingOutput:      ("Time Series", 1), # VariableForcingOutput has higher priority than TimeSeriesOutput
+    ObservedOutput:              ("Default", 1), # ObservedOutput has higher priority than DefaultOutput
+    }
 
 def collect_outputs(modes_list, app_mode):
     """

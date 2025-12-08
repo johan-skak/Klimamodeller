@@ -5,7 +5,6 @@ dt_years            : 0.0417
 nx                  : 200
 modes               : ['SeasonalVariation', 'VariableSeaDepth']
 output_dir          : Results_SeVa_SeaDep
-forcing_file        : ForcingHistory.csv
 zonal_temp_file     : current_zonal_mean_temperature.csv
 temperature_history : temperature_history.nc
 zonal_olr_file      : zonal_mean_longwave_out.csv
@@ -21,17 +20,10 @@ D0 (background diffusivity)         : 0.66
 T0 (initial temperature)            : 288.0
 S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
-<<<<<<< HEAD
 F  (additional forcing)             : 2
 ============================================
 
-Output generated on 2025-11-19 11:39:11
-=======
-F  (additional forcing)             : 0
-============================================
-
-Output generated on 2025-12-02 09:47:35
->>>>>>> origin/Johan-dev
+Output generated on 2025-12-08 15:00:10
 
 === EBM Summary ===========================================================================
 
@@ -39,7 +31,6 @@ Output generated on 2025-12-02 09:47:35
 Modes: ['SeasonalVariation', 'VariableSeaDepth']
 Years run: 200, grid points: 200, Δt (years): 1 / 24
 
-<<<<<<< HEAD
 Global mean temperature: 17.23°C (min  16.5 on Mar 06 (0.96y), max  17.9 on Sep 19 (0.50y))
 Equator temperature:     29.81°C (min  29.4 on Jul 21 (0.33y), max  30.1 on Nov 04 (0.62y))
 Denmark (56°N):           3.78°C (min   1.0 on Mar 21 (0.00y), max   6.8 on Sep 19 (0.50y))
@@ -49,15 +40,4 @@ South pole:              -8.96°C (min -13.8 on Sep 04 (0.46y), max  -3.1 on Jan
 Last-year mean OLR:    243.7 W/m²
 Last-year mean albedo: 0.308
 Last-year mean D:      0.679 W m⁻² K⁻¹
-=======
-Global mean temperature: 15.56°C (min  14.8 on Mar 13 (0.98y), max  16.3 on Sep 19 (0.50y))
-Equator temperature:     28.59°C (min  28.2 on Jul 21 (0.33y), max  28.9 on Nov 12 (0.65y))
-Denmark (56°N):           1.67°C (min  -1.4 on Mar 29 (0.02y), max   4.8 on Sep 19 (0.50y))
-North pole:             -12.50°C (min -19.8 on Mar 13 (0.98y), max  -5.6 on Aug 12 (0.40y))
-South pole:             -12.13°C (min -17.1 on Sep 04 (0.46y), max  -6.1 on Jan 27 (0.85y))
-
-Last-year mean OLR:    240.6 W/m²
-Last-year mean albedo: 0.313
-Last-year mean D:      0.668 W m⁻² K⁻¹
->>>>>>> origin/Johan-dev
 

@@ -93,7 +93,7 @@ class VariableForcing(Mode):
 class HistoricalData(Mode):
     def __init__(self, modes, app_mode=False):
         super().__init__(modes, app_mode=app_mode)
-        self.outputs.extend([outputs.ModifyOutput(),outputs.HistoricalOutput()])
+        self.outputs.extend([outputs.ObservedOutput(),outputs.HistoricalOutput()])
 
     def check_compatibility(self, modes):
         if any(isinstance(m, SeasonalVariation) for m in modes):
