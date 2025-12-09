@@ -175,8 +175,7 @@ class ClimateModel:
         rad_term = absorbed - olr + funcs["Forcing"](model=self, i=i)
 
         # Meridional diffusion coefficient depends on mean temperature
-        D = funcs["diffusion_from_T"](T, params["D0"], params["k2"],
-                                      model=self, i=i)
+        D = funcs["diffusion_from_T"](T, params["D0"], params["k2"], model=self, i=i)
 
         # Build diffusion operator L (tridiagonal representation)
         aL, bL, cL = funcs["build_diffusion_tridiag"](x, D)
