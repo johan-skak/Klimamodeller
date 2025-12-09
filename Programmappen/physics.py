@@ -213,7 +213,6 @@ def heat_capacity_profile(x, T, k1):
 def Forcing(model, i):
     return model.params['F'] * (i >= model.ctrl_nsteps)  # Step function forcing after control period
 
-
 def VariableForcing(model, i):
     return model.F_History[i] # Use time-varying forcing from forcing history data
 

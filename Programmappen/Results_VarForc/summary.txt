@@ -18,22 +18,21 @@ SD (mixed layer sea depth)          : 20
 S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 ============================================
-
-Output generated on 2025-12-02 09:50:52
+Output generated on 2025-12-09 14:49:56
 
 === EBM Summary =====================================================
 
 Years (control, forced): (100, 275)
 Grid points nx: 200, Δt (years): 1
 
-Control global mean T (°C):  15.2
-Forced global mean T (°C):  17.9
-ΔT global (°C): 2.7
+Control global mean T (°C):  15.1
+Final global mean T (°C):  17.9
+ΔT global (°C): 2.8
 
-North pole T control / forced (°C): -13.7 /  -8.6
-North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.900
+North pole T control / forced (°C): -13.8 /  -8.6
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.864
 
 Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 245
-Planetary albedo control / forced: 0.297 / 0.292
-Diffusivity control / forced (W m⁻² K⁻¹): 0.666 / 0.683
+Planetary albedo control / forced: 0.298 / 0.292
+Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.683
 

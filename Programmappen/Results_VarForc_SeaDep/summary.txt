@@ -17,8 +17,7 @@ T0 (initial temperature)            : 288.0
 S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 ============================================
-
-Output generated on 2025-12-01 17:03:09
+Output generated on 2025-12-09 14:51:13
 
 === EBM Summary =====================================================
 
@@ -26,13 +25,13 @@ Years (control, forced): (100, 275)
 Grid points nx: 200, Δt (years): 1
 
 Control global mean T (°C):  15.1
-Forced global mean T (°C):  17.5
+Final global mean T (°C):  17.5
 ΔT global (°C): 2.4
 
-North pole T control / forced (°C): -13.7 /  -9.0
-North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.987
+North pole T control / forced (°C): -13.8 /  -9.0
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.985
 
 Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 244
-Planetary albedo control / forced: 0.297 / 0.292
+Planetary albedo control / forced: 0.298 / 0.292
 Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.681
 
