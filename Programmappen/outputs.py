@@ -248,7 +248,7 @@ class DefaultOutput(OutPut):
 
     def initialize(self, model):
         # Store initial diagnostics.
-        self.diags["init"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
+        self.diags["init"] = simulation_diagnostics(model.funcs, model.x, model.T, model.params)
         self.x   = model.x
         self.lat = np.degrees(np.arcsin(self.x))
         self.Forcing_on = ( # Whether to include end of control phase diagnostics
@@ -259,11 +259,11 @@ class DefaultOutput(OutPut):
     def step(self, model, i):
         # Capture mid-state if a control phase exists.
         if i == model.ctrl_nsteps - 1:
-            self.diags["mid"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
+            self.diags["mid"] = simulation_diagnostics(model.funcs, model.x, model.T, model.params)
 
     def finalize(self, model):
         # Final state diagnostics.
-        self.diags["end"] = self.simulation_diagnostics(model.funcs, model.x, model.T, model.params)
+        self.diags["end"] = simulation_diagnostics(model.funcs, model.x, model.T, model.params)
 
         # Global warming metrics.
         self.dt_global = self.diags["end"]["T_mean"] - self.diags["mid"]["T_mean"]
@@ -340,7 +340,7 @@ class DefaultOutput(OutPut):
         ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7) # 0 °C line
         ax.set_title("Temperature Profile")
         ax.set_ylabel("°C")
-        self.Stylize(ax)
+        Stylize(ax)
     
     # Panel 2: OLR profiles (W/m²)
     def panel2(self, ax):
@@ -349,7 +349,7 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.lat, self.diags[case]['olr'], label=label, color=color)
         ax.set_title('Outgoing Longwave Radiation (OLR)'); ax.set_ylabel('W/m²')
-        self.Stylize(ax)
+        Stylize(ax)
     
     # Panel 3: Albedo profiles
     def panel3(self, ax):
@@ -358,7 +358,7 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.lat, self.diags[case]['alpha'], label=label, color=color)
         ax.set_title('Planetary Albedo'); ax.set_ylabel('Albedo')
-        self.Stylize(ax)
+        Stylize(ax)
     
     # Panel 4: Meridional heat transport (PW)
     def panel4(self, ax):
@@ -367,7 +367,7 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.diags[case]['MHTrans_PW'][0], self.diags[case]['MHTrans_PW'][1], label=label, color=color)
         ax.set_title('Meridional Heat Transport'); ax.set_ylabel('PW (10¹⁵ W)')
-        self.Stylize(ax)
+        Stylize(ax)
     
     # Heat flux convergence (W/m²)
     def panel5(self, ax):
@@ -376,7 +376,7 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.lat, self.diags[case]['conv'], label=label, color=color)
         ax.set_title('Heat Flux Convergence'); ax.set_ylabel('W/m²')
-        self.Stylize(ax)
+        Stylize(ax)
     
     # Change in zonal mean temperature (°C) + polar amplification
     def panel6(self, ax):
@@ -384,73 +384,7 @@ class DefaultOutput(OutPut):
         dT_ext = self.diags["end"]['T_ext'] - self.diags["mid"]['T_ext']
         ax.plot(self.lat_ext, dT_ext, label='Forced - Control')
         ax.set_title('Change in Zonal Mean Temperature'); ax.set_ylabel('ΔT (K)')
-        self.Stylize(ax)
-
-    def Stylize(self, ax):
-        ax.set_xlim([-90, 90])
-        ax.set_xlabel('Latitude')
-        ax.legend() if ax.get_legend_handles_labels()[1] else None # Only add legend if there are labels
-        ax.grid(True)
-        ax.set_xticks(np.linspace(-90, 90, 7))
-        ax.set_xticklabels([f"{tick:.0f}°" for tick in np.linspace(-90, 90, 7)])
-        # Minor grid with 40 ticks based on lat spacing
-        minor_ticks = np.arcsin(np.linspace(-1, 1, 40)) * (180/np.pi)
-        ax.xaxis.set_minor_locator(FixedLocator(minor_ticks))
-        ax.grid(True, which='minor', linestyle=':', alpha=0.6)
-
-    # Diagnostics helper used by DefaultOutput and SeasonalOutput
-    def simulation_diagnostics(self, funcs, x, T, params, model=None, i=0):
-        """
-        Computes albedo, OLR, diffusivity, convergence, heat transport, etc.,
-        for a given temperature field T at iteration i.
-
-        Parameters
-        ----------
-        funcs : dict
-            Dictionary of physics functions to use.
-        x : np.ndarray
-            Spatial grid points.
-        T : np.ndarray
-            Temperature profile.
-        params : dict
-            Model parameters.
-        model : Model or None, optional
-            Model instance for context, if needed.
-        i : int, optional
-            Iteration index.
-
-        Returns
-        -------
-        dict
-            Dictionary containing diagnostic variables:
-                - T : Temperature profile
-                - alpha : Albedo profile
-                - olr : Outgoing longwave radiation profile
-                - conv : Heat flux convergence profile
-                - MHTrans_PW : Meridional heat transport (PW)
-                - D : Diffusivity profile
-                - T_mean : Mean temperature
-                - T_poles : Pole temperatures
-                - Q_x : Insolation profile
-        """
-        alpha = funcs['albedo_from_T'](T, x, k1=params['k1'], model=model, i=i)
-        dTloc = funcs['deltaT_of_Ts'](T, k3=params['k3'], model=model, i=i)
-        olr = phys.SIGMA * (T - dTloc)**4
-        D = funcs["diffusion_from_T"](T, params['D0'], params['k2'], model=model, i=i)
-
-        aL, bL, cL = funcs['build_diffusion_tridiag'](x, D)
-        conv = funcs['apply_L_to_T'](aL, bL, cL, T)
-
-        MHTrans_PW = funcs['meridional_transport_PW'](T, x, D, model=model, i=i)
-        T_mean = T.mean()
-        T_poles = funcs['poles_temperature'](T, model=model, i=i)
-        Q_x = funcs['Q_x'](x, params['S0'], model=model, i=i)
-
-        return dict(
-            T=T, alpha=alpha, olr=olr, conv=conv,
-            MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean,
-            T_poles=T_poles, Q_x=Q_x
-        )
+        Stylize(ax)
 
 class TimeSeriesOutput(OutPut):
     """
@@ -529,7 +463,7 @@ class SeasonalOutput(OutPut):
 
         # Compute the same diagnostic fields used by DefaultOutput (but without
         # the full DefaultOutput object)
-        diags = DefaultOutput().simulation_diagnostics(
+        diags = simulation_diagnostics(
             model.funcs, model.x, model.T, model.params, model=model, i=i
         )
 
@@ -639,7 +573,7 @@ class SeasonalOutput(OutPut):
 
         ax.set_title(title)
         ax.set_ylabel(ylabel)
-        DefaultOutput.Stylize(self, ax)
+        Stylize(ax)
 
     # Panels 1–6: spatial seasonal profiles
     def panel1(self, ax): self.plot_profiles(ax, "T_ext", "°C", "Seasonal Temperature Profiles")
@@ -650,7 +584,6 @@ class SeasonalOutput(OutPut):
     def panel6(self, ax): self.plot_profiles(ax, "Q_x_ext", "W/m²", "Seasonal Solar Irradiance")
 
     # ---- Time-series plotting helper ----
-
     def plot_time_series(self, ax, field, ylabel, title, mean_is_zero=False):
         """
         For each named latitude group, plot the time series over the final year.
@@ -687,7 +620,7 @@ class SeasonalOutput(OutPut):
         # Set x tick labels as dates through the year
         xticks = self.t_last[np.linspace(0, len(self.t_last) - 1, 7, dtype=np.int16)]
         ax.set_xticks(xticks)
-        ax.set_xticklabels([self.date_from_fraction(t) for t in np.linspace(0, 1, 7)])
+        ax.set_xticklabels([date_from_fraction(t) for t in np.linspace(0, 1, 7)])
 
         ax.set_xlabel("Date (during the last simulated year)")
         ax.set_title(title)
@@ -715,9 +648,9 @@ class SeasonalOutput(OutPut):
 
             return (temp_fmt(series.mean(), 2) + "°C "
                     "(min " + temp_fmt(series.min()) +
-                    f" on {self.date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
+                    f" on {date_from_fraction(min_time):>5} ({min_time:>4.2f}y), "
                     f"max " + temp_fmt(series.max()) +
-                    f" on {self.date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
+                    f" on {date_from_fraction(max_time):>5} ({max_time:>4.2f}y))")
 
         # Convert arrays to °C for readability
         global_T  = self.last["T"].mean(axis=1) - 273.15
@@ -741,17 +674,6 @@ class SeasonalOutput(OutPut):
         Last-year mean albedo: {self.last['alpha'].mean():.3f}
         Last-year mean D:      {self.last['D'].mean():.3f} W m⁻² K⁻¹
         """)
-
-    def date_from_fraction(self, frac):
-        """
-        Convert fractional year since spring equinox into a calendar date.
-        Only used for axis labelling and summaries.
-        """
-        start = datetime.date(2000, 3, 21)   # fixed reference
-        days_in_year = 365
-        offset = int(round(frac * days_in_year))
-        date = start + datetime.timedelta(days=offset)
-        return date.strftime("%b %d")
 
 class SeaDepthOutput(OutPut):
     """
@@ -826,7 +748,7 @@ class SeaDepthOutput(OutPut):
 
         ax.set_title(r"Heat capacities based on ML depth and % of landmass")
         ax.set_ylabel("m (equivalent water depth)")
-        DefaultOutput.Stylize(self, ax)
+        Stylize(ax)
 
 class TemperatureOnEarthOutput(OutPut):
     """
@@ -997,6 +919,90 @@ def collect_outputs(modes_list, app_mode):
                 best_outputs[category] = obj
 
     return list(best_outputs.values())
+
+def Stylize(ax):
+    """
+    Apply common styling to latitude-based plots.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axes object to style.
+    """
+    ax.set_xlim([-90, 90])
+    ax.set_xlabel('Latitude')
+    ax.legend() if ax.get_legend_handles_labels()[1] else None # Only add legend if there are labels
+    ax.grid(True)
+    ax.set_xticks(np.linspace(-90, 90, 7))
+    ax.set_xticklabels([f"{tick:.0f}°" for tick in np.linspace(-90, 90, 7)])
+    # Minor grid with 40 ticks based on lat spacing
+    minor_ticks = np.arcsin(np.linspace(-1, 1, 40)) * (180/np.pi)
+    ax.xaxis.set_minor_locator(FixedLocator(minor_ticks))
+    ax.grid(True, which='minor', linestyle=':', alpha=0.6)
+
+def simulation_diagnostics(funcs, x, T, params, model=None, i=0):
+    """
+    Computes albedo, OLR, diffusivity, convergence, heat transport, etc.,
+    for a given temperature field T at iteration i.
+
+    Parameters
+    ----------
+    funcs : dict
+        Dictionary of physics functions to use.
+    x : np.ndarray
+        Spatial grid points.
+    T : np.ndarray
+        Temperature profile.
+    params : dict
+        Model parameters.
+    model : Model or None, optional
+        Model instance for context, if needed.
+    i : int, optional
+        Iteration index.
+
+    Returns
+    -------
+    dict
+        Dictionary containing diagnostic variables:
+            - T : Temperature profile
+            - alpha : Albedo profile
+            - olr : Outgoing longwave radiation profile
+            - conv : Heat flux convergence profile
+            - MHTrans_PW : Meridional heat transport (PW)
+            - D : Diffusivity profile
+            - T_mean : Mean temperature
+            - T_poles : Pole temperatures
+            - Q_x : Insolation profile
+    """
+    alpha = funcs['albedo_from_T'](T, x, k1=params['k1'], model=model, i=i)
+    dTloc = funcs['deltaT_of_Ts'](T, k3=params['k3'], model=model, i=i)
+    olr = phys.SIGMA * (T - dTloc)**4
+    D = funcs["diffusion_from_T"](T, params['D0'], params['k2'], model=model, i=i)
+
+    aL, bL, cL = funcs['build_diffusion_tridiag'](x, D)
+    conv = funcs['apply_L_to_T'](aL, bL, cL, T)
+
+    MHTrans_PW = funcs['meridional_transport_PW'](T, x, D, model=model, i=i)
+    T_mean = T.mean()
+    T_poles = funcs['poles_temperature'](T, model=model, i=i)
+    Q_x = funcs['Q_x'](x, params['S0'], model=model, i=i)
+
+    return dict(
+        T=T, alpha=alpha, olr=olr, conv=conv,
+        MHTrans_PW=MHTrans_PW, D=D, T_mean=T_mean,
+        T_poles=T_poles, Q_x=Q_x
+    )
+
+def date_from_fraction(frac):
+    """
+    Convert fractional year since spring equinox into a calendar date.
+    Only used for axis labelling and summaries.
+    """
+    start = datetime.date(2000, 3, 21)   # fixed reference
+    days_in_year = 365
+    offset = int(round(frac * days_in_year))
+    date = start + datetime.timedelta(days=offset)
+    return date.strftime("%b %d")
 
 def temp_fmt(n, p=1):
     """
