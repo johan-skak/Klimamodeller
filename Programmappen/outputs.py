@@ -276,20 +276,20 @@ class ObservedOutput(DefaultOutput):
     def initialize(self, model):
         super().initialize(model)
 
-        print("Loading zonal temperature data from file:", model.config["zonal_temp_file"]) #print which file is being loaded
-        T_x,CurrentZonalMeanTemperature  = tools.csv_reader(model.config["zonal_temp_file"],1) #read data from csv
+        print("Loading zonal temperature data from file:", model.zonal_temp_file) #print which file is being loaded
+        T_x,CurrentZonalMeanTemperature  = tools.csv_reader(model.zonal_temp_file,1) #read data from csv
         self.T_zonal = np.interp(model.x, T_x, CurrentZonalMeanTemperature) #interpolate from data grid to model grid
 
-        print("Loading zonal OLR data from file:", model.config["zonal_olr_file"]) #print which file is being loaded
-        OLR_x,OLR = tools.csv_reader(model.config["zonal_olr_file"],1) #read data from csv
+        print("Loading zonal OLR data from file:", model.zonal_olr_file) #print which file is being loaded
+        OLR_x,OLR = tools.csv_reader(model.zonal_olr_file,1) #read data from csv
         self.OLR_zonal = np.interp(model.x, OLR_x, OLR) #interpolate from data grid to model grid
 
-        print("Loading zonal albedo data from file:", model.config["albedo_file"])
-        Albedo_x, Albedo = tools.csv_reader(model.config["albedo_file"], 1)
+        print("Loading zonal albedo data from file:", model.albedo_file)
+        Albedo_x, Albedo = tools.csv_reader(model.albedo_file, 1)
         self.Albedo_zonal = np.interp(model.x, Albedo_x, Albedo)
 
-        print("Loading zonal solar data from file:", model.config["solar_file"])
-        Solar_x, Solar = tools.csv_reader(model.config["solar_file"], 1)
+        print("Loading zonal solar data from file:", model.solar_file)
+        Solar_x, Solar = tools.csv_reader(model.solar_file, 1)
         self.Solar_zonal = np.interp(model.x, Solar_x, Solar)
 
     def panel1(self, ax):
@@ -568,8 +568,8 @@ class HistoricalOutput(TimeSeriesOutput):
 
     def initialize(self, model):
         super().initialize(model)
-        print("Loading temperature history from file:", model.config["temperature_history"]) #print which file is being loaded
-        ds_giss = tools.netcdf_reader(model.config["temperature_history"]) # Load GISS temperature anomaly data from NetCDF file
+        print("Loading temperature history from file:", model.temperature_history_file) #print which file is being loaded
+        ds_giss = tools.netcdf_reader(model.temperature_history_file) # Load GISS temperature anomaly data from NetCDF file
         self.giss_time = pd.to_datetime(ds_giss['time'].values) # Convert to pandas datetime
         self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values) # Assume variable name is 'tempanomaly' and remove singleton dimensions
         

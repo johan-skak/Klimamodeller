@@ -107,3 +107,9 @@ class HistoricalData(Mode):
 
     def initialize(self, model):
         model.config["output_dir"] += "_HistData" # name output directory according to mode
+        model.zonal_temp_file = "current_zonal_mean_temperature.csv" # change default zonal temperature file to historical data file
+        model.temperature_history_file = "temperature_history.nc" # change default temperature history file to historical data file
+        model.zonal_olr_file = "zonal_mean_longwave_out.csv" # change default zonal olr file to historical data file
+        model.albedo_file = "zonal_mean_shortwave_out.csv" # change default albedo file to historical data file
+        model.solar_file = "zonal_mean_solar_in.csv" # change default solar
+
