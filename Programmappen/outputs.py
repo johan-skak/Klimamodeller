@@ -280,9 +280,9 @@ class ObservedOutput(DefaultOutput):
         T_x,CurrentZonalMeanTemperature  = tools.csv_reader(model.zonal_temp_file,1) #read data from csv
         self.T_zonal = np.interp(model.x, T_x, CurrentZonalMeanTemperature) #interpolate from data grid to model grid
 
-        print("Loading zonal OLR data from file:", model.zonal_olr_file) #print which file is being loaded
-        OLR_x,OLR = tools.csv_reader(model.zonal_olr_file,1) #read data from csv
-        self.OLR_zonal = np.interp(model.x, OLR_x, OLR) #interpolate from data grid to model grid
+        print("Loading zonal OLR data from file:", model.zonal_olr_file) 
+        OLR_x,OLR = tools.csv_reader(model.zonal_olr_file,1) 
+        self.OLR_zonal = np.interp(model.x, OLR_x, OLR) 
 
         print("Loading zonal albedo data from file:", model.albedo_file)
         Albedo_x, Albedo = tools.csv_reader(model.albedo_file, 1)
@@ -294,7 +294,7 @@ class ObservedOutput(DefaultOutput):
 
     def panel1(self, ax):
         super().panel1(ax)
-        ax.plot(self.lat, self.T_zonal - 273.15, label='Observed', linestyle='--', color="green") #plot temperature in celsius
+        ax.plot(self.lat, self.T_zonal - 273.15, label='Observed', linestyle='--', color="green") #plot observed zonal temperature data
         ax.legend()
     
     def panel2(self, ax):
@@ -536,6 +536,8 @@ class SeasonalTempOnEarthOutput(TemperatureOnEarthOutput):
     def __init__(self):
         super().__init__(last_year_only=True)
 
+"This output class plots global mean temperature from simulation timeseries on the same time axis as the radiative forcing time series used in the simulation in VariableForcing mode"
+"The plot has both a temperature and a forcing y-axis. this plot allows for comparison of simulation temperature response to forcing over time."
 class VariableForcingOutput(TimeSeriesOutput):
     def __init__(self):
         super().__init__()
@@ -548,20 +550,21 @@ class VariableForcingOutput(TimeSeriesOutput):
 
     def panel(self, ax):
         ax2 = ax.twinx()
-        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt+1):]) if self.ctrl_years > 0 else np.array(self.Tg_series)
-        ax2.axhline(0, color='black', linestyle='--', label='Zero Forcing')
-        ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Global Mean Temperature')
-        ax.set_xlim(self.start_year, self.start_year + len(T_series) * self.dt)
-        ax.set_ylim(np.max(np.abs(T_series-T_series[0])) * -1.1 + T_series[0], np.max(np.abs(T_series-T_series[0]))* 1.1 + T_series[0])
-        ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
+        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt+1):]) if self.ctrl_years > 0 else np.array(self.Tg_series) #exclude temperatures from control period from the time series in the plot
+        ax2.axhline(0, color='black', linestyle='--', label='Zero Forcing') # this makes a line that indicates zero forcing
+        ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Global Mean Temperature') #plot temperature time series
+        ax.set_xlim(self.start_year, self.start_year + len(T_series) * self.dt) # set xlimits based on length of temperature series
+        ax.set_ylim(np.max(np.abs(T_series-T_series[0])) * -1.1 + T_series[0], np.max(np.abs(T_series-T_series[0]))* 1.1 + T_series[0]) #set ylimits for temperature axis based on max temperature change
+        ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True) #set axis labels
 
-        ax2.set_ylabel(" Forcing [W/m²] "); ax2.set_ylim(np.max(np.abs(self.F_history)) * -1.1, np.max(np.abs(self.F_history)) * 1.1)
-        ax2.plot(np.arange(len(self.F_history)) * self.dt + self.start_year, self.F_history, label='Total Radiative Forcing', color='orange',linestyle='--')
-        handles,labels = ax.get_legend_handles_labels(); handles2, labels2 = ax2.get_legend_handles_labels()
-        ax.set_title("Global Mean Surface Temperature and Total Radiative Forcing")
-        ax.legend(handles + handles2, labels + labels2, loc='lower right')
+        ax2.set_ylabel(" Forcing [W/m²] "); ax2.set_ylim(np.max(np.abs(self.F_history)) * -1.1, np.max(np.abs(self.F_history)) * 1.1) #set ylimits for forcing axis based on max forcing
+        ax2.plot(np.arange(len(self.F_history)) * self.dt + self.start_year, self.F_history, label='Total Radiative Forcing', color='orange',linestyle='--') #plot forcing time series
+        handles,labels = ax.get_legend_handles_labels(); handles2, labels2 = ax2.get_legend_handles_labels() #get legends from both axes
+        ax.set_title("Global Mean Surface Temperature and Total Radiative Forcing") # title
+        ax.legend(handles + handles2, labels + labels2, loc='lower right') #legend
 
 "This output class loads historical temperature data and plots it alongside the model temperature time series."
+"This allows for direct comparison of model output to observed temperature anomalies over time."
 class HistoricalOutput(TimeSeriesOutput):
     def __init__(self):
         super().__init__()
@@ -570,8 +573,8 @@ class HistoricalOutput(TimeSeriesOutput):
         super().initialize(model)
         print("Loading temperature history from file:", model.temperature_history_file) #print which file is being loaded
         ds_giss = tools.netcdf_reader(model.temperature_history_file) # Load GISS temperature anomaly data from NetCDF file
-        self.giss_time = pd.to_datetime(ds_giss['time'].values) # Convert to pandas datetime
-        self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values) # Assume variable name is 'tempanomaly' and remove singleton dimensions
+        self.giss_time = pd.to_datetime(ds_giss['time'].values) # Convert time values from data to pandas datetime format
+        self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values) # Get temperature anomaly data from dataset and remove singleton dimension
         
         #interpolate GISS data to model time steps
         self.temperature_anomaly = np.interp(np.linspace(self.giss_time.year[0], self.giss_time.year[-1],
@@ -586,7 +589,7 @@ class HistoricalOutput(TimeSeriesOutput):
         T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt+1):]) if self.ctrl_years > 0 else np.array(self.Tg_series) #only plot temperature when forcing is on
         ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Simulation Temperature') #plot model temperature time series
         ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
-        ax.set_xlim(self.giss_time.year[0],self.giss_time.year[-1])
+        ax.set_xlim(self.giss_time.year[0],self.giss_time.year[-1]) #set xlimits based on GISS data time range
 
         # Set y-limits based on temperature anomaly range plus control temperature offset
         ax.set_ylim( - np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.min(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)],
