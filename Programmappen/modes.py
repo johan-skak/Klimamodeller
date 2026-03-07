@@ -89,8 +89,11 @@ class VariableSeaDepth(Mode):
 
     def initialize(self, model):
         model.config["output_dir"] += "_SeaDep" #Modify output directory name
-        del model.params["SD"] #Remove unused key from output
-
+        if "SD" in model.params:
+            del model.params["SD"] #Remove unused key from output
+    
+    def post_initialize(self, model):
+        model.C = phys.heat_capacity_profile(model.x, model.T, model.params["k1"]) #Initialize heat capacity profile
 
     def step(self, model, i):
         model.C = phys.heat_capacity_profile(model.x, model.T, model.params["k1"])
@@ -112,7 +115,7 @@ class VariableForcing(Mode):
         Interpolates forcing to match the number of model steps after the control period.
     - Stores full time series in model.F_History.
     """
-    def __init__(self, modes, app_mode=False):
+    def __init__(self, app_mode=False):
         super().__init__(app_mode=app_mode)
         self.outputs.extend([outputs.VariableForcingOutput()]) #plot the variable forcing data on the time series plot of temperature
 
@@ -127,13 +130,13 @@ class VariableForcing(Mode):
     def initialize(self, model):
         model.funcs["Forcing"] = phys.VariableForcing #enable the model to vary the forcing for each timestep
         model.config["output_dir"] += "_VarForc"  #name the output directory accordingly
-        del model.params["F"] #Remove unused key from output. This also makes the outputs aware that forcing is on
+        if "F" in model.params:
+            del model.params["F"] #Remove unused key from output. This also makes the outputs aware that forcing is on
 
         # --- Read forcing time series ---
         if model.config.get("forcing_data") is not None:
             # Provided directly in config
-            self.ForcingHistory = np.array(model.config["forcing_data"]) #set expected data location to a default filename
-            self.years = self.ForcingHistory[:, 0].astype(float)
+            self.years, self.ForcingHistory = np.array(model.config["forcing_data"]).astype(float).T
         else:
             # Load from CSV file
             if "forcing_file" not in model.config:
@@ -146,14 +149,11 @@ class VariableForcing(Mode):
         model.config["years"] = model.config["ctrl_years"] + len(self.years)
 
     def post_initialize(self, model):
-        # Extract forcing values (assumed in last column)
-        forcing = self.ForcingHistory[:, -1].astype(float)
-
         # Interpolate forcing to match simulation resolution after control period
         forcing_interp = np.interp(
             np.linspace(0, 1, model.nsteps - model.ctrl_nsteps),
-            np.linspace(0, 1, len(forcing)),
-            forcing
+            np.linspace(0, 1, len(self.ForcingHistory)),
+            self.ForcingHistory
         )
 
         # Forcing is zero during control, then follows the history
@@ -166,9 +166,9 @@ class HistoricalData(Mode):
     """
     Mode to run the model with historical observational data as a reference.
     """
-    def __init__(self, modes, app_mode=False):
-        super().__init__(modes, app_mode=app_mode)
-        self.outputs.extend([outputs.ObservedOutput(), outputs.HistoricalOutput()]) #plot observed temperature data on a time series and historical data on default plots
+    def __init__(self, app_mode=False):
+        super().__init__(app_mode=app_mode)
+        self.outputs.extend([outputs.HistoricalOutput()]) #plot historical temperature data on default plots
 
     # The HistoricalData mode is not compatible with SeasonalVariation mode. Because:
     # The datasets used in HistoricalData do not account for seasonal variation, so comparing seasonal model outputs to annual mean observational data would be misleading.

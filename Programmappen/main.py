@@ -54,6 +54,11 @@ def main(config, params, app_mode=False):
     # Default control run length
     if config["ctrl_years"] is None or config["ctrl_years"] < 0:
         config["ctrl_years"] = config["years"] // 2
+    
+    # Check that control run length is less than total simulation time
+    if config["ctrl_years"] > config["years"]:
+        tools.warn(f"Control run length {config['ctrl_years']} >= total simulation time {config['years']}. Adjusting control run to half of total time.")
+        config["ctrl_years"] = config["years"] // 2
 
     # Default to no solar-forcing change
     if params["S1"] is None:
@@ -70,7 +75,6 @@ def main(config, params, app_mode=False):
 
     # Collect all output objects defined by the active modes
     outputs_list = outputs.collect_outputs(modes_list, app_mode)
-
     # Create and run the model
     climate_model = model.ClimateModel(config, params, modes_list, outputs_list, app_mode)
 

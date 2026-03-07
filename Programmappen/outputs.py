@@ -268,11 +268,12 @@ class DefaultOutput(OutPut):
         self.diags["end"] = simulation_diagnostics(model.funcs, model.x, model.T, model.params)
 
         # Global warming metrics.
-        self.dt_global = self.diags["end"]["T_mean"] - self.diags["mid"]["T_mean"]
-        self.polar_ampl = (
-            (self.diags["end"]["T_poles"][1] - self.diags["mid"]["T_poles"][1] - self.dt_global)
-            / self.dt_global if self.dt_global != 0 else np.nan
-        )
+        if self.Forcing_on:
+            self.dt_global = self.diags["end"]["T_mean"] - self.diags["mid"]["T_mean"]
+            self.polar_ampl = (
+                (self.diags["end"]["T_poles"][1] - self.diags["mid"]["T_poles"][1] - self.dt_global)
+                / self.dt_global if self.dt_global != 0 else np.nan
+            )
 
         self.lat_ext = np.r_[-90, self.lat, 90] # Extended latitude including poles
 
@@ -299,13 +300,14 @@ class DefaultOutput(OutPut):
         """
         Produce a textual summary of the simulation results.
         """
-        has_mid = "mid" in diags and diags["mid"] is not None
         end = diags["end"]
 
-        if has_mid:
+        if self.Forcing_on:
             mid = diags["mid"]
 
             return textwrap.dedent(f"""
+                === Default Diagnostics ===
+                Modes: {model.config.get("modes")}
                 Years (control, forced): ({model.config['ctrl_years']}, {model.config['years']-model.config['ctrl_years']})
                 Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
@@ -323,6 +325,8 @@ class DefaultOutput(OutPut):
 
         # ---- Single stage simulation ----
         return textwrap.dedent(f"""
+            === Default Diagnostics ===
+            Modes: {model.config.get("modes")}
             Years simulated: {model.config['years']}
             Grid points nx: {model.config['nx']}, Δt (years): {model.config['dt_years']}
 
@@ -343,7 +347,7 @@ class DefaultOutput(OutPut):
         ax.axhline(0, color="#00aeff", linestyle='--', alpha=0.7,label = "0 °C") # 0 °C line
         ax.set_title("Temperature Profile")
         ax.set_ylabel("°C")
-        Stylize(ax)
+        stylize(ax)
     
     # Panel 2: OLR profiles (W/m²)
     def panel2(self, ax):
@@ -352,7 +356,7 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.lat, self.diags[case]['olr'], label=label, color=color)
         ax.set_title('Outgoing Longwave Radiation (OLR)'); ax.set_ylabel('W/m²')
-        Stylize(ax)
+        stylize(ax)
     
     # Panel 3: Albedo profiles
     def panel3(self, ax):
@@ -361,7 +365,7 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.lat, self.diags[case]['alpha'], label=label, color=color)
         ax.set_title('Planetary Albedo'); ax.set_ylabel('Albedo')
-        Stylize(ax)
+        stylize(ax)
     
     # Panel 4: Meridional heat transport (PW)
     def panel4(self, ax):
@@ -370,7 +374,7 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.diags[case]['MHTrans_PW'][0], self.diags[case]['MHTrans_PW'][1], label=label, color=color)
         ax.set_title('Meridional Heat Transport'); ax.set_ylabel('PW (10¹⁵ W)')
-        Stylize(ax)
+        stylize(ax)
     
     # Heat flux convergence (W/m²)
     def panel5(self, ax):
@@ -379,7 +383,7 @@ class DefaultOutput(OutPut):
             if case == "init": continue
             ax.plot(self.lat, self.diags[case]['conv'], label=label, color=color)
         ax.set_title('Heat Flux Convergence'); ax.set_ylabel('W/m²')
-        Stylize(ax)
+        stylize(ax)
     
     # Change in zonal mean temperature (°C) + polar amplification
     def panel6(self, ax):
@@ -387,7 +391,7 @@ class DefaultOutput(OutPut):
         dT_ext = self.diags["end"]['T_ext'] - self.diags["mid"]['T_ext']
         ax.plot(self.lat_ext, dT_ext, label='Forced - Control')
         ax.set_title('Change in Zonal Mean Temperature'); ax.set_ylabel('ΔT (K)')
-        Stylize(ax)
+        stylize(ax)
 
 class TimeSeriesOutput(OutPut):
     """
@@ -576,7 +580,7 @@ class SeasonalOutput(OutPut):
 
         ax.set_title(title)
         ax.set_ylabel(ylabel)
-        Stylize(ax)
+        stylize(ax)
 
     # Panels 1–6: spatial seasonal profiles
     def panel1(self, ax): self.plot_profiles(ax, "T_ext", "°C", "Seasonal Temperature Profiles")
@@ -751,7 +755,7 @@ class SeaDepthOutput(OutPut):
 
         ax.set_title(r"Heat capacities based on ML depth and % of landmass")
         ax.set_ylabel("m (equivalent water depth)")
-        Stylize(ax)
+        stylize(ax)
 
 class TemperatureOnEarthOutput(OutPut):
     """
@@ -876,32 +880,35 @@ class HistoricalOutput(TimeSeriesOutput):
            self.start_year = model.start_year
 
     def panel(self, ax):
-        T_series = np.array(self.Tg_series[int(self.ctrl_years/self.dt+1):]) if self.ctrl_years > 0 else np.array(self.Tg_series) #only plot temperature when forcing is on
-        ax.plot(np.arange(len(T_series)) * self.dt + self.start_year, T_series, label='Simulation Temperature') #plot model temperature time series
+        # Plot the model's simulated global mean temperature time series and the observed temperature anomaly data from GISS on the same axes for comparison.
+        T_series = np.array(self.Tg_series[int((self.ctrl_years + max(self.giss_time.year[0] - self.start_year, 0))/self.dt):])
+        ax.plot(np.arange(len(T_series)) * self.dt + max(self.start_year, self.giss_time.year[0]), T_series, label='Simulation Temperature') #plot model temperature time series
         ax.set_xlabel("Time [years]"); ax.set_ylabel("Temperature [°C]"); ax.grid(True)
         ax.set_xlim(self.giss_time.year[0],self.giss_time.year[-1]) #set xlimits based on GISS data time range
 
         # Set y-limits based on temperature anomaly range plus control temperature offset
-        ax.set_ylim( - np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.min(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)],
-        np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1 + np.max(self.temperature_anomaly) + self.Tg_series[int(self.ctrl_years/self.dt)])
+        y_lower = min(np.min(self.temperature_anomaly) + T_series[0] - np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1,
+                      np.min(T_series) - np.abs( np.max(T_series) - np.min(T_series) ) * 0.1)
+        y_upper = max(np.max(self.temperature_anomaly) + T_series[0] + np.abs( np.max(self.temperature_anomaly) - np.min(self.temperature_anomaly) ) * 0.1,
+                      np.max(T_series) + np.abs( np.max(T_series) - np.min(T_series) ) * 0.1)
+        ax.set_ylim(y_lower, y_upper)
         
         #plot the observed temperature anomaly data from GISS
         ax.plot(np.linspace(self.giss_time.year[0], self.giss_time.year[-1], int((self.giss_time.year[-1]-self.giss_time.year[0])/self.dt)),
-            self.temperature_anomaly + self.Tg_series[int(self.ctrl_years/self.dt)], color='black', label='GISS Observed Temperature', linewidth=1.0)
+            self.temperature_anomaly + T_series[0], color='black', label='GISS Observed Temperature', linewidth=1.0)
 
-        ax.set_title("Global Mean Temperatures")
+        ax.set_title("Global Mean Surface Temperature and Observed Temperature Anomaly") # title
         ax.legend()
 
 output_registry = { # Maps output classes to (type_name, priority)
     DefaultOutput:              ("Default", 0),
     TimeSeriesOutput:           ("Time Series", 0),
-    SeasonalOutput:             ("Default", 2), # SeasonalOutput has highest priority for Default type
+    SeasonalOutput:             ("Default", 1), # SeasonalOutput has highest priority for Default type
     TemperatureOnEarthOutput:   ("Temperature on Earth", 0),
     SeasonalTempOnEarthOutput:  ("Temperature on Earth", 1),
     SeaDepthOutput:             ("Sea Depth", 0),
     HistoricalOutput:           ("Historical", 0), # HistoricalOutput adds the observed temperature time series
     VariableForcingOutput:      ("Time Series", 1), # VariableForcingOutput has higher priority than TimeSeriesOutput
-    ObservedOutput:             ("Default", 1), # ObservedOutput has higher priority than DefaultOutput
     }
 
 def collect_outputs(modes_list, app_mode):
@@ -1002,7 +1009,7 @@ def collect_outputs(modes_list, app_mode):
 
     return list(best_outputs.values())
 
-def Stylize(ax):
+def stylize(ax):
     """
     Apply common styling to latitude-based plots.
 

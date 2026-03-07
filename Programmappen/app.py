@@ -389,8 +389,10 @@ DEFAULT_PARAMS = dict(k1=0.06, k2=0.01, k3=0.5, D0=0.66, T0=288, SD=250, S0=1365
 DEFAULT_CONFIG = dict(years=1000, ctrl_years=None, dt_years=1.0, nx=200, modes=[], forcing_file='ForcingHistory.csv')
 
 # Initialize with default values
-st.session_state.params = DEFAULT_PARAMS.copy()
-st.session_state.config = DEFAULT_CONFIG.copy()
+if "params" not in st.session_state:
+    st.session_state.params = DEFAULT_PARAMS.copy()
+if "config" not in st.session_state:
+    st.session_state.config = DEFAULT_CONFIG.copy()
 
 # Configer page layout
 st.set_page_config(page_title="Energibalancemodel af Jordens klima", page_icon="🌍",)
@@ -476,8 +478,10 @@ col_header1, col_header2 = st.columns([1, 1]) # Two columns: one for title, one 
 col_header1.title("Energibalance-model af Jordens klima")
 col_header2.html("<div class='downloadButton'></div>") # Empty container solely for styling purposes (via its class tag)
 if col_header2.button("Lav datafiler til download", type="primary"):
-    sim_info = print_simulation_info(st.session_state["config"], st.session_state["params"])
-    fig, _, clean_summary = generate_outputs_data(st.session_state["axes_funcs"], st.session_state["summaries"], sim_info=sim_info)
+    sim_info = print_simulation_info(st.session_state["config"], st.session_state["params"], app_mode=True)
+    # Remove the animation from the list of axes functions
+    axis_funcs = [ax_func for ax_func in st.session_state["axes_funcs"] if not ax_func.__name__ == "panel_wrapper"]
+    fig, _, clean_summary = generate_outputs_data(axis_funcs, st.session_state["summaries"], sim_info=sim_info)
     png_buf = make_png(fig)
     col_header2.download_button("Download figurer (.png)", png_buf, file_name="Klimamodel_figurer.png", on_click="ignore", mime="image/png")
     col_header2.download_button("Download opsummering (.txt)", clean_summary.encode('utf-8'), file_name="Klimamodel_opsummering.txt", on_click="ignore")
@@ -491,8 +495,8 @@ st.html("<i class='no-gap'>Klik på knapperne nedenfor for at vælge forudindsti
 
 # --- Preset buttons ---
 # CSS to balance text wrapping in button paragraphs
-st.html("<style> button p {text-wrap: balance;} </style>")
-col_btn1, col_btn2, col_btn3, col_btn4, col_btn5 = st.columns(5)
+st.html("<style> button p {text-wrap: balance;}</style>")
+col_btn1, col_btn2, col_btn3, col_btn4, col_btn5, col_btn6 = st.columns(6)
 with col_btn1:
     # --- Default button ---
     if btns.button("Standardtilstand", icon="🔄"):
@@ -509,20 +513,28 @@ with col_btn3:
     # --- Variable Sea Depth button ---
     if btns.button("Variabel havdybde", icon="🌊"):
         # Set the keyed input widgets to mode-specific default values
-        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=None))  # Sea depth is irrelevant in this mode
+        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=0))  # Sea depth is irrelevant in this mode
         set_keyed_inputs(DEFAULT_CONFIG | dict(modes=["VariableSeaDepth"]))
 with col_btn4:
     # --- Seasonal Variation + Variable Sea Depth button ---
     if btns.button("🌱🌊 Sæsonvariation + Variabel havdybde"):
         # Set the keyed input widgets to mode-specific default values
-        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=None)) # No forcing and sea depth is irrelevant
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0.0, SD=0)) # No forcing and sea depth is irrelevant
         set_keyed_inputs(DEFAULT_CONFIG | dict(years=50, dt_years=1/24, modes=["SeasonalVariation", "VariableSeaDepth"]))
 with col_btn5:
     # --- Variable Forcing button ---
     if btns.button("Forceringsdata", icon="📈"):
         # Set the keyed input widgets to mode-specific default values
-        set_keyed_inputs(DEFAULT_PARAMS | dict(SD=20))  # Sea depth value to fit ERA5 data
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0, SD=20))  # Sea depth value to fit ERA5 data
         set_keyed_inputs(DEFAULT_CONFIG | dict(ctrl_years=100, modes=["VariableForcing"]))
+        st.session_state.choice = "Global Mean Surface Temperature and Total Radiative Forcing" # Set default figure to show for this mode
+with col_btn6:
+    # --- Variable Forcing button ---
+    if btns.button("📈🌡️ Forceringsdata + Temperaturdata"):
+        # Set the keyed input widgets to mode-specific default values
+        set_keyed_inputs(DEFAULT_PARAMS | dict(F=0, SD=20))  # Sea depth value to fit ERA5 data
+        set_keyed_inputs(DEFAULT_CONFIG | dict(ctrl_years=100, modes=["VariableForcing", "HistoricalData"]))
+        st.session_state.choice = "Global Mean Surface Temperature and Observed Temperature Anomaly" # Set default figure to show for this mode
 
 # --- Input form for parameters and config ---
 with st.form("input_form"): # Note: A form does not auto-submit when inputs change
@@ -533,10 +545,12 @@ with st.form("input_form"): # Note: A form does not auto-submit when inputs chan
         with st.expander("🧮 Parametre", expanded=st.session_state.get("show_all_params", False)):
             # Overwrite params dict with user input when form is submitted
             st.header("Parametre")
-            st.number_input(r"F: Ekstra strålingspåvirkning (W/m²)", value=DEFAULT_PARAMS["F"], key="F", step=1.0)
-            st.number_input("SD: Varmekapacitet i meter havdybde (m)", value=DEFAULT_PARAMS["SD"], key="SD", step=10)
+            if not "VariableForcing" in st.session_state.get("modes", []):
+                st.number_input(r"F: Ekstra strålingspåvirkning (W/m²)", value=DEFAULT_PARAMS["F"], key="F", step=1.0)
+            if not "VariableSeaDepth" in st.session_state.get("modes", []):
+                st.number_input("SD: Varmekapacitet i meter havdybde (m)", value=DEFAULT_PARAMS["SD"], key="SD", step=10, min_value=1)
             st.number_input("D0: Diffusionskoefficient (m²/s)", value=DEFAULT_PARAMS["D0"], key="D0", step=0.1)
-            st.number_input("T0: Initial temperatur (K)", value=DEFAULT_PARAMS["T0"], key="T0", step=10)
+            st.number_input("T0: Initial temperatur (K)", value=DEFAULT_PARAMS["T0"], key="T0", step=10, min_value=0)
             if st.session_state.show_all_params: # Show more parameters
                 st.number_input("S0: Solindstråling under kontrolperiode (W/m²)", value=DEFAULT_PARAMS["S0"], key="S0", step=50)
                 st.number_input("S1: Solindstråling efter kontrolperiode (W/m²) (lad stå tom for ingen ændring)", value=DEFAULT_PARAMS["S1"], key="S1", step=50)
@@ -545,7 +559,8 @@ with st.form("input_form"): # Note: A form does not auto-submit when inputs chan
                 st.number_input("k3: Feedbackstyrke af drivhuseffekten", value=DEFAULT_PARAMS["k3"], key="k3", step=0.1)
             for key in DEFAULT_PARAMS.keys(): # Update params dict in session state with non-None input values
                 value = st.session_state.get(key) # Retrieve the input value; returns None if the key does not exist yet
-                if value is not None: st.session_state.params[key] = value
+                if value is not None or key in ["S1"]:  # Allow S1 to be None (indicating no change in solar radiation after control period)
+                    st.session_state.params[key] = value
     # Config inputs
     with col2:
         with st.expander("⚙️ Opsætning"):
@@ -553,7 +568,13 @@ with st.form("input_form"): # Note: A form does not auto-submit when inputs chan
             st.header("Opsætning")
             if not "VariableForcing" in st.session_state.get("modes", []):
                 st.number_input("Simuleringstid (år)", value=DEFAULT_CONFIG["years"], key="years", step=50, min_value=1, max_value=1000)
-            st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=DEFAULT_CONFIG["ctrl_years"], key="ctrl_years", step=50, min_value=0, max_value=1000)
+            # Ensure ctrl_years is at most years and set to default if not set yet.
+            if "ctrl_years" not in st.session_state:
+                st.session_state.ctrl_years = DEFAULT_CONFIG["ctrl_years"]
+            max_ctrl = min(1000, st.session_state.get("years", 1000))
+            if st.session_state.ctrl_years is not None and st.session_state.ctrl_years > max_ctrl:
+                st.session_state.ctrl_years = max_ctrl
+            st.number_input("Kontrolperiode (år) (lad stå tom for halvdelen af simuleringstiden)", value=st.session_state.ctrl_years, key="ctrl_years", step=50, min_value=0, max_value=max_ctrl)
             st.number_input("Tidsskridt (år)", value=DEFAULT_CONFIG["dt_years"], key="dt_years", step=0.01, min_value=0.01, max_value=10.0)
             st.number_input("Antal gitterpunkter", value=DEFAULT_CONFIG["nx"], key="nx", step=100, min_value=10, max_value=1000)
             st.html("""<style> 
@@ -562,10 +583,10 @@ with st.form("input_form"): # Note: A form does not auto-submit when inputs chan
                         background-color: #80b080 !important;
                     }
                 </style>""")
-            modes = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth", "VariableForcing"], default=DEFAULT_CONFIG["modes"], key="modes")
+            modes = st.multiselect("Tilstande", options=["SeasonalVariation", "VariableSeaDepth", "VariableForcing", "HistoricalData"], default=DEFAULT_CONFIG["modes"], key="modes")
             for key in DEFAULT_CONFIG.keys(): # Update config dict in session state with non-None input values
                 value = st.session_state.get(key)
-                if value is not None:
+                if value is not None or key in ["ctrl_years"]:  # Allow ctrl_years to be None
                     st.session_state.config[key] = value
 
     submitted = st.form_submit_button("▶️ Kør simulation med opdaterede parametre og opsætning", width="stretch")
@@ -575,12 +596,15 @@ if "VariableForcing" in modes and "SeasonalVariation" in modes:
     st.error("'VariableForcing' og 'SeasonalVariation' kan ikke bruges sammen. Vælg kun én af dem.")
     st.stop()
 
+if "HistoricalData" in modes and "SeasonalVariation" in modes:
+    st.error("'HistoricalData' og 'SeasonalVariation' kan ikke bruges sammen. Vælg kun én af dem.")
+    st.stop()
+
 # --- File upload for custom forcing data if VariableForcing mode is selected ---
 if "VariableForcing" in st.session_state.get("modes", []):
     upload_file_menu() # Create the upload menu
     # If custom forcing data is uploaded, pass it to the config
-    if st.session_state.forcing_data is not None:
-        st.session_state.config["forcing_data"] = st.session_state.forcing_data
+    st.session_state.config["forcing_data"] = st.session_state.forcing_data
 
 # Run simulation and show outputs
 st.session_state.axes_funcs, st.session_state.summaries = run(st.session_state.params, st.session_state.config)
