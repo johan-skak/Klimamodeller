@@ -359,7 +359,7 @@ def VariableForcing(model, i):
     -----
     - Uses model.F_History which should be set up by VariableForcing mode.
     """
-    return model.fraction_History[i] # Use time-varying forcing from forcing history data
+    return model.F_History[i] # Use time-varying forcing from forcing history data
 
 def build_diffusion_tridiag(x, D):
     """

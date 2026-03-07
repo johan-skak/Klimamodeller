@@ -1,10 +1,34 @@
 === EBM Model Configuration ================
+<<<<<<< HEAD
 years      : 500
 ctrl_years : 250
 dt_years   : 1
 nx         : 200
 modes      : ['VariableSeaDepth']
 output_dir : Results_SeaDep
+=======
+<<<<<<< HEAD
+years               : 200
+ctrl_years          : 100
+dt_years            : 1
+nx                  : 200
+modes               : ['VariableSeaDepth']
+output_dir          : Results_SeaDep
+forcing_file        : ForcingHistory.csv
+zonal_temp_file     : current_zonal_mean_temperature.csv
+temperature_history : temperature_history.nc
+zonal_olr_file      : zonal_mean_longwave_out.csv
+albedo_file         : zonal_mean_shortwave_out.csv
+=======
+years        : 500
+ctrl_years   : 250
+dt_years     : 1
+nx           : 200
+modes        : ['VariableSeaDepth']
+output_dir   : Results_SeaDep
+forcing_file : ForcingHistory.csv
+>>>>>>> origin/Johan-dev
+>>>>>>> Ludvig-dev
 ============================================
 
 === EBM Model Parameters ===================
@@ -17,11 +41,20 @@ S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 4
 ============================================
+<<<<<<< HEAD
 Output generated on 2025-12-09 22:21:21
+=======
+
+<<<<<<< HEAD
+Output generated on 2025-11-12 09:53:10
+=======
+Output generated on 2025-12-01 16:59:49
+>>>>>>> origin/Johan-dev
+>>>>>>> Ludvig-dev
 
 === EBM Summary =====================================================
 
-Years (control, forced): (250, 250)
+Years (control, forced): (100, 100)
 Grid points nx: 200, Δt (years): 1
 
 Control global mean T (°C):  15.1
