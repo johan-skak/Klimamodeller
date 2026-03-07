@@ -75,7 +75,7 @@ def draw_earth(ax, res):
     ax.add_artist(circle)
 
     # add coastlines from file (computed by make_coastline_data)
-    with open(os.path.join(os.path.dirname(__file__), 'coastline_data.pkl'), 'rb') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'Datafiler/coastline_data.pkl'), 'rb') as f:
         coastline_segments = pickle.load(f)
     for x_c, y_c in coastline_segments:
         ax.plot(x_c, y_c, color='black', lw=0.5)
@@ -147,7 +147,7 @@ def make_coastline_data():
         for x_coords_segment, y_coords_segment in split_on_nan(x_coords, y_coords):
             segments.append((x_coords_segment, y_coords_segment))
     
-    with open('coastline_data.pkl', 'wb') as f:
+    with open('Datafiler/coastline_data.pkl', 'wb') as f:
         pickle.dump(segments, f)
-    
-    print(f"Saved {len(segments)} coastline segments to 'coastline_data.pkl'")
+
+    print(f"Saved {len(segments)} coastline segments to 'Datafiler/coastline_data.pkl'")

@@ -5,5 +5,5 @@ D0: 0.66 # Base diffusivity (W/m^2/K)
 T0: 288.0 # Initial temperature (K)
 S0: 1365.0 # Solar forcing (W/m^2) before control period
 S1:  # Solar forcing (W/m^2) after control period. Leave empty to have no change.
-F: 0 # Extra forcing (W/m^2)
-SD: 20 # Sea depth (m) (of mixed layer)
+F: 4 # Extra forcing (W/m^2)
+SD: 250 # Sea depth (m) (of mixed layer)

@@ -1,0 +1,64 @@
+=== EBM Model Configuration ================
+years               : 375
+ctrl_years          : 100
+dt_years            : 1
+nx                  : 200
+modes               : ['VariableForcing']
+output_dir          : Results_VarForc
+forcing_file        : ForcingHistory.csv
+zonal_temp_file     : current_zonal_mean_temperature.csv
+temperature_history : temperature_history.nc
+zonal_olr_file      : zonal_mean_longwave_out.csv
+albedo_file         : zonal_mean_shortwave_out.csv
+solar_file          : zonal_mean_solar_in.csv
+============================================
+
+=== EBM Model Parameters ===================
+k1 (ice temperature sensitivity)    : 0.06
+k2 (diffusivity sensitivity)        : 0.01
+k3 (longwave radiation sensitivity) : 0.5
+D0 (background diffusivity)         : 0.66
+T0 (initial temperature)            : 288.0
+SD (mixed layer sea depth)          : 250
+S0 (solar forcing initial)          : 1365.0
+S1 (solar forcing changed)          : 1365.0
+============================================
+<<<<<<< HEAD
+Output generated on 2025-12-09 14:49:56
+=======
+
+<<<<<<< HEAD
+Output generated on 2025-11-24 12:06:30
+=======
+Output generated on 2025-12-02 09:50:52
+>>>>>>> origin/Johan-dev
+>>>>>>> Ludvig-dev
+
+=== EBM Summary =====================================================
+
+Years (control, forced): (100, 275)
+Grid points nx: 200, Δt (years): 1
+
+Control global mean T (°C):  15.1
+<<<<<<< HEAD
+Final global mean T (°C):  17.9
+ΔT global (°C): 2.8
+
+North pole T control / forced (°C): -13.8 /  -8.6
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.864
+
+Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 245
+Planetary albedo control / forced: 0.298 / 0.292
+Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.683
+=======
+Forced global mean T (°C):  16.7
+ΔT global (°C): 1.7
+
+North pole T control / forced (°C): -13.9 / -10.9
+North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.774
+
+Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 243
+Planetary albedo control / forced: 0.298 / 0.294
+Diffusivity control / forced (W m⁻² K⁻¹): 0.665 / 0.676
+>>>>>>> Ludvig-dev
+

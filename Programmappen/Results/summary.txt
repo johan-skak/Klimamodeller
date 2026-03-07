@@ -18,19 +18,18 @@ S0 (solar forcing initial)          : 1365.0
 S1 (solar forcing changed)          : 1365.0
 F  (additional forcing)             : 4
 ============================================
-
-Output generated on 2025-10-09 19:29:25
+Output generated on 2025-12-09 22:20:46
 
 === EBM Summary =====================================================
 
 Years (control, forced): (250, 250)
 Grid points nx: 200, Δt (years): 1
 
-Control global mean T (°C): 15.1
-Forced  global mean T (°C): 18.5
-ΔT global (°C): 3.37
+Control global mean T (°C):  15.1
+Final global mean T (°C):  18.5
+ΔT global (°C): 3.4
 
-North pole T control / forced (°C): -13.8 / -7.5
+North pole T control / forced (°C): -13.8 /  -7.5
 North polar amplification ( (ΔT_pole - ΔT_global)/ΔT_global ): 0.859
 
 Outgoing longwave radiation (OLR) control / forced (W m⁻²): 240 / 246
