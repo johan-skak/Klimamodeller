@@ -142,7 +142,8 @@ class VariableForcing(Mode):
             if "forcing_file" not in model.config:
                 model.config["forcing_file"] = 'ForcingHistory.csv'
 
-            print("Loading forcing data from file:", model.config["forcing_file"])
+            if not self.app_mode: # Don't print in Streamlit mode, as it clutters the interface
+                print("Loading forcing data from file:", model.config["forcing_file"])
             self.years, self.ForcingHistory = tools.csv_reader(model.config["forcing_file"]) #load data from file
 
         # Set model runtime to cover control period plus forcing history

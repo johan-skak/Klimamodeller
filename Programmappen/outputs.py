@@ -865,7 +865,8 @@ class HistoricalOutput(TimeSeriesOutput):
 
     def initialize(self, model):
         super().initialize(model)
-        print("Loading temperature history from file:", model.temperature_history_file) #print which file is being loaded
+        if not model.app_mode:
+            print("Loading temperature history from file:", model.temperature_history_file) #print which file is being loaded
         ds_giss = tools.netcdf_reader(model.temperature_history_file) # Load GISS temperature anomaly data from NetCDF file
         self.giss_time = pd.to_datetime(ds_giss['time'].values) # Convert time values from data to pandas datetime format
         self.giss_temp = np.squeeze(ds_giss['tempanomaly'].values) # Get temperature anomaly data from dataset and remove singleton dimension
