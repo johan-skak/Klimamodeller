@@ -616,7 +616,7 @@ with col_out2: # Summary area
     if st.session_state.summaries:
         st.html(make_summary(st.session_state.summaries))
 
-st.html("<i class='no-gap'>Version 1.0</i>")
+st.html("<i class='no-gap'>Version 1.1</i>")
 
 # st.markdown("---")
 # st.header("Om denne app")
